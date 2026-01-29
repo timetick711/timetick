@@ -175,20 +175,29 @@ const Products = () => {
     }, []);
 
     const handleTestNotification = async () => {
+        const serverUrl = import.meta.env.VITE_SERVER_URL;
+
+        // Final Diagnostic: Check if URL exists
+        if (!serverUrl || serverUrl === 'undefined') {
+            Swal.fire({
+                icon: 'error',
+                title: 'رابط السيرفر مفقود!',
+                text: 'يرجى إضافة VITE_SERVER_URL في إعدادات (Environment Variables) مشروع Dashboard في Vercel، ووضع رابط السيرفر هناك.',
+                background: '#141414',
+                color: '#fff'
+            });
+            return;
+        }
+
         startLoading();
         try {
             await setupNotifications(user.id);
 
-            // Get current subscription to show status
             const registration = await navigator.serviceWorker.ready;
             const subscription = await registration.pushManager.getSubscription();
             setIsSubscribed(!!subscription);
 
             if (subscription) {
-                // Fetch the server URL from pushManager (or use the one available in this scope)
-                // Note: We'll use the relative or full URL here
-                const serverUrl = import.meta.env.VITE_SERVER_URL || '';
-
                 const response = await fetch(`${serverUrl}/api/test-notification`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -198,20 +207,21 @@ const Products = () => {
                 if (response.ok) {
                     Swal.fire({
                         icon: 'success',
-                        title: 'تم تنشيط الإشعار!',
-                        text: 'انتظر ثواني ليصلك إشعار تجريبي. إذا لم يصل، تأكد من إعدادات الويندوز.',
+                        title: 'تم إرسال إشارة الاختبار',
+                        text: 'إذا لم يصلك إشعار خلال ثواني، فالمشكلة في إعدادات الويندوز أو المتصفح لديك.',
                         background: '#141414',
                         color: '#fff'
                     });
                 } else {
-                    throw new Error('فشل السيرفر في إرسال الإشعار');
+                    const errorMsg = await response.text();
+                    throw new Error(errorMsg || 'السيرفر رفض طلب الاختبار');
                 }
             }
         } catch (error) {
-            console.error("Error:", error);
+            console.error("Diagnostic Error:", error);
             Swal.fire({
                 icon: 'error',
-                title: 'فشل التنشيط',
+                title: 'عذراً.. حدث خطأ',
                 text: error.message,
                 background: '#141414',
                 color: '#fff'
