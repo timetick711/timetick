@@ -1,47 +1,40 @@
+// Version: 1.1 (Force update)
 self.addEventListener('push', function (event) {
-    console.log('Push Event received');
-    let data = { title: 'تنبيه جديد', body: 'لديك إشعار من Time Tick Store' };
+    console.log('[Service Worker] Push Received.');
 
+    let data = {};
     if (event.data) {
         try {
             data = event.data.json();
         } catch (e) {
-            data = { title: '🎉 طلب جديد!', body: event.data.text() };
+            data = { title: '🎉 طلب جديد!', body: 'وصل طلب جديد للمتجر' };
         }
     }
 
+    const title = data.title || 'تنبيه من Time Tick';
     const options = {
-        body: data.body,
-        icon: '/logo.png',
-        badge: '/logo.png',
-        vibrate: [200, 100, 200],
-        tag: 'new-order-notification',
+        body: data.body || 'لديك تحديث جديد في المتجر',
+        icon: 'https://vciyuynmwdmzrmlfgpvh.supabase.co/storage/v1/object/public/logos/logo.png',
+        badge: 'https://vciyuynmwdmzrmlfgpvh.supabase.co/storage/v1/object/public/logos/logo.png',
+        vibrate: [200, 100, 200, 100, 200],
+        tag: 'new-order',
         renotify: true,
         data: {
             url: data.data?.url || '/orders'
         }
     };
 
-    event.waitUntil(
-        self.registration.showNotification(data.title, options)
-    );
+    event.waitUntil(self.registration.showNotification(title, options));
 });
 
 self.addEventListener('notificationclick', function (event) {
     event.notification.close();
-    const urlToOpen = new URL(event.notification.data.url, self.location.origin).href;
-
     event.waitUntil(
         clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function (clientList) {
-            for (let i = 0; i < clientList.length; i++) {
-                let client = clientList[i];
-                if (client.url === urlToOpen && 'focus' in client) {
-                    return client.focus();
-                }
+            if (clientList.length > 0) {
+                return clientList[0].focus();
             }
-            if (clients.openWindow) {
-                return clients.openWindow(urlToOpen);
-            }
+            return clients.openWindow(event.notification.data.url);
         })
     );
 });
