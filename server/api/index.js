@@ -65,12 +65,22 @@ app.post('/api/notify-new-order', async (req, res) => {
             .from('push_subscriptions')
             .select('subscription_json');
 
-        if (error) throw error;
+        if (error) {
+            console.error('Supabase fetch error:', error);
+            throw error;
+        }
+
+        console.log(`Found ${subscriptions.length} active subscriptions.`);
+
+        if (subscriptions.length === 0) {
+            console.warn('No subscriptions found in the database. Notification aborted.');
+            return res.status(200).json({ status: 'No subscribers' });
+        }
 
         const payload = JSON.stringify({
             title: '🎉 طلب جديد!',
             body: `وصل طلب جديد بقيمة ${order.total_amount} ر.س`,
-            icon: 'https://vciyuynmwdmzrmlfgpvh.supabase.co/storage/v1/object/public/logos/logo.png', // Update with a real public URL
+            icon: 'https://vciyuynmwdmzrmlfgpvh.supabase.co/storage/v1/object/public/logos/logo.png',
             data: {
                 url: '/orders',
                 orderId: order.id
