@@ -9,19 +9,33 @@ const app = express();
 app.use(cors());
 app.use(bodyParser.json());
 
+// Validate Environment Variables
+const requiredEnvVars = ['SUPABASE_URL', 'SUPABASE_KEY', 'VAPID_PUBLIC_KEY', 'VAPID_PRIVATE_KEY', 'EMAIL'];
+requiredEnvVars.forEach(v => {
+    if (!process.env[v]) {
+        console.error(`FATAL ERROR: Environment variable ${v} is missing!`);
+    }
+});
+
 // Supabase Setup
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
 
 // Web Push Setup
-webPush.setVapidDetails(
-    `mailto:${process.env.EMAIL}`,
-    process.env.VAPID_PUBLIC_KEY,
-    process.env.VAPID_PRIVATE_KEY
-);
+if (process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
+    webPush.setVapidDetails(
+        `mailto:${process.env.EMAIL}`,
+        process.env.VAPID_PUBLIC_KEY,
+        process.env.VAPID_PRIVATE_KEY
+    );
+}
 
 // Health check
 app.get('/api', (req, res) => {
-    res.send('Notification Server is running on Vercel...');
+    res.json({
+        status: 'Notification Server is running',
+        env_vars_check: requiredEnvVars.map(v => ({ [v]: !!process.env[v] })),
+        node_env: process.env.NODE_ENV
+    });
 });
 
 // Endpoint to receive subscription and save it
