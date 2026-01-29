@@ -177,12 +177,11 @@ const Products = () => {
     const handleTestNotification = async () => {
         const serverUrl = import.meta.env.VITE_SERVER_URL;
 
-        // Final Diagnostic: Check if URL exists
         if (!serverUrl || serverUrl === 'undefined') {
             Swal.fire({
                 icon: 'error',
                 title: 'رابط السيرفر مفقود!',
-                text: 'يجب عليك إضافة المتغير VITE_SERVER_URL في إعدادات مشروع Dashboard في Vercel وتجربة الربط مجدداً.',
+                text: 'يرجى إضافة VITE_SERVER_URL في إعدادات (Environment Variables) مشروع Dashboard في Vercel، ووضع رابط مشروع السيرفر هناك.',
                 footer: '<a href="https://vercel.com" target="_blank">افتح إعدادات Vercel من هنا</a>',
                 background: '#141414',
                 color: '#fff'
@@ -192,12 +191,10 @@ const Products = () => {
 
         startLoading();
         try {
-            // Register/Update Subscription
             const subscription = await setupNotifications(user.id);
             setIsSubscribed(!!subscription);
 
             if (subscription) {
-                // Try to send a test push via our server
                 const response = await fetch(`${serverUrl}/api/test-notification`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -208,7 +205,7 @@ const Products = () => {
                     Swal.fire({
                         icon: 'success',
                         title: 'تم إرسال إشارة الاختبار!',
-                        text: 'انتظر ثواني لتصلك الرسالة. إذا لم تصل، تأكد من إعدادات الويندوز أو المتصفح لديك.',
+                        text: 'انتظر ثواني لتصلك الرسالة. إذا لم تصل، تأكد من إعدادات الويندوز أو المتصفح لديك، وجرب تثبيت الموقع كتطبيق (Install App).',
                         background: '#141414',
                         color: '#fff'
                     });
@@ -221,8 +218,8 @@ const Products = () => {
             console.error("Diagnostic Error:", error);
             Swal.fire({
                 icon: 'error',
-                title: 'عذراً.. تعذر التنشيط',
-                text: `حدث خطأ: ${error.message}. تأكد أن السيرفر يعمل بشكل صحيح في Vercel.`,
+                title: 'عذراً.. حدث خطأ',
+                text: error.message,
                 background: '#141414',
                 color: '#fff'
             });
