@@ -177,44 +177,42 @@ const Products = () => {
     const handleTestNotification = async () => {
         startLoading();
         try {
-            const subscription = await setupNotifications(user.id);
+            await setupNotifications(user.id);
+
+            // Get current subscription to show status
+            const registration = await navigator.serviceWorker.ready;
+            const subscription = await registration.pushManager.getSubscription();
             setIsSubscribed(!!subscription);
 
             if (subscription) {
-                // Send a test notification to the server
-                const { error } = await supabase.functions.invoke('send-push-notification', {
-                    body: {
-                        title: 'إشعار تجريبي',
-                        body: 'هذا إشعار تجريبي من لوحة التحكم.',
-                        tag: 'test-notification',
-                        url: window.location.origin + '/products'
-                    }
+                // Fetch the server URL from pushManager (or use the one available in this scope)
+                // Note: We'll use the relative or full URL here
+                const serverUrl = import.meta.env.VITE_SERVER_URL || '';
+
+                const response = await fetch(`${serverUrl}/api/test-notification`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ subscription })
                 });
 
-                if (error) throw error;
-
-                Swal.fire({
-                    icon: 'success',
-                    title: 'تم إرسال الإشعار التجريبي',
-                    text: 'تحقق من جهازك!',
-                    background: '#141414',
-                    color: '#fff'
-                });
-            } else {
-                Swal.fire({
-                    icon: 'info',
-                    title: 'لم يتم الاشتراك',
-                    text: 'يرجى تفعيل الإشعارات في متصفحك.',
-                    background: '#141414',
-                    color: '#fff'
-                });
+                if (response.ok) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'تم تنشيط الإشعار!',
+                        text: 'انتظر ثواني ليصلك إشعار تجريبي. إذا لم يصل، تأكد من إعدادات الويندوز.',
+                        background: '#141414',
+                        color: '#fff'
+                    });
+                } else {
+                    throw new Error('فشل السيرفر في إرسال الإشعار');
+                }
             }
         } catch (error) {
-            console.error("Error setting up or sending notification:", error);
+            console.error("Error:", error);
             Swal.fire({
                 icon: 'error',
-                title: 'خطأ في الإشعارات',
-                text: error.message || 'فشل تفعيل أو إرسال الإشعار.',
+                title: 'فشل التنشيط',
+                text: error.message,
                 background: '#141414',
                 color: '#fff'
             });

@@ -96,6 +96,28 @@ app.post('/api/notify-new-order', async (req, res) => {
     }
 });
 
+// Endpoint to test notifications manually
+app.post('/api/test-notification', async (req, res) => {
+    const { subscription } = req.body;
+
+    if (!subscription) return res.status(400).send('No subscription');
+
+    const payload = JSON.stringify({
+        title: '🔔 إشعار تجريبي ناجح!',
+        body: 'نظام الإشعارات يعمل الآن بشكل صحيح حتى في الخلفية.',
+        icon: 'https://vciyuynmwdmzrmlfgpvh.supabase.co/storage/v1/object/public/logos/logo.png',
+        data: { url: '/products' }
+    });
+
+    try {
+        await webPush.sendNotification(subscription, payload);
+        res.status(200).json({ success: true });
+    } catch (error) {
+        console.error('Test push error:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
 // For local testing (Vercel will ignore this)
 if (process.env.NODE_ENV !== 'production') {
     const PORT = process.env.PORT || 5000;
