@@ -2,9 +2,11 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useLoading } from '../context/LoadingContext';
 import { supabase } from '../supabase/client';
 import Swal from 'sweetalert2';
-import { Plus, Trash2, Edit, Loader2 } from 'lucide-react';
+import { Trash2, Plus, Package, Clock, Users, Bell, BellRing, Edit, Loader2 } from 'lucide-react';
+import { setupNotifications } from '../utils/pushManager';
+import { useAuth } from '../context/AuthContext';
 import { deleteFromCloudinary } from '../utils/cloudinary';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import ProductStats from '../components/ProductStats';
 import FilterBar from '../components/FilterBar';
 
@@ -16,6 +18,11 @@ const Products = () => {
     const [hasMore, setHasMore] = useState(true);
     const [totalStats, setTotalStats] = useState({ total: 0, men: 0, women: 0, kids: 0 });
     const { startLoading, stopLoading } = useLoading();
+    const { user } = useAuth();
+    const navigate = useNavigate();
+
+    // Notification State
+    const [isSubscribed, setIsSubscribed] = useState(false);
 
     // Filter States
     const [filterType, setFilterType] = useState('all');
@@ -156,6 +163,66 @@ const Products = () => {
         };
     }, []);
 
+    useEffect(() => {
+        const checkSubscription = async () => {
+            if ('serviceWorker' in navigator && 'PushManager' in window) {
+                const registration = await navigator.serviceWorker.ready;
+                const subscription = await registration.pushManager.getSubscription();
+                setIsSubscribed(!!subscription);
+            }
+        };
+        checkSubscription();
+    }, []);
+
+    const handleTestNotification = async () => {
+        startLoading();
+        try {
+            const subscription = await setupNotifications(user.id);
+            setIsSubscribed(!!subscription);
+
+            if (subscription) {
+                // Send a test notification to the server
+                const { error } = await supabase.functions.invoke('send-push-notification', {
+                    body: {
+                        title: 'إشعار تجريبي',
+                        body: 'هذا إشعار تجريبي من لوحة التحكم.',
+                        tag: 'test-notification',
+                        url: window.location.origin + '/products'
+                    }
+                });
+
+                if (error) throw error;
+
+                Swal.fire({
+                    icon: 'success',
+                    title: 'تم إرسال الإشعار التجريبي',
+                    text: 'تحقق من جهازك!',
+                    background: '#141414',
+                    color: '#fff'
+                });
+            } else {
+                Swal.fire({
+                    icon: 'info',
+                    title: 'لم يتم الاشتراك',
+                    text: 'يرجى تفعيل الإشعارات في متصفحك.',
+                    background: '#141414',
+                    color: '#fff'
+                });
+            }
+        } catch (error) {
+            console.error("Error setting up or sending notification:", error);
+            Swal.fire({
+                icon: 'error',
+                title: 'خطأ في الإشعارات',
+                text: error.message || 'فشل تفعيل أو إرسال الإشعار.',
+                background: '#141414',
+                color: '#fff'
+            });
+        } finally {
+            stopLoading();
+        }
+    };
+
     const stats = [
         { label: 'إجمالي القطع', value: totalStats.total, color: 'var(--primary)' },
         { label: 'ساعات رجالية', value: totalStats.men },
@@ -225,9 +292,23 @@ const Products = () => {
                     <h1 style={{ fontSize: '2.5rem', marginBottom: '8px', color: '#fff' }}>المخزون</h1>
                     <p style={{ color: 'var(--text-muted)' }}>إدارة الساعات والمنتجات المتاحة في المتجر</p>
                 </div>
-                <Link to="/products/add" className="btn-primary" style={{ textDecoration: 'none' }}>
-                    <Plus size={22} /> إضافة ساعة جديدة
-                </Link>
+                <div className="flex gap-2">
+                    <button
+                        onClick={handleTestNotification}
+                        className="flex items-center gap-2 bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded-lg transition-colors"
+                        title="تنشيط وإختبار الإشعارات"
+                    >
+                        {isSubscribed ? <BellRing size={20} /> : <Bell size={20} />}
+                        <span>{isSubscribed ? 'تم الاشتراك' : 'تنشيط الإشعارات'}</span>
+                    </button>
+                    <button
+                        onClick={() => navigate('/products/add')}
+                        className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
+                    >
+                        <Plus size={20} />
+                        <span>إضافة منتج</span>
+                    </button>
+                </div>
             </div>
 
             <ProductStats stats={stats} />
