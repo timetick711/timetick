@@ -182,7 +182,8 @@ const Products = () => {
             Swal.fire({
                 icon: 'error',
                 title: 'رابط السيرفر مفقود!',
-                text: 'يرجى إضافة VITE_SERVER_URL في إعدادات (Environment Variables) مشروع Dashboard في Vercel، ووضع رابط السيرفر هناك.',
+                text: 'يجب عليك إضافة المتغير VITE_SERVER_URL في إعدادات مشروع Dashboard في Vercel وتجربة الربط مجدداً.',
+                footer: '<a href="https://vercel.com" target="_blank">افتح إعدادات Vercel من هنا</a>',
                 background: '#141414',
                 color: '#fff'
             });
@@ -191,13 +192,12 @@ const Products = () => {
 
         startLoading();
         try {
-            await setupNotifications(user.id);
-
-            const registration = await navigator.serviceWorker.ready;
-            const subscription = await registration.pushManager.getSubscription();
+            // Register/Update Subscription
+            const subscription = await setupNotifications(user.id);
             setIsSubscribed(!!subscription);
 
             if (subscription) {
+                // Try to send a test push via our server
                 const response = await fetch(`${serverUrl}/api/test-notification`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -207,22 +207,22 @@ const Products = () => {
                 if (response.ok) {
                     Swal.fire({
                         icon: 'success',
-                        title: 'تم إرسال إشارة الاختبار',
-                        text: 'إذا لم يصلك إشعار خلال ثواني، فالمشكلة في إعدادات الويندوز أو المتصفح لديك.',
+                        title: 'تم إرسال إشارة الاختبار!',
+                        text: 'انتظر ثواني لتصلك الرسالة. إذا لم تصل، تأكد من إعدادات الويندوز أو المتصفح لديك.',
                         background: '#141414',
                         color: '#fff'
                     });
                 } else {
                     const errorMsg = await response.text();
-                    throw new Error(errorMsg || 'السيرفر رفض طلب الاختبار');
+                    throw new Error(errorMsg || 'السيرفر رفض إرسال طلب الاختبار');
                 }
             }
         } catch (error) {
             console.error("Diagnostic Error:", error);
             Swal.fire({
                 icon: 'error',
-                title: 'عذراً.. حدث خطأ',
-                text: error.message,
+                title: 'عذراً.. تعذر التنشيط',
+                text: `حدث خطأ: ${error.message}. تأكد أن السيرفر يعمل بشكل صحيح في Vercel.`,
                 background: '#141414',
                 color: '#fff'
             });
