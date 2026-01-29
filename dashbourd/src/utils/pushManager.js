@@ -45,7 +45,7 @@ export const setupNotifications = async (userId) => {
         }
 
         // 4. Send to Server
-        await fetch(`${SERVER_URL}/subscribe`, {
+        const response = await fetch(`${SERVER_URL}/api/subscribe`, {
             method: 'POST',
             body: JSON.stringify({
                 subscription,
@@ -55,6 +55,10 @@ export const setupNotifications = async (userId) => {
                 'Content-Type': 'application/json'
             }
         });
+
+        if (!response.ok) {
+            throw new Error('Failed to send subscription to server');
+        }
 
         console.log('User is subscribed for push notifications');
     } catch (error) {
