@@ -51,13 +51,9 @@ const Orders = () => {
             }
 
             if (searchQuery) {
-                // For joined search, it's a bit tricky in Supabase without functions or complex queries.
-                // We'll search order ID or customer name (if profiles join allows nested search)
-                // Actually, Supabase doesn't support nested searching in .select() easily without RPC or specific setup.
-                // We'll search by Order ID for now, or use computed columns if available.
-                // Alternatively, search profiles separately and filter by those IDs if needed.
-                // Let's try to search order id directly.
-                query = query.ilike('id', `%${searchQuery}%`);
+                // Search by Order ID, Customer Name, or WhatsApp Number
+                // We use .or() with nested profile fields
+                query = query.or(`id.ilike.%${searchQuery}%,profiles.full_name.ilike.%${searchQuery}%,profiles.whatsapp.ilike.%${searchQuery}%`);
             }
 
             query = query.order('created_at', { ascending: false });
