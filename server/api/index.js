@@ -25,10 +25,12 @@ app.get('/api', (req, res) => {
 });
 
 // Endpoint to receive subscription and save it
-app.post('/api/subscribe', async (req, res) => {
+app.post(['/api/subscribe', '/subscribe'], async (req, res) => {
+    console.log('[Server] Subscribe request received');
     const { subscription, user_id } = req.body;
 
     if (!subscription) {
+        console.error('[Server] No subscription in body');
         return res.status(400).json({ error: 'Subscription is required' });
     }
 
@@ -51,14 +53,14 @@ app.post('/api/subscribe', async (req, res) => {
 });
 
 // Endpoint to be called by Supabase Webhook when new order arrives
-app.post('/api/notify-new-order', async (req, res) => {
+app.post(['/api/notify-new-order', '/notify-new-order'], async (req, res) => {
     const order = req.body.record;
 
     if (!order) {
         return res.status(400).json({ error: 'No order data provided' });
     }
 
-    console.log('New order received via webhook:', order);
+    console.log('[Server] New order notification trigger:', order.id);
 
     try {
         const { data: subscriptions, error } = await supabase

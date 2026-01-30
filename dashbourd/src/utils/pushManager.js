@@ -1,15 +1,11 @@
 const VAPID_PUBLIC_KEY = 'BMJhbSmauKjruXLYzdbfuDLTjTdyFChC2oY8wbtaTgvx-nxlHwFwMon4w_IhfXo4nQ-AsYIhs61yQ99-TQ9JAbY';
-const SERVER_URL = import.meta.env.VITE_SERVER_URL || ''; // Relative in production, or specific URL if provided
+const SERVER_URL = import.meta.env.VITE_SERVER_URL || '';
 
 function urlBase64ToUint8Array(base64String) {
     const padding = '='.repeat((4 - base64String.length % 4) % 4);
-    const base64 = (base64String + padding)
-        .replace(/-/g, '+')
-        .replace(/_/g, '/');
-
+    const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
     const rawData = window.atob(base64);
     const outputArray = new Uint8Array(rawData.length);
-
     for (let i = 0; i < rawData.length; ++i) {
         outputArray[i] = rawData.charCodeAt(i);
     }
@@ -18,68 +14,50 @@ function urlBase64ToUint8Array(base64String) {
 
 export const setupNotifications = async (userId) => {
     if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
-        console.warn('Push notifications are not supported in this browser.');
+        console.warn('[Push] Browser not supported');
         return;
     }
 
     try {
-        // 1. Register Service Worker
-        const registration = await navigator.serviceWorker.register('/sw.js', {
-            scope: '/' // Ensure broad scope
-        });
-
-        // Wait for it to be ready
+        const registration = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
         await navigator.serviceWorker.ready;
-        console.log('Service Worker is active and ready');
 
-        // 2. Request Permission
         const permission = await Notification.requestPermission();
-        if (permission !== 'granted') {
-            console.warn('Notification permission denied by user');
-            return;
-        }
+        if (permission !== 'granted') return;
 
-        // 3. Get or Create Subscription
         let subscription = await registration.pushManager.getSubscription();
-
         if (!subscription) {
             subscription = await registration.pushManager.subscribe({
                 userVisibleOnly: true,
                 applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
             });
-            console.log('New Subscription created');
         }
 
-        // 4. Send to Server
-        let baseUrl = SERVER_URL;
-        if (!baseUrl) {
-            // If no SERVER_URL, we fallback to current domain, assuming it's a monolithic deploy
-            baseUrl = window.location.origin;
+        // --- CRITICAL CONFIG CHECK ---
+        if (!SERVER_URL) {
+            console.error('[Push] ERROR: Missing VITE_SERVER_URL environment variable in Vercel settings!');
+            return;
         }
 
-        // Remove trailing slash and /api if user added it manually
-        baseUrl = baseUrl.replace(/\/+$/, '').replace(/\/api$/, '');
-        const subscribeEndpoint = `${baseUrl}/api/subscribe`;
+        const baseUrl = SERVER_URL.replace(/\/+$/, '');
+        const endpoint = `${baseUrl}/api/subscribe`;
 
-        console.log('[Push] Target API:', subscribeEndpoint);
+        console.log('[Push] Registering at:', endpoint);
 
-        const response = await fetch(subscribeEndpoint, {
+        const response = await fetch(endpoint, {
             method: 'POST',
-            body: JSON.stringify({
-                subscription,
-                user_id: userId
-            }),
-            headers: {
-                'Content-Type': 'application/json'
-            }
+            mode: 'cors',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ subscription, user_id: userId })
         });
 
         if (!response.ok) {
-            throw new Error(`Server returned ${response.status}`);
+            const errBody = await response.text();
+            throw new Error(`Server ${response.status}: ${errBody}`);
         }
 
-        console.log('User is successfully synced with notification server');
+        console.log('[Push] SUCCESS: Registered successfully for background notifications!');
     } catch (error) {
-        console.error('CRITICAL: Failed to setup push notifications:', error);
+        console.error('[Push] FAILED:', error.message);
     }
 };
