@@ -6,6 +6,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Search, Download, Trash2, Eye, CheckCircle, XCircle, RotateCcw, Loader2 } from 'lucide-react';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+import { setupNotifications } from '../utils/pushManager';
+import { Bell, Info } from 'lucide-react';
 
 const Orders = () => {
     const [orders, setOrders] = useState([]);
@@ -16,6 +18,7 @@ const Orders = () => {
     const { startLoading, stopLoading } = useLoading();
     const [searchQuery, setSearchQuery] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
+    const [notifStatus, setNotifStatus] = useState('checking');
 
     const observer = useRef();
     const lastOrderRef = useCallback(node => {
@@ -97,12 +100,39 @@ const Orders = () => {
         fetchOrders(0, true);
     }, [statusFilter, searchQuery]);
 
-    // Page changes
     useEffect(() => {
         if (page > 0) {
             fetchOrders(page);
         }
     }, [page]);
+
+    // Check Notification Status
+    useEffect(() => {
+        if (!('serviceWorker' in navigator)) {
+            setNotifStatus('unsupported');
+            return;
+        }
+        navigator.serviceWorker.ready.then(reg => {
+            reg.pushManager.getSubscription().then(sub => {
+                setNotifStatus(sub ? 'ready' : 'not-subscribed');
+            });
+        });
+    }, []);
+
+    const handleTestNotification = async () => {
+        if (user) {
+            startLoading();
+            await setupNotifications(user.id);
+            stopLoading();
+            Swal.fire({
+                title: 'تنشيط النظام',
+                text: 'تم إعادة تسجيل نظام الإشعارات. يرجى إغلاق المتصفح الآن وعمل طلب تجريبي من المتجر.',
+                icon: 'info',
+                background: '#141414',
+                color: '#fff'
+            });
+        }
+    };
 
     useEffect(() => {
         const channel = supabase
@@ -337,7 +367,24 @@ const Orders = () => {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3rem', flexWrap: 'wrap', gap: '20px' }}>
                 <div>
                     <h1 style={{ fontSize: '2.5rem', marginBottom: '8px', color: '#fff' }}>الطلبات</h1>
-                    <p style={{ color: 'var(--text-muted)' }}>إدارة الطلبات، الفواتير، وبيانات العملاء</p>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                        <p style={{ color: 'var(--text-muted)' }}>إدارة الطلبات، الفواتير، وبيانات العملاء</p>
+                        <div style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            background: notifStatus === 'ready' ? 'rgba(34,197,94,0.1)' : 'rgba(239,68,68,0.1)',
+                            padding: '4px 12px',
+                            borderRadius: '20px',
+                            fontSize: '0.8rem',
+                            cursor: 'pointer'
+                        }} onClick={handleTestNotification}>
+                            <Bell size={14} color={notifStatus === 'ready' ? '#22c55e' : '#ef4444'} />
+                            <span style={{ color: notifStatus === 'ready' ? '#22c55e' : '#ef4444' }}>
+                                {notifStatus === 'ready' ? 'نظام الإشعارات نشط' : 'نظام الإشعارات غير مفعل (اضغط للتفعيل)'}
+                            </span>
+                        </div>
+                    </div>
                 </div>
             </div>
 

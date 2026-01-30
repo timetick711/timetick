@@ -50,11 +50,18 @@ export const setupNotifications = async (userId) => {
             console.log('New Subscription created');
         }
 
-        // 4. Send to Server (Check if VITE_SERVER_URL ends with /api)
-        const baseUrl = SERVER_URL.endsWith('/') ? SERVER_URL : SERVER_URL + '/';
-        const subscribeEndpoint = `${baseUrl}api/subscribe`;
+        // 4. Send to Server
+        let baseUrl = SERVER_URL;
+        if (!baseUrl) {
+            // If no SERVER_URL, we fallback to current domain, assuming it's a monolithic deploy
+            baseUrl = window.location.origin;
+        }
 
-        console.log('Sending subscription to:', subscribeEndpoint);
+        // Remove trailing slash and /api if user added it manually
+        baseUrl = baseUrl.replace(/\/+$/, '').replace(/\/api$/, '');
+        const subscribeEndpoint = `${baseUrl}/api/subscribe`;
+
+        console.log('[Push] Target API:', subscribeEndpoint);
 
         const response = await fetch(subscribeEndpoint, {
             method: 'POST',

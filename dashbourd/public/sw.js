@@ -1,32 +1,29 @@
-/* sw.js - Service Worker for Push Notifications */
+/* sw.js - Enhanced Deep Tracking and Background Logic */
+console.log('[SW] Service Worker File Loaded');
 
 self.addEventListener('push', function (event) {
-    console.log('[Service Worker] Push Received.');
+    console.log('[SW] Push Event Received');
 
-    let data = {};
-    if (event.data) {
-        try {
-            data = event.data.json();
-        } catch (e) {
-            console.error('[Service Worker] Error parsing push data:', e);
-            data = { title: 'إشعار جديد', body: event.data.text() };
-        }
+    let data;
+    try {
+        data = event.data ? event.data.json() : {};
+    } catch (e) {
+        console.error('[SW] Failed to parse push data', e);
+        data = { title: 'Notification Error', body: 'Could not parse message' };
     }
 
-    const title = data.title || 'تايم تك - طلب جديد! 📦';
+    const title = data.title || 'طلب جديد من تايم تك! 🔔';
     const options = {
-        body: data.body || 'لديك طلب جديد في المتجر، يرجى التحقق.',
-        icon: '/logo.png', // Ensure this exists in /public
+        body: data.body || 'توجد طلبات جديدة بانتظارك في لوحة التحكم.',
+        icon: '/logo.png',
         badge: '/logo.png',
-        vibrate: [200, 100, 200],
-        tag: 'new-order', // Prevents multiple notifications for the same thing
+        vibrate: [200, 100, 200, 100, 200],
+        tag: 'order-notif',
         renotify: true,
+        requireInteraction: true, // Device stays awake/notif stays until dismissed
         data: {
             url: data.data?.url || '/orders'
-        },
-        actions: [
-            { action: 'open', title: 'فتح لوحة التحكم' }
-        ]
+        }
     };
 
     event.waitUntil(
@@ -35,22 +32,22 @@ self.addEventListener('push', function (event) {
 });
 
 self.addEventListener('notificationclick', function (event) {
-    console.log('[Service Worker] Notification click Received.');
     event.notification.close();
-
-    const targetUrl = event.notification.data.url;
-
     event.waitUntil(
         clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function (clientList) {
-            for (let i = 0; i < clientList.length; i++) {
-                let client = clientList[i];
-                if (client.url === targetUrl && 'focus' in client) {
-                    return client.focus();
-                }
+            if (clientList.length > 0) {
+                return clientList[0].focus();
             }
-            if (clients.openWindow) {
-                return clients.openWindow(targetUrl);
-            }
+            return clients.openWindow(event.notification.data.url);
         })
     );
+});
+
+// Immediately active the SW
+self.addEventListener('install', event => {
+    self.skipWaiting();
+});
+
+self.addEventListener('activate', event => {
+    event.waitUntil(clients.claim());
 });
