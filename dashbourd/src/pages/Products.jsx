@@ -2,11 +2,9 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useLoading } from '../context/LoadingContext';
 import { supabase } from '../supabase/client';
 import Swal from 'sweetalert2';
-import { Trash2, Plus, Package, Clock, Users, Bell, BellRing, Edit, Loader2 } from 'lucide-react';
-import { setupNotifications } from '../utils/pushManager';
-import { useAuth } from '../context/AuthContext';
+import { Plus, Trash2, Edit, Loader2 } from 'lucide-react';
 import { deleteFromCloudinary } from '../utils/cloudinary';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import ProductStats from '../components/ProductStats';
 import FilterBar from '../components/FilterBar';
 
@@ -18,11 +16,6 @@ const Products = () => {
     const [hasMore, setHasMore] = useState(true);
     const [totalStats, setTotalStats] = useState({ total: 0, men: 0, women: 0, kids: 0 });
     const { startLoading, stopLoading } = useLoading();
-    const { user } = useAuth();
-    const navigate = useNavigate();
-
-    // Notification State
-    const [isSubscribed, setIsSubscribed] = useState(false);
 
     // Filter States
     const [filterType, setFilterType] = useState('all');
@@ -163,71 +156,6 @@ const Products = () => {
         };
     }, []);
 
-    useEffect(() => {
-        const checkSubscription = async () => {
-            if ('serviceWorker' in navigator && 'PushManager' in window) {
-                const registration = await navigator.serviceWorker.ready;
-                const subscription = await registration.pushManager.getSubscription();
-                setIsSubscribed(!!subscription);
-            }
-        };
-        checkSubscription();
-    }, []);
-
-    const handleTestNotification = async () => {
-        const serverUrl = import.meta.env.VITE_SERVER_URL;
-
-        if (!serverUrl || serverUrl === 'undefined') {
-            Swal.fire({
-                icon: 'error',
-                title: 'رابط السيرفر مفقود!',
-                text: 'يرجى إضافة VITE_SERVER_URL في إعدادات (Environment Variables) مشروع Dashboard في Vercel، ووضع رابط مشروع السيرفر هناك.',
-                footer: '<a href="https://vercel.com" target="_blank">افتح إعدادات Vercel من هنا</a>',
-                background: '#141414',
-                color: '#fff'
-            });
-            return;
-        }
-
-        startLoading();
-        try {
-            const subscription = await setupNotifications(user.id);
-            setIsSubscribed(!!subscription);
-
-            if (subscription) {
-                const response = await fetch(`${serverUrl}/api/test-notification`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ subscription })
-                });
-
-                if (response.ok) {
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'تم إرسال إشارة الاختبار!',
-                        text: 'انتظر ثواني لتصلك الرسالة. إذا لم تصل، تأكد من إعدادات الويندوز أو المتصفح لديك، وجرب تثبيت الموقع كتطبيق (Install App).',
-                        background: '#141414',
-                        color: '#fff'
-                    });
-                } else {
-                    const errorMsg = await response.text();
-                    throw new Error(errorMsg || 'السيرفر رفض إرسال طلب الاختبار');
-                }
-            }
-        } catch (error) {
-            console.error("Diagnostic Error:", error);
-            Swal.fire({
-                icon: 'error',
-                title: 'عذراً.. حدث خطأ',
-                text: error.message,
-                background: '#141414',
-                color: '#fff'
-            });
-        } finally {
-            stopLoading();
-        }
-    };
-
     const stats = [
         { label: 'إجمالي القطع', value: totalStats.total, color: 'var(--primary)' },
         { label: 'ساعات رجالية', value: totalStats.men },
@@ -297,23 +225,9 @@ const Products = () => {
                     <h1 style={{ fontSize: '2.5rem', marginBottom: '8px', color: '#fff' }}>المخزون</h1>
                     <p style={{ color: 'var(--text-muted)' }}>إدارة الساعات والمنتجات المتاحة في المتجر</p>
                 </div>
-                <div className="flex gap-2">
-                    <button
-                        onClick={handleTestNotification}
-                        className="flex items-center gap-2 bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded-lg transition-colors"
-                        title="تنشيط وإختبار الإشعارات"
-                    >
-                        {isSubscribed ? <BellRing size={20} /> : <Bell size={20} />}
-                        <span>{isSubscribed ? 'تم الاشتراك' : 'تنشيط الإشعارات'}</span>
-                    </button>
-                    <button
-                        onClick={() => navigate('/products/add')}
-                        className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
-                    >
-                        <Plus size={20} />
-                        <span>إضافة منتج</span>
-                    </button>
-                </div>
+                <Link to="/products/add" className="btn-primary" style={{ textDecoration: 'none' }}>
+                    <Plus size={22} /> إضافة ساعة جديدة
+                </Link>
             </div>
 
             <ProductStats stats={stats} />

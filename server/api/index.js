@@ -9,33 +9,19 @@ const app = express();
 app.use(cors());
 app.use(bodyParser.json());
 
-// Validate Environment Variables
-const requiredEnvVars = ['SUPABASE_URL', 'SUPABASE_KEY', 'VAPID_PUBLIC_KEY', 'VAPID_PRIVATE_KEY', 'EMAIL'];
-requiredEnvVars.forEach(v => {
-    if (!process.env[v]) {
-        console.error(`FATAL ERROR: Environment variable ${v} is missing!`);
-    }
-});
-
 // Supabase Setup
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
 
 // Web Push Setup
-if (process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
-    webPush.setVapidDetails(
-        `mailto:${process.env.EMAIL}`,
-        process.env.VAPID_PUBLIC_KEY,
-        process.env.VAPID_PRIVATE_KEY
-    );
-}
+webPush.setVapidDetails(
+    `mailto:${process.env.EMAIL}`,
+    process.env.VAPID_PUBLIC_KEY,
+    process.env.VAPID_PRIVATE_KEY
+);
 
 // Health check
 app.get('/api', (req, res) => {
-    res.json({
-        status: 'Notification Server is running',
-        env_vars_check: requiredEnvVars.map(v => ({ [v]: !!process.env[v] })),
-        node_env: process.env.NODE_ENV
-    });
+    res.send('Notification Server is running on Vercel...');
 });
 
 // Endpoint to receive subscription and save it
@@ -79,22 +65,12 @@ app.post('/api/notify-new-order', async (req, res) => {
             .from('push_subscriptions')
             .select('subscription_json');
 
-        if (error) {
-            console.error('Supabase fetch error:', error);
-            throw error;
-        }
-
-        console.log(`Found ${subscriptions.length} active subscriptions.`);
-
-        if (subscriptions.length === 0) {
-            console.warn('No subscriptions found in the database. Notification aborted.');
-            return res.status(200).json({ status: 'No subscribers' });
-        }
+        if (error) throw error;
 
         const payload = JSON.stringify({
             title: '🎉 طلب جديد!',
             body: `وصل طلب جديد بقيمة ${order.total_amount} ر.س`,
-            icon: 'https://vciyuynmwdmzrmlfgpvh.supabase.co/storage/v1/object/public/logos/logo.png',
+            icon: 'https://vciyuynmwdmzrmlfgpvh.supabase.co/storage/v1/object/public/logos/logo.png', // Update with a real public URL
             data: {
                 url: '/orders',
                 orderId: order.id
@@ -117,28 +93,6 @@ app.post('/api/notify-new-order', async (req, res) => {
     } catch (error) {
         console.error('Notification trigger error:', error);
         res.status(500).json({ error: 'Failed to send notifications' });
-    }
-});
-
-// Endpoint to test notifications manually
-app.post('/api/test-notification', async (req, res) => {
-    const { subscription } = req.body;
-
-    if (!subscription) return res.status(400).send('No subscription');
-
-    const payload = JSON.stringify({
-        title: '🔔 إشعار تجريبي ناجح!',
-        body: 'نظام الإشعارات يعمل الآن بشكل صحيح حتى في الخلفية.',
-        icon: 'https://vciyuynmwdmzrmlfgpvh.supabase.co/storage/v1/object/public/logos/logo.png',
-        data: { url: '/products' }
-    });
-
-    try {
-        await webPush.sendNotification(subscription, payload);
-        res.status(200).json({ success: true });
-    } catch (error) {
-        console.error('Test push error:', error);
-        res.status(500).json({ error: error.message });
     }
 });
 

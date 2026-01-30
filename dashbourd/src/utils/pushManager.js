@@ -23,27 +23,18 @@ export const setupNotifications = async (userId) => {
     }
 
     try {
-        // 1. Get properly defined SERVER_URL
-        const serverUrl = import.meta.env.VITE_SERVER_URL || '';
-        console.log('Attempting notification setup with Server:', serverUrl);
+        // 1. Register Service Worker
+        const registration = await navigator.serviceWorker.register('/sw.js');
+        console.log('Service Worker registered');
 
-        // 2. Register Service Worker with absolute path
-        const registration = await navigator.serviceWorker.register('/sw.js', {
-            scope: '/'
-        });
-
-        // Wait for it to be active
-        await navigator.serviceWorker.ready;
-        console.log('Service Worker is ready');
-
-        // 3. Request Permission
+        // 2. Request Permission
         const permission = await Notification.requestPermission();
         if (permission !== 'granted') {
             console.warn('Notification permission denied');
             return;
         }
 
-        // 4. Get or Create Subscription
+        // 3. Get or Create Subscription
         let subscription = await registration.pushManager.getSubscription();
 
         if (!subscription) {
@@ -51,12 +42,10 @@ export const setupNotifications = async (userId) => {
                 userVisibleOnly: true,
                 applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
             });
-            console.log('New subscription created');
         }
 
-        // 5. Send to Server (with /api/ prefix for Vercel)
-        const endpoint = `${serverUrl}/api/subscribe`;
-        const response = await fetch(endpoint, {
+        // 4. Send to Server
+        await fetch(`${SERVER_URL}/subscribe`, {
             method: 'POST',
             body: JSON.stringify({
                 subscription,
@@ -67,15 +56,8 @@ export const setupNotifications = async (userId) => {
             }
         });
 
-        if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`Server ignored subscription: ${errorText}`);
-        }
-
-        console.log('Successfully synced subscription with server');
-        return subscription;
+        console.log('User is subscribed for push notifications');
     } catch (error) {
-        console.error('Push Setup Failed:', error);
-        throw error;
+        console.error('Failed to setup push notifications:', error);
     }
 };
