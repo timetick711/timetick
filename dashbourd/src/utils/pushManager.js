@@ -24,13 +24,18 @@ export const setupNotifications = async (userId) => {
 
     try {
         // 1. Register Service Worker
-        const registration = await navigator.serviceWorker.register('/sw.js');
-        console.log('Service Worker registered');
+        const registration = await navigator.serviceWorker.register('/sw.js', {
+            scope: '/' // Ensure broad scope
+        });
+
+        // Wait for it to be ready
+        await navigator.serviceWorker.ready;
+        console.log('Service Worker is active and ready');
 
         // 2. Request Permission
         const permission = await Notification.requestPermission();
         if (permission !== 'granted') {
-            console.warn('Notification permission denied');
+            console.warn('Notification permission denied by user');
             return;
         }
 
@@ -42,10 +47,16 @@ export const setupNotifications = async (userId) => {
                 userVisibleOnly: true,
                 applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
             });
+            console.log('New Subscription created');
         }
 
-        // 4. Send to Server
-        await fetch(`${SERVER_URL}/subscribe`, {
+        // 4. Send to Server (Check if VITE_SERVER_URL ends with /api)
+        const baseUrl = SERVER_URL.endsWith('/') ? SERVER_URL : SERVER_URL + '/';
+        const subscribeEndpoint = `${baseUrl}api/subscribe`;
+
+        console.log('Sending subscription to:', subscribeEndpoint);
+
+        const response = await fetch(subscribeEndpoint, {
             method: 'POST',
             body: JSON.stringify({
                 subscription,
@@ -56,8 +67,12 @@ export const setupNotifications = async (userId) => {
             }
         });
 
-        console.log('User is subscribed for push notifications');
+        if (!response.ok) {
+            throw new Error(`Server returned ${response.status}`);
+        }
+
+        console.log('User is successfully synced with notification server');
     } catch (error) {
-        console.error('Failed to setup push notifications:', error);
+        console.error('CRITICAL: Failed to setup push notifications:', error);
     }
 };
