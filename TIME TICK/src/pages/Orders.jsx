@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Package, Calendar, CreditCard, ChevronDown, ChevronUp, ShoppingBag, Clock, CheckCircle2, XCircle } from 'lucide-react';
+import { Package, Calendar, CreditCard, ChevronDown, ChevronUp, ShoppingBag, Clock, CheckCircle2, XCircle, User } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
 export default function Orders() {
-    const { currentUser } = useAuth();
+    const { currentUser, openAuthModal } = useAuth();
     const navigate = useNavigate();
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -13,7 +13,7 @@ export default function Orders() {
 
     useEffect(() => {
         if (!currentUser) {
-            navigate('/');
+            setLoading(false);
             return;
         }
 
@@ -72,7 +72,27 @@ export default function Orders() {
                 <p style={{ color: 'var(--text-dim)', fontSize: '0.9rem' }}>يمكنك متابعة حالة وتفاصيل مشترياتك السابقة</p>
             </motion.div>
 
-            {orders.length === 0 ? (
+            {!currentUser ? (
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    style={{
+                        textAlign: 'center',
+                        padding: '60px 20px',
+                        background: 'var(--bg-card)',
+                        borderRadius: '24px',
+                        border: '1px solid var(--border-color)',
+                        backdropFilter: 'blur(10px)'
+                    }}
+                >
+                    <User size={48} style={{ color: 'var(--primary)', marginBottom: '15px', opacity: 0.4 }} />
+                    <h2 style={{ fontSize: '1.2rem', marginBottom: '10px' }}>تسجيل الدخول مطلوب</h2>
+                    <p style={{ color: 'var(--text-dim)', fontSize: '0.9rem', marginBottom: '20px' }}>يجب عليك تسجيل الدخول لتتمكن من رؤية سجل طلباتك</p>
+                    <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
+                        <button className="btn-primary" onClick={openAuthModal} style={{ padding: '8px 24px' }}>تسجيل الدخول</button>
+                    </div>
+                </motion.div>
+            ) : orders.length === 0 ? (
                 <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}

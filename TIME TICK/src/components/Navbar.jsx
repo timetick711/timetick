@@ -128,12 +128,10 @@ export default function Navbar() {
                     <span style={{ fontSize: '1.1rem' }}>الرئيسية</span>
                 </div>
 
-                {currentUser && (
-                    <div className="action-icon" style={{ justifyContent: 'flex-start', padding: '10px 0' }} onClick={() => { navigate('/orders'); setIsMenuOpen(false); }}>
-                        <ListIcon size={22} color="var(--primary)" />
-                        <span style={{ fontSize: '1.1rem' }}>طلباتي</span>
-                    </div>
-                )}
+                <div className="action-icon" style={{ justifyContent: 'flex-start', padding: '10px 0' }} onClick={() => { navigate('/orders'); setIsMenuOpen(false); }}>
+                    <ListIcon size={22} color="var(--primary)" />
+                    <span style={{ fontSize: '1.1rem' }}>طلباتي</span>
+                </div>
 
             </div>
 
