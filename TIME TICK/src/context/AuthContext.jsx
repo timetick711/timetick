@@ -54,10 +54,7 @@ export const AuthProvider = ({ children }) => {
         // Listen for Supabase Auth changes
         const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
             if ((event === 'SIGNED_IN' || event === 'USER_UPDATED' || event === 'INITIAL_SESSION') && session?.user) {
-                // If running in a popup (Google Login), close it after login
-                if (window.opener) {
-                    window.close();
-                }
+                // Removed popup closing code
 
                 // Map Supabase user to our app user format
                 const user = {
@@ -131,29 +128,14 @@ export const AuthProvider = ({ children }) => {
     };
 
     const loginWithGoogle = async () => {
-        const { data, error } = await supabase.auth.signInWithOAuth({
+        const { error } = await supabase.auth.signInWithOAuth({
             provider: 'google',
             options: {
-                redirectTo: window.location.origin,
-                skipBrowserRedirect: true,
+                redirectTo: window.location.origin
             }
         });
 
         if (error) throw error;
-
-        if (data?.url) {
-            // Calculate popup position to center it
-            const width = 500;
-            const height = 600;
-            const left = window.screen.width / 2 - width / 2;
-            const top = window.screen.height / 2 - height / 2;
-
-            window.open(
-                data.url,
-                'Google Login',
-                `width=${width},height=${height},top=${top},left=${left},scrollbars=yes,status=yes`
-            );
-        }
     };
 
     const checkEmailExists = async (email) => {

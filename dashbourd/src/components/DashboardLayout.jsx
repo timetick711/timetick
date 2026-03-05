@@ -10,15 +10,14 @@ import {
     Menu,
     X,
     ShoppingBag,
+    ShoppingCart,
     Users,
-    Bell
+    Bell,
+    Plus
 } from 'lucide-react';
 
 const logo = '/logo.png';
 
-// Simple notification sound (Base64)
-const notificationSound = new Audio("data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YU"); // Placeholder short beep (needs real base64 or file)
-// Better real sound:
 const playNotificationSound = () => {
     try {
         const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
@@ -40,7 +39,6 @@ const DashboardLayout = ({ children }) => {
         navigate('/login');
     };
 
-    // Request Notification Permission
     useEffect(() => {
         if ("Notification" in window) {
             Notification.requestPermission();
@@ -58,7 +56,6 @@ const DashboardLayout = ({ children }) => {
         }
     };
 
-    // Global Order Listener
     useEffect(() => {
         fetchPendingCount();
 
@@ -68,25 +65,15 @@ const DashboardLayout = ({ children }) => {
                 'postgres_changes',
                 { event: '*', schema: 'public', table: 'orders' },
                 (payload) => {
-                    // Update count on any change
                     fetchPendingCount();
-
-                    // Handle New Order Notification
                     if (payload.eventType === 'INSERT') {
-                        console.log('New Order Received!', payload);
-
-                        // 1. Play Sound
                         playNotificationSound();
-
-                        // 2. Show System Notification (if allowed)
                         if (Notification.permission === "granted") {
                             new Notification("طلب جديد!", {
                                 body: `رقم الطلب: ${payload.new.id.substring(0, 8)}\nالمبلغ: ${payload.new.total_amount}`,
                                 icon: logo
                             });
                         }
-
-                        // 3. Show In-App Toast
                         Swal.fire({
                             title: 'طلب جديد!',
                             text: `تم استلام طلب بقيمة ${payload.new.total_amount}`,
@@ -109,18 +96,19 @@ const DashboardLayout = ({ children }) => {
         };
     }, []);
 
-    const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
+    const toggleMobileSidebar = () => setIsSidebarOpen(!isSidebarOpen);
 
     const menuItems = [
-        { path: '/', label: 'المنتجات', icon: LayoutDashboard },
-        { path: '/orders', label: 'الطلبات', icon: ShoppingBag, badge: pendingCount > 0 ? pendingCount : null },
+        { path: '/', label: 'الرئيسية', icon: LayoutDashboard },
+        { path: '/products', label: 'المنتجات', icon: ShoppingBag },
+        { path: '/orders', label: 'الطلبات', icon: ShoppingCart, badge: pendingCount > 0 ? pendingCount : null },
         { path: '/users', label: 'المستخدمين', icon: Users },
     ];
 
     return (
         <div className="dashboard-container">
             {/* Mobile Menu Button */}
-            <button className="mobile-menu-btn" onClick={toggleSidebar}>
+            <button className="mobile-menu-btn" onClick={toggleMobileSidebar}>
                 {isSidebarOpen ? <X size={24} /> : <Menu size={24} />}
             </button>
 
@@ -134,131 +122,95 @@ const DashboardLayout = ({ children }) => {
 
             {/* Sidebar */}
             <aside className={`glass-panel sidebar ${isSidebarOpen ? 'open' : ''}`}>
-                {/* Brand */}
-                <div style={{ marginBottom: '3rem', padding: '0 1rem' }}>
-                    <div style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '12px',
-                        marginBottom: '8px'
-                    }}>
-                        <img
-                            src={logo} alt="Time Tick" style={{
-                                width: '45px',
-                                height: '45px',
-                                borderRadius: '50%',
-                                boxShadow: '0 0 15px rgba(212, 175, 55, 0.3)',
-                                border: '1px solid var(--primary)'
-                            }}
-                        />
-                        <h2 style={{ fontSize: '1.4rem', color: '#fff', fontWeight: '800', letterSpacing: '1px' }}>
-                            <span style={{ color: 'var(--primary)' }}>تايم</span> تك
-                        </h2>
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: '500' }}>
-                            نظام إدارة المتجر
-                        </p>
-                        <button
-                            onClick={() => {
-                                if ("Notification" in window) {
-                                    Notification.requestPermission().then(permission => {
-                                        if (permission === 'granted') {
-                                            new Notification("تم تفعيل التنبيهات بنجاح!");
-                                        }
-                                    });
-                                }
-                            }}
-                            title="تفعيل التنبيهات"
-                            style={{
-                                background: 'transparent',
-                                border: 'none',
-                                color: 'var(--primary)',
-                                cursor: 'pointer',
-                                padding: '4px'
-                            }}
-                        >
-                            <Bell size={16} />
-                        </button>
+                {/* Brand Layer */}
+                <div style={{ paddingBottom: '2rem', borderBottom: '1px solid var(--border-color)', marginBottom: '1rem', position: 'relative' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <div style={{ position: 'relative' }}>
+                            <img
+                                src={logo} alt="Time Tick" style={{
+                                    width: '45px',
+                                    height: '45px',
+                                    borderRadius: '12px',
+                                    boxShadow: '0 0 15px rgba(212, 175, 55, 0.2)',
+                                    border: '1px solid var(--primary)',
+                                    transition: '0.3s'
+                                }}
+                            />
+                        </div>
+                        <div className="brand-name" style={{ transition: '0.3s' }}>
+                            <h2 style={{ fontSize: '1.2rem', color: '#fff', fontWeight: '800', letterSpacing: '0.5px' }}>
+                                <span style={{ color: 'var(--primary)' }}>تايم</span> تك
+                            </h2>
+                            <p className="brand-desc" style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: '500' }}>
+                                نظام إدارة المتجر
+                            </p>
+                        </div>
                     </div>
                 </div>
 
-                {/* Navigation */}
-                <nav style={{ flex: 1 }}>
-                    <ul style={{ listStyle: 'none' }}>
-                        {menuItems.map((item) => {
-                            const isActive = location.pathname === item.path || (item.path !== '/' && location.pathname.startsWith(item.path));
-                            return (
-                                <li key={item.path} style={{ marginBottom: '0.75rem' }}>
-                                    <Link
-                                        to={item.path}
-                                        onClick={() => setIsSidebarOpen(false)}
-                                        style={{
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            gap: '14px',
-                                            padding: '14px 18px',
-                                            color: isActive ? '#fff' : 'var(--text-muted)',
-                                            textDecoration: 'none',
-                                            borderRadius: '16px',
-                                            transition: '0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                                            background: isActive ? 'rgba(212, 175, 55, 0.1)' : 'transparent',
-                                            fontWeight: isActive ? '700' : '500',
-                                            border: isActive ? '1px solid rgba(212, 175, 55, 0.2)' : '1px solid transparent',
-                                            position: 'relative'
-                                        }}
-                                    >
-                                        <item.icon size={22} style={{ color: isActive ? 'var(--primary)' : 'inherit' }} />
-                                        <span>{item.label}</span>
-                                        {item.badge && (
-                                            <span style={{
-                                                background: '#ef4444',
-                                                color: '#fff',
-                                                fontSize: '0.7rem',
-                                                fontWeight: 'bold',
-                                                padding: '2px 8px',
-                                                borderRadius: '20px',
-                                                marginRight: 'auto', // Pushes to the left in RTL
-                                                boxShadow: '0 2px 5px rgba(239, 68, 68, 0.3)'
-                                            }}>
-                                                {item.badge}
-                                            </span>
-                                        )}
-                                    </Link>
-                                </li>
-                            );
-                        })}
-                    </ul>
+                {/* Navigation Layer */}
+                <nav className="sidebar-nav">
+                    {menuItems.map((item) => {
+                        const isActive = location.pathname === item.path || (item.path !== '/' && location.pathname.startsWith(item.path));
+                        return (
+                            <Link
+                                key={item.path}
+                                to={item.path}
+                                onClick={() => setIsSidebarOpen(false)}
+                                className={`sidebar-nav-item ${isActive ? 'active' : ''}`}
+                            >
+                                <item.icon size={22} className="nav-icon" />
+                                <span className="nav-text" style={{ transition: '0.3s' }}>{item.label}</span>
+                                {item.badge && (
+                                    <span style={{
+                                        background: '#ef4444',
+                                        color: '#fff',
+                                        fontSize: '0.65rem',
+                                        fontWeight: 'bold',
+                                        padding: '2px 6px',
+                                        borderRadius: '10px',
+                                        marginRight: 'auto',
+                                        transition: '0.2s'
+                                    }}>
+                                        {item.badge}
+                                    </span>
+                                )}
+                            </Link>
+                        );
+                    })}
                 </nav>
 
-                {/* Footer / User */}
+                {/* User Section */}
                 <div style={{
                     marginTop: 'auto',
-                    padding: '1.5rem 0 0',
-                    borderTop: '1px solid var(--border-color)'
+                    paddingTop: '1rem',
+                    borderTop: '1px solid var(--border-color)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '10px'
                 }}>
                     <div style={{
                         display: 'flex',
                         alignItems: 'center',
                         gap: '12px',
-                        marginBottom: '1.5rem',
-                        padding: '0 0.8rem'
+                        padding: '10px 8px'
                     }}>
                         <div style={{
                             width: '40px',
                             height: '40px',
-                            borderRadius: '50%',
-                            background: 'var(--glass-bg)',
+                            minWidth: '40px',
+                            borderRadius: '12px',
+                            background: 'rgba(212, 175, 55, 0.1)',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
-                            border: '1px solid var(--glass-border)'
+                            border: '1px solid rgba(212, 175, 55, 0.2)'
                         }}>
-                            <User size={20} color="var(--primary)" />
+                            <User size={18} color="var(--primary)" />
                         </div>
-                        <div>
-                            <p style={{ fontSize: '0.9rem', fontWeight: '700' }}>المدير</p>
-                            <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{user?.email || 'متصل الآن'}</p>
+                        <div className="user-details" style={{ transition: '0.3s', overflow: 'hidden' }}>
+                            <p style={{ fontSize: '0.85rem', fontWeight: '700', color: '#fff', whiteSpace: 'nowrap' }}>المدير</p>
+                            <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>{user?.email?.split('@')[0] || 'متصل'}</p>
                         </div>
                     </div>
 
@@ -267,27 +219,29 @@ const DashboardLayout = ({ children }) => {
                         style={{
                             display: 'flex',
                             alignItems: 'center',
-                            gap: '12px',
-                            padding: '14px 18px',
+                            gap: 'var(--nav-item-gap)',
+                            padding: 'var(--nav-item-padding)',
                             color: '#ef4444',
                             background: 'rgba(239, 68, 68, 0.05)',
-                            border: '1px solid transparent',
+                            border: 'none',
                             cursor: 'pointer',
-                            borderRadius: '16px',
+                            borderRadius: 'var(--radius-md)',
                             width: '100%',
-                            fontWeight: '600'
+                            fontWeight: '600',
+                            transition: '0.3s',
+                            justifyContent: 'flex-start',
+                            marginBottom: '0.5rem'
                         }}
                     >
-                        <LogOut size={20} /> تسجيل الخروج
+                        <LogOut size={20} />
+                        <span style={{ fontSize: '0.9rem' }}>تسجيل الخروج</span>
                     </button>
                 </div>
             </aside>
 
             {/* Main Content */}
             <main className="main-content">
-                <div
-                    className="glass-panel main-panel"
-                >
+                <div className="glass-panel main-panel">
                     {/* Decorative Background for Main Content */}
                     <div style={{
                         position: 'absolute',
@@ -297,7 +251,7 @@ const DashboardLayout = ({ children }) => {
                         height: '300px',
                         background: 'var(--primary)',
                         filter: 'blur(150px)',
-                        opacity: '0.05',
+                        opacity: '0.04',
                         zIndex: 0
                     }} />
 
@@ -311,4 +265,3 @@ const DashboardLayout = ({ children }) => {
 };
 
 export default DashboardLayout;
-

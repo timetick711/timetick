@@ -16,15 +16,22 @@ export const AuthProvider = ({ children }) => {
         setLoading(false);
     }, []);
 
-    const login = (email) => {
-        const mockUser = {
-            email: email,
-            uid: 'mock-user-' + Date.now(),
-            role: 'admin'
-        };
-        localStorage.setItem('dash_user', JSON.stringify(mockUser));
-        setUser(mockUser);
-        return true;
+    const login = (email, password) => {
+        const adminEmail = import.meta.env.VITE_ADMIN_EMAIL;
+        const adminPassword = import.meta.env.VITE_ADMIN_PASSWORD;
+
+        if (email === adminEmail && password === adminPassword) {
+            const mockUser = {
+                email: email,
+                uid: 'admin-user',
+                role: 'admin'
+            };
+            localStorage.setItem('dash_user', JSON.stringify(mockUser));
+            setUser(mockUser);
+            return true;
+        } else {
+            throw new Error('بيانات الدخول غير صحيحة');
+        }
     };
 
     const logout = () => {

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { supabase } from '../supabase/client';
 
 import { useCart } from '../context/CartContext';
 import { ShoppingCart, ArrowRight, PlayCircle, Image as ImageIcon } from 'lucide-react';
@@ -39,22 +40,28 @@ const ProductDetails = () => {
     }, [id]);
 
     useEffect(() => {
-        const unsubscribe = subscribeToProducts((data) => {
-            // Filter out current product and random sort (or just take first 4)
-            const others = data.filter(p => p.id !== id);
-            // Simple shuffle
-            const shuffled = others.sort(() => 0.5 - Math.random());
+        const fetchRelated = async () => {
+            const { data, error } = await supabase
+                .from('products')
+                .select('*')
+                .neq('id', id)
+                .limit(10);
 
-            const mappedData = shuffled.slice(0, 4).map(p => ({
-                ...p,
-                displayId: p.displayId,
-                price: Number(p.price) || 0,
-                image: p.imageUrl || p.image || 'https://placehold.co/400x500/1a1a1a/ffffff?text=No+Image',
-                video: p.video || ''
-            }));
+            if (data) {
+                const shuffled = data.sort(() => 0.5 - Math.random());
+                const mappedData = shuffled.slice(0, 4).map(p => ({
+                    ...p,
+                    price: Number(p.price) || 0,
+                    image: p.imageUrl || p.image || 'https://placehold.co/400x500/1a1a1a/ffffff?text=No+Image',
+                    video: p.video || ''
+                }));
+                setRelatedProducts(mappedData);
+            }
+        };
 
-            setRelatedProducts(mappedData);
-        });
+        fetchRelated();
+
+        const unsubscribe = subscribeToProducts(() => fetchRelated());
         return () => unsubscribe();
     }, [id]);
 
@@ -269,7 +276,14 @@ const ProductDetails = () => {
                     </div>
 
                     <div style={{ fontSize: '2rem', fontWeight: '700', color: 'var(--primary)' }}>
-                        {Number(product.price).toLocaleString()} <span style={{ fontSize: '1rem', fontWeight: '400' }}>ر.س</span>
+                        {product.variants && product.variants.length > 0 ? (
+                            <>
+                                {Math.min(...[Number(product.price), ...product.variants.map(v => v.price)]).toLocaleString()} - {Math.max(...[Number(product.price), ...product.variants.map(v => v.price)]).toLocaleString()}
+                            </>
+                        ) : (
+                            Number(product.price).toLocaleString()
+                        )}
+                        <span style={{ fontSize: '1rem', fontWeight: '400' }}> ر.س</span>
                     </div>
 
                     <div style={{ height: '1px', background: 'var(--border-color)' }} />

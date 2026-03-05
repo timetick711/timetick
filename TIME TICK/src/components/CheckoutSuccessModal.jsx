@@ -1,98 +1,119 @@
-import { CheckCircle, MessageCircle } from 'lucide-react';
+import { CheckCircle, MessageCircle, X } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export default function CheckoutSuccessModal({ isOpen, onClose, onProceed }) {
     if (!isOpen) return null;
 
     return (
-        <div style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            width: '100%',
-            height: '100%',
-            background: 'rgba(0,0,0,0.85)',
-            backdropFilter: 'blur(5px)',
-            zIndex: 1100,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            animation: 'fadeIn 0.2s ease-out'
-        }}>
-            <div className="glass-panel" style={{
-                width: '90%',
-                maxWidth: '400px',
-                padding: '30px',
-                textAlign: 'center',
-                border: '1px solid rgba(75, 255, 75, 0.3)',
-                boxShadow: '0 10px 40px rgba(0,0,0,0.5)'
-            }}>
+        <AnimatePresence>
+            {isOpen && (
                 <div style={{
-                    width: '70px',
-                    height: '70px',
-                    borderRadius: '50%',
-                    background: 'rgba(75, 255, 75, 0.1)',
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    width: '100%',
+                    height: '100%',
+                    background: 'rgba(0,0,0,0.9)',
+                    backdropFilter: 'blur(10px)',
+                    zIndex: 1200,
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    margin: '0 auto 20px',
-                    border: '1px solid #4bff4b'
+                    padding: '20px'
                 }}>
-                    <CheckCircle size={32} color="#4bff4b" />
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.9, y: 30 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.9, y: 30 }}
+                        className="glass-panel"
+                        style={{
+                            width: '100%',
+                            maxWidth: '400px',
+                            padding: '40px 30px',
+                            textAlign: 'center',
+                            border: '1px solid rgba(212, 175, 55, 0.3)',
+                            boxShadow: '0 20px 50px rgba(0,0,0,0.6)',
+                            position: 'relative'
+                        }}
+                    >
+                        <button
+                            onClick={onClose}
+                            style={{
+                                position: 'absolute',
+                                top: '15px',
+                                right: '15px',
+                                background: 'transparent',
+                                border: 'none',
+                                color: 'var(--text-dim)',
+                                cursor: 'pointer'
+                            }}
+                        >
+                            <X size={24} />
+                        </button>
+
+                        <div style={{
+                            width: '80px',
+                            height: '80px',
+                            borderRadius: '50%',
+                            background: 'rgba(34, 197, 94, 0.1)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            margin: '0 auto 25px',
+                            border: '2px solid #22c55e',
+                            color: '#22c55e'
+                        }}>
+                            <CheckCircle size={40} />
+                        </div>
+
+                        <h2 style={{ color: '#fff', marginBottom: '15px', fontSize: '1.6rem', fontWeight: 'bold' }}>تم تجهيز طلبك!</h2>
+
+                        <p style={{ color: 'var(--text-dim)', marginBottom: '30px', lineHeight: '1.6', fontSize: '1rem' }}>
+                            لقد تلقينا تفاصيل طلبك. يرجى المتابعة إلى الواتساب الآن لإرسال الرسالة وتأكيد عملية الشراء.
+                        </p>
+
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                            <button
+                                onClick={onProceed}
+                                className="btn-primary"
+                                style={{
+                                    width: '100%',
+                                    padding: '15px',
+                                    display: 'flex',
+                                    justifyContent: 'center',
+                                    alignItems: 'center',
+                                    gap: '12px',
+                                    fontSize: '1.1rem',
+                                    borderRadius: '12px',
+                                    background: '#25D366', // WhatsApp Green
+                                    border: 'none',
+                                    color: '#fff',
+                                    fontWeight: 'bold'
+                                }}
+                            >
+                                <span>إرسال الطلب عبر الواتساب</span>
+                                <MessageCircle size={24} />
+                            </button>
+
+                            <button
+                                onClick={onClose}
+                                style={{
+                                    width: '100%',
+                                    padding: '12px',
+                                    background: 'transparent',
+                                    border: '1px solid rgba(255,255,255,0.1)',
+                                    color: 'var(--text-dim)',
+                                    borderRadius: '10px',
+                                    cursor: 'pointer',
+                                    fontSize: '0.9rem'
+                                }}
+                            >
+                                إغلاق
+                            </button>
+                        </div>
+                    </motion.div>
                 </div>
-
-                <h2 style={{ color: 'white', marginBottom: '10px', fontSize: '1.4rem' }}>تم تجهيز طلبك بنجاح!</h2>
-                <p style={{ color: 'var(--text-dim)', marginBottom: '10px', lineHeight: '1.6' }}>
-                    تم تحميل فاتورة طلبك (PDF) بنجاح.
-                </p>
-                <p style={{ color: '#d4af37', marginBottom: '30px', fontSize: '0.9rem', fontWeight: 'bold' }}>
-                    يرجى إرسال الرسالة وإرفاق الفاتورة في المحادثة لإكمال الطلب.
-                </p>
-
-                <button
-                    onClick={onProceed}
-                    className="btn-primary"
-                    style={{
-                        width: '100%',
-                        padding: '12px',
-                        display: 'flex',
-                        justifyContent: 'center',
-                        alignItems: 'center',
-                        gap: '10px',
-                        fontSize: '1rem',
-                        marginBottom: '15px'
-                    }}
-                >
-                    <span>الانتقال إلى واتساب</span>
-                    <MessageCircle size={20} />
-                </button>
-
-                <button
-                    onClick={onClose}
-                    // style={{
-                    //     background: 'transparent',
-                    //     border: 'none',
-                    //     color: 'var(--text-dim)',
-                    //     cursor: 'pointer',
-                    //     fontSize: '0.9rem',
-                    //     textDecoration: 'underline'
-                    // }}
-                    className="btn-primary cancel-btn"
-                    style={{
-                        background: '#ff4b4b',
-                        width: '100%',
-                        padding: '12px',
-                        display: 'flex',
-                        justifyContent: 'center',
-                        alignItems: 'center',
-                        gap: '10px',
-                        fontSize: '1rem',
-                        marginBottom: '15px',
-                        color:'white',
-                    }}
-                >
-                   <span>إغلاق</span>
-                </button>
-            </div>
-        </div>
+            )}
+        </AnimatePresence>
     );
 }

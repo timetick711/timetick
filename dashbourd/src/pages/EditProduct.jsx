@@ -68,7 +68,8 @@ const EditProduct = () => {
                     imageUrl: formData.imageUrl,
                     images: formData.images || [],
                     colors: formData.colors || [],
-                    materials: formData.materials || []
+                    materials: formData.materials || [],
+                    variants: formData.variants || []
                 })
                 .eq('id', id);
 

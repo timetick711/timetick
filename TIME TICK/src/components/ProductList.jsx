@@ -89,7 +89,13 @@ export default function ProductList() {
             if (payload.eventType === 'UPDATE' || payload.eventType === 'DELETE' || payload.eventType === 'INSERT') {
                 setProducts(prev => {
                     if (payload.eventType === 'UPDATE') {
-                        return prev.map(p => p.id === payload.new.id ? { ...p, ...payload.new } : p);
+                        const updatedProduct = {
+                            ...payload.new,
+                            price: Number(payload.new.price) || 0,
+                            image: payload.new.imageUrl || payload.new.image || 'https://placehold.co/400x500/1a1a1a/ffffff?text=No+Image',
+                            video: payload.new.video || ''
+                        };
+                        return prev.map(p => p.id === updatedProduct.id ? updatedProduct : p);
                     }
                     if (payload.eventType === 'DELETE') {
                         return prev.filter(p => p.id !== payload.old.id);

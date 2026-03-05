@@ -18,7 +18,8 @@ const ProductForm = ({ initialData, onSubmit, title, subTitle }) => {
         imageUrl: '',
         images: [],
         colors: [],
-        materials: []
+        materials: [],
+        variants: []
     });
 
     useEffect(() => {
@@ -34,7 +35,8 @@ const ProductForm = ({ initialData, onSubmit, title, subTitle }) => {
                 imageUrl: initialData.imageUrl || '',
                 images: initialData.images || (initialData.imageUrl ? [initialData.imageUrl] : []),
                 colors: initialData.colors || [],
-                materials: initialData.materials || []
+                materials: initialData.materials || [],
+                variants: initialData.variants || []
             });
         }
     }, [initialData]);
@@ -469,6 +471,29 @@ const ProductForm = ({ initialData, onSubmit, title, subTitle }) => {
             materials: prev.materials.filter(m => m !== materialToRemove)
         }));
     };
+    const [variantInput, setVariantInput] = useState({ color: '', material: '', price: '' });
+
+    const addVariant = () => {
+        const { color, material, price } = variantInput;
+        if (!price) return;
+
+        // Check combination
+        const exists = formData.variants.find(v => v.color === color && v.material === material);
+        if (exists) return;
+
+        setFormData(prev => ({
+            ...prev,
+            variants: [...prev.variants, { color, material, price: Number(price) }]
+        }));
+        setVariantInput({ color: '', material: '', price: '' });
+    };
+
+    const removeVariant = (indexToRemove) => {
+        setFormData(prev => ({
+            ...prev,
+            variants: prev.variants.filter((_, i) => i !== indexToRemove)
+        }));
+    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -526,10 +551,94 @@ const ProductForm = ({ initialData, onSubmit, title, subTitle }) => {
                             <input type="text" placeholder="مثلاً: رويال جولد" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} required style={inputStyle} />
                         </div>
                         <div style={formGroup}>
-                            <label style={labelStyle}>السعر (ر.س)</label>
+                            <label style={labelStyle}>السعر الأساسي (ر.س)</label>
                             <input type="number" placeholder="0.00" value={formData.price} onChange={e => setFormData({ ...formData, price: e.target.value })} required style={inputStyle} />
                         </div>
                     </div>
+
+                    {/* Price Variants Section */}
+                    {(formData.colors.length > 0 || formData.materials.length > 0) && (
+                        <div style={{ ...formGroup, background: 'rgba(212, 175, 55, 0.05)', padding: '20px', borderRadius: '16px', border: '1px solid rgba(212, 175, 55, 0.2)', marginBottom: '30px' }}>
+                            <label style={{ ...labelStyle, color: 'var(--primary)' }}>أسعار مخصصة لمواصفات معينة</label>
+                            <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '15px' }}>سيتم استخدام السعر الأساسي إذا لم يتطابق اختيار العميل مع أي سعر مخصص أدناه.</p>
+
+                            <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', flexWrap: 'wrap', alignItems: 'flex-end' }}>
+                                <div style={{ flex: '0 0 120px' }}>
+                                    <label style={{ color: '#fff', fontSize: '0.75rem', marginBottom: '5px', display: 'block' }}>السعر:</label>
+                                    <input
+                                        type="number"
+                                        placeholder="السعر"
+                                        value={variantInput.price}
+                                        onChange={e => setVariantInput({ ...variantInput, price: e.target.value })}
+                                        style={inputStyle}
+                                    />
+                                </div>
+
+                                {formData.colors.length > 0 && (
+                                    <div style={{ flex: 1, minWidth: '140px' }}>
+                                        <label style={{ color: '#fff', fontSize: '0.75rem', marginBottom: '5px', display: 'block' }}>اللون:</label>
+                                        <select
+                                            value={variantInput.color}
+                                            onChange={e => setVariantInput({ ...variantInput, color: e.target.value })}
+                                            style={{ ...inputStyle, backgroundColor: '#1a1a1a' }}
+                                        >
+                                            <option value="">اختر اللون</option>
+                                            {formData.colors.map(c => <option key={c} value={c}>{c}</option>)}
+                                        </select>
+                                    </div>
+                                )}
+
+                                {formData.materials.length > 0 && (
+                                    <div style={{ flex: 1, minWidth: '140px' }}>
+                                        <label style={{ color: '#fff', fontSize: '0.75rem', marginBottom: '5px', display: 'block' }}>الخامة:</label>
+                                        <select
+                                            value={variantInput.material}
+                                            onChange={e => setVariantInput({ ...variantInput, material: e.target.value })}
+                                            style={{ ...inputStyle, backgroundColor: '#1a1a1a' }}
+                                        >
+                                            <option value="">اختر الخامة</option>
+                                            {formData.materials.map(m => <option key={m} value={m}>{m}</option>)}
+                                        </select>
+                                    </div>
+                                )}
+
+                                <button
+                                    type="button"
+                                    onClick={addVariant}
+                                    className="btn-icon"
+                                    style={{ background: 'var(--primary)', color: '#000', height: '48px', padding: '0 15px', borderRadius: '14px', marginBottom: '2px' }}
+                                >
+                                    <Plus size={18} /> إضافة
+                                </button>
+                            </div>
+
+                            {formData.variants.length > 0 && (
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginTop: '10px', paddingTop: '15px', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                                    {formData.variants.map((v, i) => (
+                                        <div key={i} style={{
+                                            display: 'flex', alignItems: 'center', gap: '10px',
+                                            background: 'rgba(255,255,255,0.05)', padding: '8px 15px',
+                                            borderRadius: '10px', border: '1px solid rgba(255,255,255,0.1)'
+                                        }}>
+                                            <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                                <span style={{ color: 'var(--primary)', fontWeight: 'bold', fontSize: '0.9rem' }}>
+                                                    {v.color && v.material ? `${v.color} + ${v.material}` : (v.color || v.material || 'افتراضي')}
+                                                </span>
+                                                <span style={{ color: '#fff', fontSize: '0.85rem' }}>{v.price} ر.س</span>
+                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={() => removeVariant(i)}
+                                                style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: 0 }}
+                                            >
+                                                <X size={14} />
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    )}
 
                     <div className="form-grid">
                         <div style={formGroup}>
@@ -754,76 +863,78 @@ const ProductForm = ({ initialData, onSubmit, title, subTitle }) => {
                     >
                         {uploading ? 'جاري الرفع... يرجى الانتظار' : <><Save size={22} /> حفظ الساعة</>}
                     </button>
-                </form>
-            </div>
+                </form >
+            </div >
 
             {/* Uploading Status Overlay */}
-            {uploading && (
-                <div style={{
-                    position: 'fixed',
-                    bottom: '20px',
-                    right: '20px',
-                    width: '320px',
-                    maxHeight: '400px',
-                    overflowY: 'auto',
-                    background: '#1a1a1a',
-                    border: '1px solid var(--glass-border)',
-                    borderRadius: '16px',
-                    padding: '10px',
-                    boxShadow: '0 10px 30px rgba(0,0,0,0.5)',
-                    zIndex: 9999,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '10px',
-                    animation: 'slideInRight 0.3s ease'
-                }}>
-                    <div style={{ padding: '5px 10px', borderBottom: '1px solid rgba(255,255,255,0.05)', marginBottom: '5px', display: 'flex', justifyContent: 'space-between' }}>
-                        <span style={{ fontSize: '0.85rem', color: 'var(--primary)', fontWeight: 'bold' }}>عمليات الرفع النشطة ({Object.keys(activeUploads).length})</span>
-                    </div>
-                    {Object.entries(activeUploads).map(([taskId, progress]) => (
-                        <div key={taskId} style={{
-                            background: 'rgba(255,255,255,0.03)',
-                            padding: '12px',
-                            borderRadius: '12px',
-                            border: '1px solid rgba(255,255,255,0.05)'
-                        }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                                <span style={{ fontSize: '0.8rem', color: '#fff', fontWeight: '500' }}>
-                                    {progress.type === 'video' ? '📽️ فيديو' : '🖼️ صور'}
-                                </span>
-                                <button
-                                    onClick={() => {
-                                        cancelledRefs.current[taskId] = true;
-                                        if (abortRefs.current[taskId]) abortRefs.current[taskId]();
-                                        setActiveUploads(prev => {
-                                            const updated = { ...prev };
-                                            delete updated[taskId];
-                                            return updated;
-                                        });
-                                    }}
-                                    style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '0.75rem', padding: '0 5px' }}
-                                >
-                                    إلغاء ✕
-                                </button>
-                            </div>
-                            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '8px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                {progress.text}
-                            </div>
-                            <div style={{ height: '4px', background: 'rgba(255,255,255,0.05)', borderRadius: '2px', overflow: 'hidden' }}>
-                                <div style={{
-                                    width: `${progress.percent}%`,
-                                    height: '100%',
-                                    background: 'var(--primary)',
-                                    transition: 'width 0.3s ease'
-                                }} />
-                            </div>
-                            <div style={{ marginTop: '5px', fontSize: '0.7rem', color: 'var(--primary)', textAlign: 'right' }}>
-                                {progress.percent}%
-                            </div>
+            {
+                uploading && (
+                    <div style={{
+                        position: 'fixed',
+                        bottom: '20px',
+                        right: '20px',
+                        width: '320px',
+                        maxHeight: '400px',
+                        overflowY: 'auto',
+                        background: '#1a1a1a',
+                        border: '1px solid var(--glass-border)',
+                        borderRadius: '16px',
+                        padding: '10px',
+                        boxShadow: '0 10px 30px rgba(0,0,0,0.5)',
+                        zIndex: 9999,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '10px',
+                        animation: 'slideInRight 0.3s ease'
+                    }}>
+                        <div style={{ padding: '5px 10px', borderBottom: '1px solid rgba(255,255,255,0.05)', marginBottom: '5px', display: 'flex', justifyContent: 'space-between' }}>
+                            <span style={{ fontSize: '0.85rem', color: 'var(--primary)', fontWeight: 'bold' }}>عمليات الرفع النشطة ({Object.keys(activeUploads).length})</span>
                         </div>
-                    ))}
-                </div>
-            )}
+                        {Object.entries(activeUploads).map(([taskId, progress]) => (
+                            <div key={taskId} style={{
+                                background: 'rgba(255,255,255,0.03)',
+                                padding: '12px',
+                                borderRadius: '12px',
+                                border: '1px solid rgba(255,255,255,0.05)'
+                            }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                                    <span style={{ fontSize: '0.8rem', color: '#fff', fontWeight: '500' }}>
+                                        {progress.type === 'video' ? '📽️ فيديو' : '🖼️ صور'}
+                                    </span>
+                                    <button
+                                        onClick={() => {
+                                            cancelledRefs.current[taskId] = true;
+                                            if (abortRefs.current[taskId]) abortRefs.current[taskId]();
+                                            setActiveUploads(prev => {
+                                                const updated = { ...prev };
+                                                delete updated[taskId];
+                                                return updated;
+                                            });
+                                        }}
+                                        style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '0.75rem', padding: '0 5px' }}
+                                    >
+                                        إلغاء ✕
+                                    </button>
+                                </div>
+                                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '8px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                    {progress.text}
+                                </div>
+                                <div style={{ height: '4px', background: 'rgba(255,255,255,0.05)', borderRadius: '2px', overflow: 'hidden' }}>
+                                    <div style={{
+                                        width: `${progress.percent}%`,
+                                        height: '100%',
+                                        background: 'var(--primary)',
+                                        transition: 'width 0.3s ease'
+                                    }} />
+                                </div>
+                                <div style={{ marginTop: '5px', fontSize: '0.7rem', color: 'var(--primary)', textAlign: 'right' }}>
+                                    {progress.percent}%
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )
+            }
 
             <style>{`
                 @keyframes slideInRight {
@@ -831,7 +942,7 @@ const ProductForm = ({ initialData, onSubmit, title, subTitle }) => {
                     to { transform: translateX(0); opacity: 1; }
                 }
             `}</style>
-        </div>
+        </div >
     );
 };
 

@@ -10,6 +10,22 @@ export default function ProductOptionsModal({ isOpen, onClose, product, onConfir
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
 
+    const getCurrentPrice = () => {
+        if (!product.variants || product.variants.length === 0) return Number(product.price);
+
+        // Find variant that matches BOTH selected color AND selected material 100%
+        const matchingVariant = product.variants.find(v => {
+            const colorMatch = v.color ? v.color === selectedColor : !selectedColor;
+            const materialMatch = v.material ? v.material === selectedMaterial : !selectedMaterial;
+            return colorMatch && materialMatch;
+        });
+
+        if (matchingVariant) return matchingVariant.price;
+
+        // Fallback to Base Price if no exact match 100%
+        return Number(product.price);
+    };
+
     useEffect(() => {
         if (isOpen) {
             setQuantity(1);
@@ -38,7 +54,8 @@ export default function ProductOptionsModal({ isOpen, onClose, product, onConfir
         onConfirm({
             quantity,
             selectedColor: selectedColor || null,
-            selectedMaterial: selectedMaterial || null
+            selectedMaterial: selectedMaterial || null,
+            variantPrice: getCurrentPrice()
         });
         onClose();
     };
@@ -49,7 +66,8 @@ export default function ProductOptionsModal({ isOpen, onClose, product, onConfir
         onConfirm({
             quantity,
             selectedColor: selectedColor || null,
-            selectedMaterial: selectedMaterial || null
+            selectedMaterial: selectedMaterial || null,
+            variantPrice: getCurrentPrice()
         });
 
         // Reset for next item
@@ -137,7 +155,7 @@ export default function ProductOptionsModal({ isOpen, onClose, product, onConfir
                                 {product.description}
                             </p>
                             <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--primary)' }}>
-                                {Number(product.price).toLocaleString()} <span style={{ fontSize: '1rem' }}>ر.س</span>
+                                {getCurrentPrice().toLocaleString()} <span style={{ fontSize: '1rem' }}>ر.س</span>
                             </div>
                         </div>
                     </div>
@@ -290,7 +308,7 @@ export default function ProductOptionsModal({ isOpen, onClose, product, onConfir
                             }}
                         >
                             <ShoppingCart size={24} />
-                            <span>إضافة وإنهاء - {(Number(product.price) * quantity).toLocaleString()} ر.س</span>
+                            <span>إضافة وإنهاء - {(getCurrentPrice() * quantity).toLocaleString()} ر.س</span>
                         </button>
 
                         {((product.colors && product.colors.length > 1) || (product.materials && product.materials.length > 1)) && (

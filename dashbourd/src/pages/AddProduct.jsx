@@ -40,6 +40,7 @@ const AddProduct = () => {
                     images: formData.images || [],
                     colors: formData.colors || [],
                     materials: formData.materials || [],
+                    variants: formData.variants || [],
                     featured: false // Default
                 }]);
 

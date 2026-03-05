@@ -24,6 +24,8 @@ const Products = () => {
     const [minPrice, setMinPrice] = useState('');
     const [maxPrice, setMaxPrice] = useState('');
     const [searchQuery, setSearchQuery] = useState('');
+    const [selectedProducts, setSelectedProducts] = useState(new Set());
+    const [totalMatchingCount, setTotalMatchingCount] = useState(0);
 
     const observer = useRef();
     const lastProductRef = useCallback(node => {
@@ -50,6 +52,23 @@ const Products = () => {
         }
     };
 
+    const buildQuery = (selectString = '*', { count = null, head = false } = {}) => {
+        let query = supabase.from('products').select(selectString, { count, head });
+
+        if (filterType !== 'all') query = query.eq('category', filterType);
+        if (filterStyle !== 'all') query = query.eq('style', filterStyle);
+        if (minPrice !== '') query = query.gte('price', Number(minPrice));
+        if (maxPrice !== '') query = query.lte('price', Number(maxPrice));
+        if (searchQuery) {
+            if (!isNaN(searchQuery)) {
+                query = query.or(`name.ilike.%${searchQuery}%,displayId.eq.${searchQuery}`);
+            } else {
+                query = query.ilike('name', `%${searchQuery}%`);
+            }
+        }
+        return query;
+    };
+
     const fetchProducts = async (pageNum, isInitial = false) => {
         if (isInitial) {
             startLoading();
@@ -59,23 +78,7 @@ const Products = () => {
         }
 
         try {
-            let query = supabase
-                .from('products')
-                .select('*', { count: 'exact' });
-
-            // Apply Filters
-            if (filterType !== 'all') query = query.eq('category', filterType);
-            if (filterStyle !== 'all') query = query.eq('style', filterStyle);
-            if (minPrice !== '') query = query.gte('price', Number(minPrice));
-            if (maxPrice !== '') query = query.lte('price', Number(maxPrice));
-            if (searchQuery) {
-                // Search by name or displayId
-                if (!isNaN(searchQuery)) {
-                    query = query.or(`name.ilike.%${searchQuery}%,displayId.eq.${searchQuery}`);
-                } else {
-                    query = query.ilike('name', `%${searchQuery}%`);
-                }
-            }
+            let query = buildQuery('*', { count: 'exact' });
 
             // Apply Sorting
             if (sortPrice === 'asc') query = query.order('price', { ascending: true });
@@ -90,12 +93,11 @@ const Products = () => {
 
             if (isInitial) {
                 setProducts(data || []);
+                setTotalMatchingCount(count || 0);
             } else {
                 setProducts(prev => [...prev, ...data]);
             }
 
-            setHasMore(count > (to + 1) || (data && data.length === 12));
-            // A more robust hasMore check is to see if count > to + 1
             setHasMore(count > to + 1);
         } catch (error) {
             console.error(error);
@@ -218,6 +220,114 @@ const Products = () => {
         }
     };
 
+    const toggleProduct = (id) => {
+        const newSelected = new Set(selectedProducts);
+        if (newSelected.has(id)) {
+            newSelected.delete(id);
+        } else {
+            newSelected.add(id);
+        }
+        setSelectedProducts(newSelected);
+    };
+
+    const toggleAll = async () => {
+        if (selectedProducts.size === totalMatchingCount && totalMatchingCount > 0) {
+            setSelectedProducts(new Set());
+        } else {
+            startLoading();
+            try {
+                let query = buildQuery('id');
+                const { data, error } = await query;
+
+                if (error) throw error;
+
+                if (data) {
+                    setSelectedProducts(new Set(data.map(p => p.id)));
+                    Swal.fire({
+                        title: 'تم تحديد الكل',
+                        text: `تم تحديد ${data.length} منتج`,
+                        icon: 'success',
+                        toast: true,
+                        position: 'top-end',
+                        showConfirmButton: false,
+                        timer: 2000,
+                        background: '#141414',
+                        color: '#fff'
+                    });
+                }
+            } catch (error) {
+                console.error("Select all error:", error);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'خطأ',
+                    text: 'فشل تحديد جميع المنتجات',
+                    background: '#141414',
+                    color: '#fff'
+                });
+            } finally {
+                stopLoading();
+            }
+        }
+    };
+
+    const handleBulkDelete = async () => {
+        const result = await Swal.fire({
+            title: 'هل أنت متأكد؟',
+            text: `سيتم حذف ${selectedProducts.size} من المنتجات نهائياً!`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'نعم، احذف المحدد',
+            cancelButtonText: 'إلغاء',
+            background: '#141414',
+            color: '#fff',
+            confirmButtonColor: '#ef4444',
+            cancelButtonColor: 'rgba(255,255,255,0.1)'
+        });
+
+        if (result.isConfirmed) {
+            startLoading();
+            try {
+                // Fetch media to delete
+                const { data: productsToDelete, error: fetchError } = await supabase
+                    .from('products')
+                    .select('id, video, images, imageUrl')
+                    .in('id', Array.from(selectedProducts));
+
+                if (!fetchError && productsToDelete) {
+                    for (const product of productsToDelete) {
+                        if (product.video && product.video.includes('cloudinary')) {
+                            await deleteFromCloudinary(product.video, 'video');
+                        }
+                        const imagesToDelete = new Set(product.images || []);
+                        if (product.imageUrl) imagesToDelete.add(product.imageUrl);
+                        for (const img of imagesToDelete) {
+                            if (img && img.includes('cloudinary')) {
+                                await deleteFromCloudinary(img, 'image');
+                            }
+                        }
+                    }
+                }
+
+                const { error } = await supabase
+                    .from('products')
+                    .delete()
+                    .in('id', Array.from(selectedProducts));
+
+                if (error) throw error;
+
+                setProducts(prev => prev.filter(p => !selectedProducts.has(p.id)));
+                setSelectedProducts(new Set());
+                fetchStats();
+                Swal.fire({ title: 'تم الحذف بنجاح', icon: 'success', background: '#141414', color: '#fff' });
+            } catch (error) {
+                console.error(error);
+                Swal.fire({ icon: 'error', title: 'خطأ', text: 'فشل الحذف الجماعي', background: '#141414', color: '#fff' });
+            } finally {
+                stopLoading();
+            }
+        }
+    };
+
     return (
         <div style={{ direction: 'rtl' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3rem', flexWrap: 'wrap', gap: '20px' }}>
@@ -225,9 +335,30 @@ const Products = () => {
                     <h1 style={{ fontSize: '2.5rem', marginBottom: '8px', color: '#fff' }}>المخزون</h1>
                     <p style={{ color: 'var(--text-muted)' }}>إدارة الساعات والمنتجات المتاحة في المتجر</p>
                 </div>
-                <Link to="/products/add" className="btn-primary" style={{ textDecoration: 'none' }}>
-                    <Plus size={22} /> إضافة ساعة جديدة
-                </Link>
+                <div style={{ display: 'flex', gap: '10px' }}>
+                    {selectedProducts.size > 0 ? (
+                        <>
+                            <button
+                                onClick={toggleAll}
+                                className="btn-primary"
+                                style={{ background: 'var(--surface)', border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', gap: '8px', color: '#fff' }}
+                            >
+                                {selectedProducts.size === totalMatchingCount && totalMatchingCount > 0 ? 'إلغاء التحديد' : 'تحديد الكل'}
+                            </button>
+                            <button
+                                onClick={handleBulkDelete}
+                                className="btn-primary"
+                                style={{ background: '#ef4444', border: 'none', display: 'flex', alignItems: 'center', gap: '8px' }}
+                            >
+                                <Trash2 size={20} /> حذف المحدد ({selectedProducts.size})
+                            </button>
+                        </>
+                    ) : (
+                        <Link to="/products/add" className="btn-primary" style={{ textDecoration: 'none' }}>
+                            <Plus size={22} /> إضافة ساعة جديدة
+                        </Link>
+                    )}
+                </div>
             </div>
 
             <ProductStats stats={stats} />
@@ -277,15 +408,25 @@ const Products = () => {
                                 }}>
                                     #{product.displayId || '---'}
                                 </div>
-                                <img
-                                    src={product.imageUrl || (product.images && product.images[0]) || 'https://placehold.co/400x400/1a1a1a/ffffff?text=No+Image'}
-                                    alt={product.name}
-                                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                                />
+
                                 <div style={{
                                     position: 'absolute',
                                     top: '12px',
                                     right: '12px',
+                                    zIndex: 10
+                                }}>
+                                    <input
+                                        type="checkbox"
+                                        checked={selectedProducts.has(product.id)}
+                                        onChange={() => toggleProduct(product.id)}
+                                        className="custom-checkbox"
+                                    />
+                                </div>
+
+                                <div style={{
+                                    position: 'absolute',
+                                    top: '12px',
+                                    right: '48px',
                                     background: 'rgba(0,0,0,0.6)',
                                     backdropFilter: 'blur(10px)',
                                     padding: '6px 14px',
@@ -297,13 +438,27 @@ const Products = () => {
                                 }}>
                                     {product.style === 'classic' ? 'كلاسيكي' : product.style === 'formal' ? 'رسمي' : 'عرائسي'}
                                 </div>
+
+                                <img
+                                    src={product.imageUrl || (product.images && product.images[0]) || 'https://placehold.co/400x400/1a1a1a/ffffff?text=No+Image'}
+                                    alt={product.name}
+                                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                />
                             </div>
 
                             <div style={{ padding: '24px', flex: 1, display: 'flex', flexDirection: 'column' }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
                                     <h3 style={{ fontSize: '1.3rem', color: '#fff' }}>{product.name}</h3>
-                                    <div style={{ fontSize: '1.4rem', fontWeight: '900', color: 'var(--primary)', letterSpacing: '0.5px' }}>
-                                        {Number(product.price).toLocaleString()} <span style={{ fontSize: '0.85rem', fontWeight: '500' }}>ر.س</span>
+                                    <div style={{ fontSize: '1.4rem', fontWeight: '900', color: 'var(--primary)', letterSpacing: '0.5px', textAlign: 'left' }}>
+                                        {product.variants && product.variants.length > 0 ? (
+                                            <div style={{ fontSize: '1.1rem' }}>
+                                                {Math.min(...[Number(product.price), ...product.variants.map(v => v.price)]).toLocaleString()} - {Math.max(...[Number(product.price), ...product.variants.map(v => v.price)]).toLocaleString()}
+                                            </div>
+                                        ) : (
+                                            <>
+                                                {Number(product.price).toLocaleString()} <span style={{ fontSize: '0.85rem', fontWeight: '500' }}>ر.س</span>
+                                            </>
+                                        )}
                                     </div>
                                 </div>
                                 <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', lineHeight: '1.6', flex: 1, marginBottom: '24px' }}>
@@ -334,20 +489,52 @@ const Products = () => {
                         <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '50px', color: 'var(--text-muted)' }}>لا توجد منتجات مطابقة للبحث</div>
                     )}
                 </div>
-            )}
+            )
+            }
 
-            {loadingMore && (
-                <div style={{ textAlign: 'center', padding: '40px' }}>
-                    <Loader2 className="animate-spin" style={{ width: '30px', height: '30px', color: 'var(--primary)', margin: '0 auto' }} />
-                </div>
-            )}
+            {
+                loadingMore && (
+                    <div style={{ textAlign: 'center', padding: '40px' }}>
+                        <Loader2 className="animate-spin" style={{ width: '30px', height: '30px', color: 'var(--primary)', margin: '0 auto' }} />
+                    </div>
+                )
+            }
 
             <style>{`
                 @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
                 .loader { border-radius: 50%; }
                 .animate-spin { animation: spin 1s linear infinite; }
+                
+                .custom-checkbox {
+                    appearance: none;
+                    -webkit-appearance: none;
+                    width: 24px;
+                    height: 24px;
+                    border: 2px solid var(--primary);
+                    border-radius: 6px;
+                    background-color: transparent;
+                    cursor: pointer;
+                    position: relative;
+                    transition: all 0.2s ease;
+                }
+                
+                .custom-checkbox:checked {
+                    background-color: var(--primary);
+                }
+                
+                .custom-checkbox:checked::after {
+                    content: '';
+                    position: absolute;
+                    left: 7px;
+                    top: 2px;
+                    width: 6px;
+                    height: 12px;
+                    border: solid #000;
+                    border-width: 0 2px 2px 0;
+                    transform: rotate(45deg);
+                }
             `}</style>
-        </div>
+        </div >
     );
 };
 

@@ -17,8 +17,7 @@ const Login = () => {
         e.preventDefault();
         setLoading(true);
         try {
-            // Mock Login: Accept any email/password via Context
-            login(email);
+            login(email, password);
 
             Swal.fire({
                 icon: 'success',
@@ -34,7 +33,7 @@ const Login = () => {
             Swal.fire({
                 icon: 'error',
                 title: 'خطأ في الدخول',
-                text: 'تأكد من البريد الإلكتروني وكلمة المرور',
+                text: error.message || 'تأكد من البريد الإلكتروني وكلمة المرور',
                 background: '#141414',
                 color: '#fff',
                 confirmButtonColor: 'var(--primary)'
@@ -157,14 +156,6 @@ const Login = () => {
                         {!loading && <ArrowLeft size={20} style={{ marginRight: '8px' }} />}
                     </button>
 
-                    <p style={{
-                        marginTop: '2rem',
-                        textAlign: 'center',
-                        fontSize: '0.85rem',
-                        color: 'var(--text-muted)'
-                    }}>
-                        ليس لديك حساب؟ <span onClick={() => navigate('/register')} style={{ color: 'var(--primary)', textDecoration: 'none', fontWeight: '700', cursor: 'pointer' }}>أنشئ حساباً جديداً</span>
-                    </p>
                 </form>
             </div>
         </div>

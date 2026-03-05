@@ -6,8 +6,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Search, Download, Trash2, Eye, CheckCircle, XCircle, RotateCcw, Loader2 } from 'lucide-react';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
-import { setupNotifications } from '../utils/pushManager';
-import { Bell, Info } from 'lucide-react';
 
 const Orders = () => {
     const [orders, setOrders] = useState([]);
@@ -18,7 +16,6 @@ const Orders = () => {
     const { startLoading, stopLoading } = useLoading();
     const [searchQuery, setSearchQuery] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
-    const [notifStatus, setNotifStatus] = useState('checking');
 
     const observer = useRef();
     const lastOrderRef = useCallback(node => {
@@ -41,19 +38,27 @@ const Orders = () => {
         }
 
         try {
-            let query = supabase
-                .from('orders')
-                .select('*, profiles(full_name, email, whatsapp, governorate, district, neighborhood)', { count: 'exact' });
-
-            // Apply Filters
-            if (statusFilter !== 'all') {
-                query = query.eq('status', statusFilter);
-            }
+            let query = supabase.from('orders');
 
             if (searchQuery) {
-                // Search by Order ID, Customer Name, or WhatsApp Number
-                // We use .or() with nested profile fields
-                query = query.or(`id.ilike.%${searchQuery}%,profiles.full_name.ilike.%${searchQuery}%,profiles.whatsapp.ilike.%${searchQuery}%`);
+                // If it's a full UUID, search by ID. Otherwise, search by profile name/whatsapp.
+                const isUUID = searchQuery.length === 36 && /^[0-9a-f-]+$/i.test(searchQuery);
+
+                if (isUUID) {
+                    query = query.select('*, profiles(full_name, email, whatsapp, governorate, district, neighborhood)', { count: 'exact' })
+                        .eq('id', searchQuery);
+                } else {
+                    // Use !inner to filter the main table based on the join
+                    query = query.select('*, profiles!inner(full_name, email, whatsapp, governorate, district, neighborhood)', { count: 'exact' })
+                        .or(`full_name.ilike.%${searchQuery}%,whatsapp.ilike.%${searchQuery}%`, { foreignTable: 'profiles' });
+                }
+            } else {
+                query = query.select('*, profiles(full_name, email, whatsapp, governorate, district, neighborhood)', { count: 'exact' });
+            }
+
+            // Apply Status Filter
+            if (statusFilter !== 'all') {
+                query = query.eq('status', statusFilter);
             }
 
             query = query.order('created_at', { ascending: false });
@@ -96,50 +101,54 @@ const Orders = () => {
         fetchOrders(0, true);
     }, [statusFilter, searchQuery]);
 
+    // Page changes
     useEffect(() => {
         if (page > 0) {
             fetchOrders(page);
         }
     }, [page]);
 
-    // Check Notification Status
     useEffect(() => {
-        if (!('serviceWorker' in navigator)) {
-            setNotifStatus('unsupported');
-            return;
-        }
-        navigator.serviceWorker.ready.then(reg => {
-            reg.pushManager.getSubscription().then(sub => {
-                setNotifStatus(sub ? 'ready' : 'not-subscribed');
-            });
-        });
-    }, []);
+        const playNotificationSound = () => {
+            const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+            audio.play().catch(e => console.error("Error playing sound:", e));
+        };
 
-    const handleTestNotification = async () => {
-        if (user) {
-            startLoading();
-            await setupNotifications(user.id);
-            stopLoading();
-            Swal.fire({
-                title: 'تنشيط النظام',
-                text: 'تم إعادة تسجيل نظام الإشعارات. يرجى إغلاق المتصفح الآن وعمل طلب تجريبي من المتجر.',
-                icon: 'info',
-                background: '#141414',
-                color: '#fff'
-            });
-        }
-    };
-
-    useEffect(() => {
         const channel = supabase
             .channel('orders_realtime')
             .on(
                 'postgres_changes',
                 { event: '*', schema: 'public', table: 'orders' },
-                (payload) => {
+                async (payload) => {
                     if (payload.eventType === 'INSERT') {
-                        setPage(0);
-                        fetchOrders(0, true);
+                        playNotificationSound();
+
+                        // Fetch the full order with profiles for the new insertion
+                        const { data: newOrder, error } = await supabase
+                            .from('orders')
+                            .select('*, profiles(full_name, email, whatsapp, governorate, district, neighborhood)')
+                            .eq('id', payload.new.id)
+                            .single();
+
+                        if (!error && newOrder) {
+                            setOrders(prev => [newOrder, ...prev]);
+
+                            Swal.fire({
+                                title: 'طلب جديد!',
+                                text: `تم استلام طلب جديد من ${newOrder.profiles?.full_name || 'عميل'}`,
+                                icon: 'info',
+                                toast: true,
+                                position: 'top-end',
+                                showConfirmButton: false,
+                                timer: 5000,
+                                background: '#141414',
+                                color: '#fff'
+                            });
+                        } else {
+                            // Fallback to reload first page if single fetch fails
+                            setPage(0);
+                            fetchOrders(0, true);
+                        }
                     } else if (payload.eventType === 'UPDATE') {
                         setOrders(prev => prev.map(o => o.id === payload.new.id ? { ...o, ...payload.new } : o));
                     } else if (payload.eventType === 'DELETE') {
@@ -163,7 +172,11 @@ const Orders = () => {
 
             if (error) throw error;
 
-            setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: newStatus } : o));
+            if (statusFilter !== 'all' && statusFilter !== newStatus) {
+                setOrders(prev => prev.filter(o => o.id !== orderId));
+            } else {
+                setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: newStatus } : o));
+            }
 
             Swal.fire({
                 icon: 'success',
@@ -240,115 +253,159 @@ const Orders = () => {
         const dateStr = new Date(order.created_at).toLocaleDateString('ar-SA');
         const profiles = order.profiles || {};
 
+        const logo = '/logo.png';
+
+        // --- Pagination Logic ---
+        const items = Array.isArray(order.items) ? order.items : [];
+        const itemsPerPageFirst = 7;
+        const itemsPerPageNext = 12;
+
+        const pages = [];
+        let remainingItems = [...items];
+
+        if (remainingItems.length === 0) {
+            pages.push({ isFirst: true, items: [], isLast: true });
+        } else {
+            const firstPageItems = remainingItems.splice(0, itemsPerPageFirst);
+            pages.push({ isFirst: true, items: firstPageItems, isLast: remainingItems.length === 0 });
+
+            while (remainingItems.length > 0) {
+                const nextItems = remainingItems.splice(0, itemsPerPageNext);
+                pages.push({ isFirst: false, items: nextItems, isLast: remainingItems.length === 0 });
+            }
+        }
+
         const invoiceDiv = document.createElement('div');
         invoiceDiv.id = 'temp-invoice';
         invoiceDiv.style.position = 'absolute';
         invoiceDiv.style.left = '-9999px';
         invoiceDiv.style.top = '-9999px';
         invoiceDiv.style.width = '800px';
-        invoiceDiv.style.padding = '40px';
-        invoiceDiv.style.background = '#ffffff';
-        invoiceDiv.style.color = '#000';
-        invoiceDiv.style.fontFamily = "'Cairo', sans-serif";
-        invoiceDiv.style.direction = 'rtl';
 
-        const logo = '/logo.png';
+        invoiceDiv.innerHTML = pages.map((page, index) => `
+            <div class="pdf-page" style="width: 800px; min-height: 1120px; padding: 40px; background: #ffffff; color: #000; font-family: 'Cairo', sans-serif; direction: rtl; box-sizing: border-box; position: relative; display: flex; flex-direction: column;">
+                
+                ${page.isFirst ? `
+                    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #d4af37; padding-bottom: 20px; margin-bottom: 30px;">
+                        <div style="flex: 1; text-align: right;">
+                            <h1 style="color: #d4af37; font-size: 28px; margin: 0 0 10px 0; font-weight: 700;letter-spacing: 0px;">تايم تك</h1>
+                            <div style="font-size: 13px; color: #444; line-height: 1.8;">
+                                 <p style="margin: 0;"><strong>تواصل : </strong> 770822310</p>
+                                 <p style="margin: 0;"><strong>الإيميل : </strong> saeedbinmeslem@gmail.com</p>
+                                 <p style="margin: 0;"><strong>العنوان : </strong> اليمن - حضرموت - المكلا</p>
+                            </div>
+                        </div>
+                        <div style="flex: 1; text-align: center;">
+                            <img src="${logo}" style="width: 100px; height: 100px;" />
+                        </div>
+                        <div style="flex: 1; text-align: left; display: flex; flex-direction: column; justify-content: space-between; height: 100px;">
+                            <div>
+                                <p style="margin: 0; font-size: 15px; color: #d4af37; font-weight: bold; font-style: italic;">"الفخامة ... في كل ثانية"</p>
+                                <p style="margin: 5px 0 0; color: #888; font-size: 11px;">نصنع التميز، لنهديه إليكم</p>
+                            </div>
+                            <div style="font-size: 12px; color: #666;">
+                                <span style="display: block; margin-bottom: 3px;">رقم الفاتورة: <strong>${invoiceId}</strong></span>
+                                <span>التاريخ: ${dateStr}</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div style="display: flex; gap: 40px; margin-bottom: 30px; padding: 20px; background: #f9f9f9; border-radius: 8px; border: 1px solid #eee;">
+                        <div style="flex: 1;">
+                            <h3 style="color: #d4af37; margin-bottom: 10px; font-size: 16px;letter-spacing: 0px">بيانات العميل</h3>
+                            <p style="margin: 5px 0;"><strong> الاسم : </strong> ${profiles.full_name || 'غير معروف'}</p>
+                            <p style="margin: 5px 0;"><strong> واتساب : </strong> ${profiles.whatsapp || 'غير متوفر'}</p>
+                            <p style="margin: 5px 0;"><strong>الإيميل : </strong> ${profiles.email || 'غير متوفر'}</p>
+                        </div>
+                        <div style="flex: 1;">
+                            <h3 style="color: #d4af37; margin-bottom: 10px; font-size: 16px;letter-spacing: 0px">عنوان التوصيل</h3>
+                            <p style="margin: 5px 0;"><strong> المحافظة : </strong> ${profiles.governorate || ''}</p>
+                            <p style="margin: 5px 0;"><strong>المديرية : </strong> ${profiles.district || ''}</p>
+                            <p style="margin: 5px 0;"><strong>الحي : </strong> ${profiles.neighborhood || ''}</p>
+                        </div>
+                    </div>
+                ` : `
+                    <div style="margin-bottom: 20px; border-bottom: 2px solid #d4af37; padding-bottom: 10px; display: flex; justify-content: space-between; align-items: center;">
+                        <span style="color: #d4af37; font-weight: bold; font-size: 14px;">فاتورة رقم: ${invoiceId} (يتبع)</span>
+                        <span style="color: #666; font-size: 12px;">صفحة ${index + 1}</span>
+                    </div>
+                `}
 
-        invoiceDiv.innerHTML = `
-            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #d4af37; padding-bottom: 20px; margin-bottom: 30px;">
-                <div style="flex: 1; text-align: right;">
-                    <h1 style="color: #d4af37; font-size: 28px; margin: 0 0 10px 0; font-weight: 700;letter-spacing: 0px;">تايم تك</h1>
-                    <div style="font-size: 13px; color: #444; line-height: 1.8;">
-                         <p style="margin: 0;"><strong>تواصل : </strong> 770822310</p>
-                         <p style="margin: 0;"><strong>الإيميل : </strong> saeedbinmeslem@gmail.com</p>
-                         <p style="margin: 0;"><strong>العنوان : </strong> اليمن - حضرموت - المكلا</p>
-                    </div>
-                </div>
-                <div style="flex: 1; text-align: center;">
-                    <img src="${logo}" style="width: 100px; height: 100px;" />
-                </div>
-                <div style="flex: 1; text-align: left; display: flex; flex-direction: column; justify-content: space-between; height: 100px;">
-                    <div>
-                        <p style="margin: 0; font-size: 15px; color: #d4af37; font-weight: bold; font-style: italic;">"الفخامة ... في كل ثانية"</p>
-                        <p style="margin: 5px 0 0; color: #888; font-size: 11px;">نصنع التميز، لنهديه إليكم</p>
-                    </div>
-                    <div style="font-size: 12px; color: #666;">
-                        <span style="display: block; margin-bottom: 3px;">رقم الفاتورة: <strong>${invoiceId}</strong></span>
-                        <span>التاريخ: ${dateStr}</span>
-                    </div>
-                </div>
-            </div>
-            
-            <div style="display: flex; gap: 40px; margin-bottom: 30px; padding: 20px; background: #f9f9f9; border-radius: 8px; border: 1px solid #eee;">
                 <div style="flex: 1;">
-                    <h3 style="color: #d4af37; margin-bottom: 10px; font-size: 16px;letter-spacing: 0px">بيانات العميل</h3>
-                    <p style="margin: 5px 0;"><strong> الاسم : </strong> ${profiles.full_name || 'غير معروف'}</p>
-                    <p style="margin: 5px 0;"><strong> واتساب : </strong> ${profiles.whatsapp || 'غير متوفر'}</p>
-                    <p style="margin: 5px 0;"><strong>الإيميل : </strong> ${profiles.email || 'غير متوفر'}</p>
+                    <table style="width: 100%; border-collapse: collapse; margin-bottom: 30px;">
+                        <thead>
+                            <tr style="background: rgba(212, 175, 55, 0.1); color: #000;">
+                                <th style="padding: 15px; text-align: right; border-bottom: 2px solid #d4af37;">رقم الموديل</th>
+                                <th style="padding: 15px; text-align: right; border-bottom: 2px solid #d4af37;">المنتج</th>
+                                <th style="padding: 15px; text-align: right; border-bottom: 2px solid #d4af37;">مواصفات الساعة</th>
+                                <th style="padding: 15px; text-align: center; border-bottom: 2px solid #d4af37;">السعر</th>
+                                <th style="padding: 15px; text-align: center; border-bottom: 2px solid #d4af37;">الكمية</th>
+                                <th style="padding: 15px; text-align: left; border-bottom: 2px solid #d4af37;">الإجمالي</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${page.items.map(item => `
+                                <tr style="border-bottom: 1px solid #eee; page-break-inside: avoid;">
+                                    <td style="padding: 15px; text-align: right; color: #555; font-size: 13px; font-weight: bold;">#${item.displayId || '---'}</td>
+                                    <td style="padding: 15px; text-align: right; color: #000; font-weight: 600;">${item.name || item.title}</td>
+                                    <td style="padding: 15px; text-align: right; color: #555; font-size: 14px;">
+                                        <div style="display:flex; flex-direction:column; gap:4px;">
+                                        <span>${item.selectedColor ? 'اللون: ' + item.selectedColor : '---'}</span>
+                                        <span>${item.selectedMaterial ? 'السوار: ' + item.selectedMaterial : '---'}</span>
+                                        </div>
+                                    </td>
+                                    <td style="padding: 15px; text-align: center; color: #333;">${(item.price || 0).toLocaleString()} ر.س</td>
+                                    <td style="padding: 15px; text-align: center; color: #333;">${item.dp_qty || item.quantity || 1}</td>
+                                    <td style="padding: 15px; text-align: left; color: #d4af37; font-weight: bold;">${((item.price || 0) * (item.dp_qty || item.quantity || 1)).toLocaleString()} ر.س</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
                 </div>
-                <div style="flex: 1;">
-                    <h3 style="color: #d4af37; margin-bottom: 10px; font-size: 16px;letter-spacing: 0px">عنوان التوصيل</h3>
-                    <p style="margin: 5px 0;"><strong> المحافظة : </strong> ${profiles.governorate || ''}</p>
-                    <p style="margin: 5px 0;"><strong>المديرية : </strong> ${profiles.district || ''}</p>
-                    <p style="margin: 5px 0;"><strong>الحي : </strong> ${profiles.neighborhood || ''}</p>
+                
+                ${page.isLast ? `
+                    <div style="display: flex; flex-direction: column; align-items: flex-start; margin-top: auto; padding: 20px; background: #fcfcfc; border: 1px solid #eee; border-radius: 8px;">
+                        <div style="width: 100%; display: flex; justify-content: space-between; font-size: 22px; font-weight: bold;">
+                            <span style="color: #000;">الإجمالي الكلي:</span>
+                            <span style="color: #d4af37;">${order.total_amount.toLocaleString()} ر.س</span>
+                        </div>
+                    </div>
+                ` : ''}
+                
+                <div style="margin-top: ${page.isLast ? '30px' : 'auto'}; text-align: center; color: #888; font-size: 13px; border-top: 1px solid #eee; padding-top: 20px;">
+                    <p style="margin-bottom: 5px;">نشكركم على اختياركم متجر تايم تك - الفخامة في كل ثانية</p>
                 </div>
             </div>
-
-            <table style="width: 100%; border-collapse: collapse; margin-bottom: 30px;">
-                <thead>
-                    <tr style="background: rgba(212, 175, 55, 0.1); color: #000;">
-                        <th style="padding: 15px; text-align: right; border-bottom: 2px solid #d4af37;">رقم الموديل</th>
-                        <th style="padding: 15px; text-align: right; border-bottom: 2px solid #d4af37;">المنتج</th>
-                        <th style="padding: 15px; text-align: center; border-bottom: 2px solid #d4af37;">السعر</th>
-                        <th style="padding: 15px; text-align: center; border-bottom: 2px solid #d4af37;">الكمية</th>
-                        <th style="padding: 15px; text-align: left; border-bottom: 2px solid #d4af37;">الإجمالي</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${Array.isArray(order.items) ? order.items.map(item => `
-                        <tr style="border-bottom: 1px solid #eee;">
-                            <td style="padding: 15px; text-align: right; color: #555; font-size: 13px; font-weight: bold;">#${item.displayId || '---'}</td>
-                            <td style="padding: 15px; text-align: right; color: #000; font-weight: 600;">${item.name || item.title}</td>
-                            <td style="padding: 15px; text-align: center; color: #333;">${(item.price || 0).toLocaleString()} ر.س</td>
-                            <td style="padding: 15px; text-align: center; color: #333;">${item.dp_qty || item.quantity || 1}</td>
-                            <td style="padding: 15px; text-align: left; color: #d4af37; font-weight: bold;">${((item.price || 0) * (item.dp_qty || item.quantity || 1)).toLocaleString()} ر.س</td>
-                        </tr>
-                    `).join('') : ''}
-                </tbody>
-            </table>
-            
-            <div style="display: flex; flex-direction: column; align-items: flex-start; margin-top: 30px; padding: 20px; background: #fcfcfc; border: 1px solid #eee; border-radius: 8px;">
-                <div style="width: 100%; display: flex; justify-content: space-between; font-size: 22px; font-weight: bold;">
-                    <span style="color: #000;">الإجمالي الكلي:</span>
-                    <span style="color: #d4af37;">${order.total_amount.toLocaleString()} ر.س</span>
-                </div>
-            </div>
-            
-            <div style="margin-top: 60px; text-align: center; color: #888; font-size: 13px;">
-                <p style="margin-bottom: 5px;">نشكركم على اختياركم متجر تايم تك - الفخامة في كل ثانية</p>
-            </div>
-        `;
+        `).join('');
 
         document.body.appendChild(invoiceDiv);
 
         try {
-            const canvas = await html2canvas(invoiceDiv, { backgroundColor: '#ffffff', scale: 2 });
-            const imgData = canvas.toDataURL('image/png');
             const pdf = new jsPDF('p', 'mm', 'a4');
             const pageWidth = pdf.internal.pageSize.getWidth();
-            const pageHeight = pdf.internal.pageSize.getHeight();
-            const imgWidth = pageWidth;
-            const imgHeight = (canvas.height * imgWidth) / canvas.width;
-            let heightLeft = imgHeight;
-            let position = 0;
-            pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-            heightLeft -= pageHeight;
-            while (heightLeft > 0) {
-                position -= 297;
-                pdf.addPage();
-                pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-                heightLeft -= pageHeight;
+            const pageHeightA4 = pdf.internal.pageSize.getHeight();
+
+            const pageElements = invoiceDiv.querySelectorAll('.pdf-page');
+
+            for (let i = 0; i < pageElements.length; i++) {
+                if (i > 0) {
+                    pdf.addPage();
+                }
+
+                // Temporary set height logic to ensure html2canvas paints the full height needed
+                const el = pageElements[i];
+
+                const canvas = await html2canvas(el, { backgroundColor: '#ffffff', scale: 2 });
+                const imgData = canvas.toDataURL('image/png');
+
+                // Map the HTML width (800) exactly to the A4 width (210)
+                const imgWidth = pageWidth;
+                // Calculate height proportionally from canvas
+                const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+                pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
             }
+
             pdf.save(`invoice_${invoiceId}.pdf`);
         } catch (error) {
             console.error('Invoice Generation Error:', error);
@@ -363,24 +420,7 @@ const Orders = () => {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3rem', flexWrap: 'wrap', gap: '20px' }}>
                 <div>
                     <h1 style={{ fontSize: '2.5rem', marginBottom: '8px', color: '#fff' }}>الطلبات</h1>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-                        <p style={{ color: 'var(--text-muted)' }}>إدارة الطلبات، الفواتير، وبيانات العملاء</p>
-                        <div style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '8px',
-                            background: notifStatus === 'ready' ? 'rgba(34,197,94,0.1)' : 'rgba(239,68,68,0.1)',
-                            padding: '4px 12px',
-                            borderRadius: '20px',
-                            fontSize: '0.8rem',
-                            cursor: 'pointer'
-                        }} onClick={handleTestNotification}>
-                            <Bell size={14} color={notifStatus === 'ready' ? '#22c55e' : '#ef4444'} />
-                            <span style={{ color: notifStatus === 'ready' ? '#22c55e' : '#ef4444' }}>
-                                {notifStatus === 'ready' ? 'نظام الإشعارات نشط' : 'نظام الإشعارات غير مفعل (اضغط للتفعيل)'}
-                            </span>
-                        </div>
-                    </div>
+                    <p style={{ color: 'var(--text-muted)' }}>إدارة الطلبات، الفواتير، وبيانات العملاء</p>
                 </div>
             </div>
 
@@ -398,7 +438,7 @@ const Orders = () => {
                     <Search size={18} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
                     <input
                         type="text"
-                        placeholder="بحث برقم الطلب..."
+                        placeholder="بحث باسم العميل أو الواتساب..."
                         value={searchQuery}
                         onChange={e => setSearchQuery(e.target.value)}
                         style={{
@@ -535,6 +575,7 @@ const Orders = () => {
                                             </div>
                                             <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', alignItems: 'flex-end' }}>
                                                 <div style={{ textAlign: 'left' }}>
+                                                    <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '5px' }}>وسيلة الدفع: <span style={{ color: 'var(--primary)', fontWeight: 'bold' }}>{order.payment_method || 'غير محددة'}</span></p>
                                                     <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '5px' }}>الإجمالي الكلي</p>
                                                     <p style={{ fontSize: '1.5rem', fontWeight: '900', color: 'var(--primary)' }}>{order.total_amount} <span style={{ fontSize: '0.9rem' }}>ر.س</span></p>
                                                 </div>
@@ -608,19 +649,22 @@ const Orders = () => {
                         )}
                     </AnimatePresence>
                 </div>
-            )}
+            )
+            }
 
-            {loadingMore && (
-                <div style={{ textAlign: 'center', padding: '40px' }}>
-                    <Loader2 className="animate-spin" style={{ width: '30px', height: '30px', color: 'var(--primary)', margin: '0 auto' }} />
-                </div>
-            )}
+            {
+                loadingMore && (
+                    <div style={{ textAlign: 'center', padding: '40px' }}>
+                        <Loader2 className="animate-spin" style={{ width: '30px', height: '30px', color: 'var(--primary)', margin: '0 auto' }} />
+                    </div>
+                )
+            }
 
             <style>{`
                 @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
                 .animate-spin { animation: spin 1s linear infinite; }
             `}</style>
-        </div>
+        </div >
     );
 };
 

@@ -27,7 +27,8 @@ export const CartProvider = ({ children }) => {
 
     const addToCart = (product, options = {}) => {
         setCart(prev => {
-            const { quantity = 1, selectedColor, selectedMaterial } = options;
+            const { quantity = 1, selectedColor, selectedMaterial, variantPrice } = options;
+            const priceToUse = variantPrice !== undefined ? variantPrice : Number(product.price);
 
             // Create a unique ID for the variant
             // If no options, it falls back to product.id, but since we always want to support options now:
@@ -43,6 +44,7 @@ export const CartProvider = ({ children }) => {
 
             return [...prev, {
                 ...product,
+                price: priceToUse,
                 variantId, // Store the variant ID
                 dp_qty: quantity,
                 selectedColor,
@@ -241,7 +243,7 @@ export const CartProvider = ({ children }) => {
         }
     };
 
-    const prepareWhatsAppCheckout = async () => {
+    const prepareWhatsAppCheckout = async (paymentMethod = '') => {
         if (!currentUser) {
             openAuthModal();
             return { success: false, reason: 'login' };
@@ -249,70 +251,53 @@ export const CartProvider = ({ children }) => {
 
         if (cart.length === 0) return { success: false, reason: 'empty' };
 
-        // Generate ID (we still call generateOrderPDF for ID logic, but it won't save)
-        const { invoiceId, pdfFile } = await generateOrderPDF();
+        // Simple Order ID
+        const orderId = `TT-${Date.now().toString().slice(-6)}`;
 
         // Save order to Supabase
         try {
-            import('../supabase/client').then(async ({ supabase }) => {
-                const { error } = await supabase.from('orders').insert([{
-                    user_id: currentUser.uid || currentUser.id,
-                    items: cart,
-                    total_amount: total,
-                    status: 'pending'
-                }]);
+            const { supabase } = await import('../supabase/client');
+            const { error } = await supabase.from('orders').insert([{
+                user_id: currentUser.uid || currentUser.id,
+                items: cart,
+                total_amount: total,
+                status: 'pending',
+                payment_method: paymentMethod
+            }]);
 
-                if (error) {
-                    console.error("Failed to save order to database:", error);
-                    // We might choose to alert the user, but for now we log it.
-                    // If saving fails, we arguably still want to let them buy via WhatsApp,
-                    // but the dashboard won't see it.
-                } else {
-                    console.log("Order saved to database successfully.");
-                    // Optional: Clear cart here if you want to force empty cart after order
-                    // clearCart(); 
-                }
-            });
+            if (error) console.error("Database save error:", error);
         } catch (error) {
-            console.error("Error saving order:", error);
+            console.error("Supabase error:", error);
         }
 
-        // Just log the order locally or do nothing as we are static
-        console.log("Order prepared for WhatsApp:", invoiceId);
-
         const phoneNumber = "967770822310";
-        let message = `مرحباً، أود إتمام الطلب من متجر تايم تك:
+        let message = `مرحباً تايم تك، أود تأكيد طلبي الجديد:
 
-بيانات العميل:
+*بيانات العميل:*
 الاسم: ${currentUser.name}
-العنوان: ${currentUser.governorate} - ${currentUser.district} - ${currentUser.neighborhood}
-الواتساب: ${currentUser.whatsapp}
+العنوان: ${currentUser.governorate} - ${currentUser.district}
+الرقم: ${currentUser.whatsapp}
 
-الطلب رقم: ${invoiceId || 'N/A'}
-----------------
+*تفاصيل الدفع:*
+الطريقة: ${paymentMethod || 'لم تحدد'}
+
+*الطلب (#${orderId}):*
 `;
 
         cart.forEach((item, index) => {
-            let itemDetails = `${index + 1}. [ #${item.displayId || '---'} ] ${item.name} (×${item.dp_qty})`;
+            message += `${index + 1}. ${item.name} (×${item.dp_qty})`;
             if (item.selectedColor || item.selectedMaterial) {
-                itemDetails += ` (`;
-                if (item.selectedColor) itemDetails += `اللون: ${item.selectedColor}`;
-                if (item.selectedColor && item.selectedMaterial) itemDetails += ` - `;
-                if (item.selectedMaterial) itemDetails += `السوار: ${item.selectedMaterial}`;
-                itemDetails += `)`;
+                message += ` [${[item.selectedColor, item.selectedMaterial].filter(Boolean).join(' - ')}]`;
             }
-            itemDetails += ` - ${(item.price * item.dp_qty).toLocaleString()} ر.س\n`;
-            message += itemDetails;
+            message += ` - ${(item.price * item.dp_qty).toLocaleString()} ر.س\n`;
         });
 
         message += `
-----------------
-الإجمالي الكلي: ${total.toLocaleString()} ر.س
+*الإجمالي الكلي: ${total.toLocaleString()} ر.س*
 `;
 
         const url = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
-
-        return { success: true, url, invoiceId };
+        return { success: true, url, invoiceId: orderId };
     };
 
     return (
