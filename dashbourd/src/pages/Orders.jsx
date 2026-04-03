@@ -43,10 +43,15 @@ const Orders = () => {
             if (searchQuery) {
                 // If it's a full UUID, search by ID. Otherwise, search by profile name/whatsapp.
                 const isUUID = searchQuery.length === 36 && /^[0-9a-f-]+$/i.test(searchQuery);
+                const isNumericSearch = /^\d+$/.test(searchQuery.replace(/^ord/i, ''));
 
                 if (isUUID) {
                     query = query.select('*, profiles(full_name, email, whatsapp, governorate, district, neighborhood)', { count: 'exact' })
                         .eq('id', searchQuery);
+                } else if (isNumericSearch) {
+                    const orderNum = parseInt(searchQuery.replace(/^ord/i, ''));
+                    query = query.select('*, profiles(full_name, email, whatsapp, governorate, district, neighborhood)', { count: 'exact' })
+                        .eq('order_number', orderNum);
                 } else {
                     // Use !inner to filter the main table based on the join
                     query = query.select('*, profiles!inner(full_name, email, whatsapp, governorate, district, neighborhood)', { count: 'exact' })
@@ -249,7 +254,7 @@ const Orders = () => {
     };
 
     const generateInvoice = async (order) => {
-        const invoiceId = order.id.substring(0, 8).toUpperCase();
+        const invoiceId = `ORD${order.order_number}`;
         const dateStr = new Date(order.created_at).toLocaleDateString('ar-SA');
         const profiles = order.profiles || {};
 
@@ -511,7 +516,7 @@ const Orders = () => {
                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '20px', marginBottom: '20px' }}>
                                             <div>
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '5px' }}>
-                                                    <span style={{ fontSize: '1.2rem', fontWeight: '800', color: 'var(--primary)' }}>#{order.id.substring(0, 8)}</span>
+                                                    <span style={{ fontSize: '1.2rem', fontWeight: '800', color: 'var(--primary)' }}>ORD{order.order_number}</span>
                                                     <span style={{
                                                         padding: '4px 10px',
                                                         borderRadius: '50px',

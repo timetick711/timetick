@@ -72,8 +72,8 @@ export const CartProvider = ({ children }) => {
 
     const total = cart.reduce((sum, item) => sum + (item.price * item.dp_qty), 0);
 
-    const generateOrderPDF = async () => {
-        const invoiceId = `INV-${Date.now().toString().slice(-6)}`;
+    const generateOrderPDF = async (orderNumber) => {
+        const invoiceId = orderNumber || `ORD-${Date.now().toString().slice(-6)}`;
 
         // Create a hidden div for the invoice
         const invoiceDiv = document.createElement('div');
@@ -232,10 +232,10 @@ export const CartProvider = ({ children }) => {
             const pdfBlob = pdf.output('blob');
             const pdfFile = new File([pdfBlob], `TimeTick-Invoice-${invoiceId}.pdf`, { type: 'application/pdf' });
 
-            // pdf.save(`TimeTick-Invoice-${invoiceId}.pdf`); // Disabled per user request
+            // pdf.save(`${invoiceId}.pdf`); // Disabled per user request
 
             document.body.removeChild(invoiceDiv);
-            return { invoiceId, pdfFile };
+            return { invoiceId: orderNumber || invoiceId, pdfFile };
         } catch (error) {
             console.error('PDF Error:', error);
             if (document.body.contains(invoiceDiv)) document.body.removeChild(invoiceDiv);
@@ -251,21 +251,30 @@ export const CartProvider = ({ children }) => {
 
         if (cart.length === 0) return { success: false, reason: 'empty' };
 
-        // Simple Order ID
-        const orderId = `TT-${Date.now().toString().slice(-6)}`;
-
         // Save order to Supabase
+        let orderId = `ORD-${Date.now().toString().slice(-6)}`;
         try {
             const { supabase } = await import('../supabase/client');
-            const { error } = await supabase.from('orders').insert([{
+            const { data, error } = await supabase.from('orders').insert([{
                 user_id: currentUser.uid || currentUser.id,
+                customer_name: currentUser.name,
+                customer_phone: currentUser.whatsapp,
+                customer_address: {
+                    governorate: currentUser.governorate,
+                    district: currentUser.district,
+                    neighborhood: currentUser.neighborhood
+                },
                 items: cart,
                 total_amount: total,
                 status: 'pending',
                 payment_method: paymentMethod
-            }]);
+            }]).select('order_number').single();
 
-            if (error) console.error("Database save error:", error);
+            if (error) {
+                console.error("Database save error:", error);
+            } else if (data && data.order_number) {
+                orderId = `ORD${data.order_number}`;
+            }
         } catch (error) {
             console.error("Supabase error:", error);
         }

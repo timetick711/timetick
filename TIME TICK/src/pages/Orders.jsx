@@ -156,7 +156,7 @@ export default function Orders() {
                                         </div>
                                         <div>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '2px' }}>
-                                                <h3 style={{ fontSize: '0.95rem', fontWeight: 'bold', margin: 0 }}>#{order.id.slice(-6).toUpperCase()}</h3>
+                                                <h3 style={{ fontSize: '0.95rem', fontWeight: 'bold', margin: 0 }}>ORD{order.order_number}</h3>
                                                 <span style={{
                                                     fontSize: '0.7rem',
                                                     padding: '2px 8px',
