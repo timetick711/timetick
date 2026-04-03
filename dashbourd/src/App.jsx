@@ -12,6 +12,7 @@ import TopProgressBar from './components/TopProgressBar';
 import Users from './pages/Users';
 import Orders from './pages/Orders';
 import Home from './pages/Home';
+import Settings from './pages/Settings';
 
 function App() {
   return (
@@ -33,6 +34,7 @@ function App() {
                     <Route path="/orders" element={<Orders />} />
 
                     <Route path="/users" element={<Users />} />
+                    <Route path="/settings" element={<Settings />} />
                   </Routes>
                 </DashboardLayout>
               </ProtectedRoute>

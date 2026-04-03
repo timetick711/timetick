@@ -1,23 +1,46 @@
 import { useState, useEffect } from 'react';
+import { supabase } from '../supabase/client';
 import heroImage1 from '../assets/hero-watch.png';
 import heroImage2 from '../assets/hero-watch-2.png';
 import heroImage3 from '../assets/hero-watch-3.png';
 
-const slides = [
+const defaultSlides = [
     { id: 1, image: heroImage1, title: 'كلاسيك', subtitle: 'الزمن .. بمنظور فني' },
     { id: 2, image: heroImage2, title: 'أناقة', subtitle: 'تميز بلا حدود' },
     { id: 3, image: heroImage3, title: 'عصرية', subtitle: 'تكنولوجيا المستقبل' },
 ];
 
 export default function Hero() {
+    const [slides, setSlides] = useState(defaultSlides);
     const [currentSlide, setCurrentSlide] = useState(0);
 
     useEffect(() => {
+        const fetchHeroSlides = async () => {
+            try {
+                const { data, error } = await supabase
+                    .from('site_settings')
+                    .select('value')
+                    .eq('key', 'hero_slides')
+                    .single();
+
+                if (data && Array.isArray(data.value) && data.value.length > 0) {
+                    setSlides(data.value);
+                }
+            } catch (err) {
+                console.error("Hero fecth error:", err);
+            }
+        };
+
+        fetchHeroSlides();
+    }, []);
+
+    useEffect(() => {
+        if (slides.length <= 1) return;
         const timer = setInterval(() => {
             setCurrentSlide((prev) => (prev + 1) % slides.length);
-        }, 5000); // Slower transition for background
+        }, 5000); 
         return () => clearInterval(timer);
-    }, []);
+    }, [slides.length]);
 
     return (
         <div style={{
@@ -104,18 +127,19 @@ export default function Hero() {
                                 {slide.subtitle}
                             </span>
                         </h1>
+
+                        <p style={{
+                            fontSize: '1.1rem',
+                            color: '#e0e0e0',
+                            maxWidth: '600px',
+                            textShadow: '0 2px 5px rgba(0,0,0,0.8)',
+                            marginBottom: '30px',
+                            margin: '0 auto 30px'
+                        }}>
+                            {slide.description || 'مجموعة حصرية تجمع بين أصالة الماضي وتقنيات المستقبل'}
+                        </p>
                     </div>
                 ))}
-
-                <p style={{
-                    fontSize: '1.2rem',
-                    color: '#e0e0e0',
-                    maxWidth: '600px',
-                    textShadow: '0 2px 5px rgba(0,0,0,0.8)',
-                    marginBottom: '30px'
-                }}>
-                    مجموعة حصرية تجمع بين أصالة الماضي وتقنيات المستقبل
-                </p>
 
                 <div style={{ display: 'flex', gap: '20px' }}>
                     <button

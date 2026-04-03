@@ -13,7 +13,8 @@ import {
     ShoppingCart,
     Users,
     Bell,
-    Plus
+    Plus,
+    Settings as SettingsIcon
 } from 'lucide-react';
 
 const logo = '/logo.png';
@@ -103,6 +104,7 @@ const DashboardLayout = ({ children }) => {
         { path: '/products', label: 'المنتجات', icon: ShoppingBag },
         { path: '/orders', label: 'الطلبات', icon: ShoppingCart, badge: pendingCount > 0 ? pendingCount : null },
         { path: '/users', label: 'المستخدمين', icon: Users },
+        { path: '/settings', label: 'الإعدادات', icon: SettingsIcon },
     ];
 
     return (
