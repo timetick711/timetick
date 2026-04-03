@@ -85,11 +85,21 @@ const Settings = () => {
                 .select()
                 .single();
 
-            if (error) throw error;
+            if (error) {
+                console.error("Supabase Insert Error Detail:", error);
+                throw error;
+            }
             setHeroSlides([...heroSlides, data]);
         } catch (error) {
-            console.error("Add error:", error);
-            Swal.fire({ icon: 'error', title: 'خطأ', text: 'فشل إضافة سلايد جديد', background: '#141414', color: '#fff' });
+            console.error("Add error full object:", error);
+            Swal.fire({ 
+                icon: 'error', 
+                title: 'خطأ في قاعدة البيانات', 
+                text: `فشل الإضافة: ${error.message || 'تأكد من تشغيل كود SQL في Supabase'}`,
+                footer: error.details ? `Details: ${error.details}` : '',
+                background: '#141414', 
+                color: '#fff' 
+            });
         } finally {
             stopLoading();
         }
@@ -141,7 +151,10 @@ const Settings = () => {
             const results = await Promise.all(promises);
             const errors = results.filter(r => r.error);
 
-            if (errors.length > 0) throw errors[0].error;
+            if (errors.length > 0) {
+                console.error("Save Errors:", errors);
+                throw errors[0].error;
+            }
 
             Swal.fire({
                 icon: 'success',

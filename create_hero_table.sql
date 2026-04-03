@@ -1,5 +1,6 @@
--- 1. Drop existing 'site_settings' table
+-- 1. Drop existing tables
 DROP TABLE IF EXISTS public.site_settings CASCADE;
+DROP TABLE IF EXISTS public.hero CASCADE;
 
 -- 2. Create 'hero' table for dynamic slides
 CREATE TABLE public.hero (
@@ -15,19 +16,26 @@ CREATE TABLE public.hero (
 ALTER TABLE public.hero ENABLE ROW LEVEL SECURITY;
 
 -- 4. Set Policies
--- Allow anyone to read slides (for the store)
+-- Allow anyone (public/anon) to read slides
 CREATE POLICY "Allow public read access"
 ON public.hero
 FOR SELECT
 USING (true);
 
--- Allow authenticated admins to full access (for the dashboard)
-CREATE POLICY "Allow full access for authenticated users"
+-- Allow anyone (including anon for the dashboard) to manage slides
+-- Note: In a production app with Supabase Auth, we would restrict this to 'authenticated'
+-- but since your dashboard uses a custom login system, we will allow 'anon' access.
+CREATE POLICY "Allow public all access"
 ON public.hero
 FOR ALL
-USING (auth.role() = 'authenticated')
-WITH CHECK (auth.role() = 'authenticated');
+USING (true)
+WITH CHECK (true);
 
 -- 5. Enable Realtime
 ALTER PUBLICATION supabase_realtime ADD TABLE public.hero;
 ALTER TABLE public.hero REPLICA IDENTITY FULL;
+
+-- 6. Explicitly Grant permissions for anon/authenticated roles
+GRANT ALL ON TABLE public.hero TO anon;
+GRANT ALL ON TABLE public.hero TO authenticated;
+GRANT ALL ON TABLE public.hero TO service_role;
