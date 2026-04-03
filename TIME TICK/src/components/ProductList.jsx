@@ -127,9 +127,9 @@ export default function ProductList() {
                 style={{ textAlign: 'center', marginBottom: '50px' }}
             >
                 <h2 style={{
-                    fontSize: '3rem',
+                    fontSize: window.innerWidth < 480 ? '2rem' : '3rem',
                     color: 'var(--text-main)',
-                    marginBottom: '15px'
+                    marginBottom: '10px'
                 }}>
                     تشكيلة <span style={{ color: 'var(--primary)' }}>حصرية</span>
                 </h2>
@@ -143,15 +143,17 @@ export default function ProductList() {
                 initial={{ opacity: 0, scale: 0.95 }}
                 whileInView={{ opacity: 1, scale: 1 }}
                 viewport={{ once: true }}
-                className="glass-panel"
+                className="glass-panel filter-bar"
                 style={{
-                    padding: '25px',
+                    padding: '15px',
                     marginBottom: '40px',
                     display: 'flex',
                     flexWrap: 'wrap',
-                    gap: '30px',
+                    gap: window.innerWidth < 480 ? '10px' : '15px',
                     alignItems: 'center',
-                    justifyContent: 'center'
+                    justifyContent: 'center',
+                    maxWidth: '100%',
+                    overflow: 'hidden'
                 }}
             >
                 {/* Type Filter */}

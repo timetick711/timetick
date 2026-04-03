@@ -65,13 +65,14 @@ export default function ProductCard({ product }) {
                 overflow: 'hidden',
                 display: 'flex',
                 flexDirection: 'column',
-                height: '480px',
+                minHeight: '420px', // Standard height for desktop
+                height: '100%', // Use full row height
                 position: 'relative'
             }}
         >
             {/* Media Container */}
             <div style={{
-                height: '55%',
+                aspectRatio: '1/1', // Use square aspect ratio for consistency
                 position: 'relative',
                 background: '#000',
                 overflow: 'hidden'
@@ -214,9 +215,9 @@ export default function ProductCard({ product }) {
                     <p 
                         className="product-card-desc"
                         style={{
-                            color: 'var(--text-dim)', fontSize: '0.9rem', lineHeight: '1.5',
-                            display: '-webkit-box', WebkitLineClamp: 3, lineClamp: 3, WebkitBoxOrient: 'vertical',
-                            overflow: 'hidden', height: '4.5em'
+                            color: 'var(--text-dim)', fontSize: '0.85rem', lineHeight: '1.4',
+                            display: '-webkit-box', WebkitLineClamp: 2, lineClamp: 2, WebkitBoxOrient: 'vertical',
+                            overflow: 'hidden', height: '2.8em' // Stabilize text height
                         }}
                     >
                         {product.description}

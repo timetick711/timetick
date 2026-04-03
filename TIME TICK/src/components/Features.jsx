@@ -13,9 +13,9 @@ export default function Features() {
         <div className="container" style={{ marginBottom: '80px' }}>
             <div className="glass-panel" style={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-                gap: '40px',
-                padding: '40px',
+                gridTemplateColumns: window.innerWidth < 480 ? '1fr' : 'repeat(auto-fit, minmax(200px, 1fr))',
+                gap: '20px',
+                padding: window.innerWidth < 480 ? '20px' : '40px',
                 textAlign: 'center'
             }}>
                 {features.map((feature, index) => (

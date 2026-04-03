@@ -166,14 +166,17 @@ export default function Navbar() {
         <>
             <nav className="glass-panel" style={{
                 position: 'fixed',
-                top: '10px',
+                top: isMobile ? '0' : '10px',
+                left: isMobile ? '0' : '10px',
+                right: isMobile ? '0' : '10px',
                 zIndex: 1000,
-                width: '100%',
-                padding: '10px 40px',
+                width: isMobile ? '100%' : 'calc(100% - 20px)',
+                padding: isMobile ? '10px 15px' : '10px 40px',
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center',
-                height: '70px'
+                height: '70px',
+                borderRadius: isMobile ? '0' : 'var(--radius)'
             }}>
                 {/* Desktop LAYOUT: LEFT (Logo - Position swapped) */}
                 {!isMobile && (
