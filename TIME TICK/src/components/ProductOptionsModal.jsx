@@ -89,32 +89,15 @@ export default function ProductOptionsModal({ isOpen, onClose, product, onConfir
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="modal-overlay"
-                style={{
-                    position: 'fixed',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    background: 'var(--bg-main)', // Full opaque background for full screen
-                    zIndex: 9999, // High z-index to stay on top
-                    display: 'flex',
-                    flexDirection: 'column',
-                    overflowY: 'auto'
-                }}
+                className="custom-modal-overlay"
             >
-                <div style={{
-                    maxWidth: '800px',
-                    width: '100%',
-                    margin: '0 auto',
-                    padding: '40px 20px',
-                    flex: 1,
-                    display: 'flex',
-                    flexDirection: 'column'
-                }}>
-
+                <div className="custom-modal-container">
+                    {/* Header */}
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px' }}>
-                        <h2 style={{ margin: 0, fontSize: '1.8rem' }}>تخصيص الطلب</h2>
+                        <div>
+                            <h2 style={{ margin: 0, fontSize: '2rem', fontWeight: '800' }}>تخصيص طلبك</h2>
+                            <p style={{ color: 'var(--text-dim)', margin: '5px 0 0' }}>حدد المواصفات التي تناسب ذوقك</p>
+                        </div>
                         <button
                             onClick={onClose}
                             style={{
@@ -122,220 +105,210 @@ export default function ProductOptionsModal({ isOpen, onClose, product, onConfir
                                 border: '1px solid var(--border-color)',
                                 color: 'var(--text-main)',
                                 cursor: 'pointer',
-                                padding: '10px',
+                                padding: '12px',
                                 borderRadius: '50%',
                                 display: 'flex',
                                 alignItems: 'center',
-                                justifyContent: 'center'
+                                justifyContent: 'center',
+                                transition: '0.3s'
                             }}
+                            onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
+                            onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
                         >
                             <X size={24} />
                         </button>
                     </div>
 
-                    <div style={{ display: 'flex', gap: '30px', marginBottom: '40px', flexWrap: 'wrap' }}>
-                        <div style={{
-                            width: '150px',
-                            height: '150px',
-                            borderRadius: '20px',
-                            overflow: 'hidden',
-                            border: '1px solid var(--border-color)',
-                            flexShrink: 0,
-                            boxShadow: '0 10px 30px rgba(0,0,0,0.2)'
-                        }}>
-                            <img
-                                src={product.imageUrl || product.image}
-                                alt={product.name}
-                                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                            />
-                        </div>
-                        <div style={{ flex: 1 }}>
-                            <h3 style={{ margin: '0 0 10px', fontSize: '1.8rem' }}>{product.name}</h3>
-                            <p style={{ color: 'var(--text-dim)', marginBottom: '15px', lineHeight: '1.6' }}>
-                                {product.description}
-                            </p>
-                            <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--primary)' }}>
-                                {getCurrentPrice().toLocaleString()} <span style={{ fontSize: '1rem' }}>ر.س</span>
+                    <div className="custom-grid">
+                        {/* Left Side: Preview */}
+                        <div className="preview-pane">
+                            <div className="preview-image-wrapper">
+                                <img
+                                    src={product.imageUrl || product.image}
+                                    alt={product.name}
+                                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                />
                             </div>
-                        </div>
-                    </div>
-
-                    <div style={{ background: 'var(--bg-card)', padding: '30px', borderRadius: '20px', border: '1px solid var(--border-color)', marginBottom: '30px' }}>
-                        {/* Colors */}
-                        {product.colors && product.colors.length > 0 && (
-                            <div style={{ marginBottom: '30px' }}>
-                                <label style={{ display: 'block', marginBottom: '15px', fontWeight: 'bold', fontSize: '1.1rem' }}>أختر اللون</label>
-                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '15px' }}>
-                                    {product.colors.map(color => (
-                                        <button
-                                            key={color}
-                                            onClick={() => { setSelectedColor(color); setError(''); setSuccess(''); }}
-                                            style={{
-                                                padding: '12px 24px',
-                                                borderRadius: '12px',
-                                                border: selectedColor === color ? '1px solid var(--primary)' : '1px solid var(--border-color)',
-                                                background: selectedColor === color ? 'var(--primary)' : 'rgba(255,255,255,0.03)',
-                                                color: selectedColor === color ? '#000' : 'var(--text-main)',
-                                                cursor: 'pointer',
-                                                transition: '0.2s',
-                                                fontSize: '1rem',
-                                                fontWeight: selectedColor === color ? 'bold' : 'normal'
-                                            }}
-                                        >
-                                            {color}
-                                        </button>
-                                    ))}
+                            <div style={{ marginTop: '24px', textAlign: 'center' }}>
+                                <h3 style={{ fontSize: '1.5rem', marginBottom: '8px' }}>{product.name}</h3>
+                                <div style={{ fontSize: '1.8rem', fontWeight: '800', color: 'var(--primary)' }}>
+                                    {getCurrentPrice().toLocaleString()} <span style={{ fontSize: '1rem', fontWeight: '400' }}>ر.س</span>
                                 </div>
                             </div>
-                        )}
+                        </div>
 
-                        {/* Materials */}
-                        {product.materials && product.materials.length > 0 && (
-                            <div style={{ marginBottom: '30px' }}>
-                                <label style={{ display: 'block', marginBottom: '15px', fontWeight: 'bold', fontSize: '1.1rem' }}>أختر مادة السوار</label>
-                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '15px' }}>
-                                    {product.materials.map(material => (
+                        {/* Right Side: Controls */}
+                        <div className="controls-pane">
+                            <div className="glass-panel" style={{ padding: '32px', marginBottom: '32px' }}>
+                                {/* Colors */}
+                                {product.colors && product.colors.length > 0 && (
+                                    <div className="option-group">
+                                        <label className="option-label">اختر اللون</label>
+                                        <div className="chips-container">
+                                            {product.colors.map(color => (
+                                                <button
+                                                    key={color}
+                                                    onClick={() => { setSelectedColor(color); setError(''); setSuccess(''); }}
+                                                    className={`option-chip ${selectedColor === color ? 'active' : ''}`}
+                                                >
+                                                    {color}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Materials */}
+                                {product.materials && product.materials.length > 0 && (
+                                    <div className="option-group">
+                                        <label className="option-label">مادة السوار</label>
+                                        <div className="chips-container">
+                                            {product.materials.map(material => (
+                                                <button
+                                                    key={material}
+                                                    onClick={() => { setSelectedMaterial(material); setError(''); setSuccess(''); }}
+                                                    className={`option-chip ${selectedMaterial === material ? 'active' : ''}`}
+                                                >
+                                                    {material}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Quantity */}
+                                <div className="option-group" style={{ marginBottom: 0 }}>
+                                    <label className="option-label">الكمية</label>
+                                    <div style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '24px',
+                                        background: 'rgba(255,255,255,0.03)',
+                                        padding: '10px',
+                                        borderRadius: '16px',
+                                        width: 'fit-content',
+                                        border: '1px solid var(--border-color)'
+                                    }}>
                                         <button
-                                            key={material}
-                                            onClick={() => { setSelectedMaterial(material); setError(''); setSuccess(''); }}
+                                            onClick={() => setQuantity(Math.max(1, quantity - 1))}
                                             style={{
-                                                padding: '12px 24px',
+                                                width: '40px', height: '40px',
                                                 borderRadius: '12px',
-                                                border: selectedMaterial === material ? '1px solid var(--primary)' : '1px solid var(--border-color)',
-                                                background: selectedMaterial === material ? 'var(--primary)' : 'rgba(255,255,255,0.03)',
-                                                color: selectedMaterial === material ? '#000' : 'var(--text-main)',
+                                                background: 'var(--bg-card)',
+                                                color: 'var(--text-main)',
+                                                border: '1px solid var(--border-color)',
                                                 cursor: 'pointer',
-                                                transition: '0.2s',
-                                                fontSize: '1rem',
-                                                fontWeight: selectedMaterial === material ? 'bold' : 'normal'
+                                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                transition: '0.2s'
                                             }}
+                                            onMouseEnter={(e) => e.currentTarget.style.borderColor = 'var(--primary)'}
+                                            onMouseLeave={(e) => e.currentTarget.style.borderColor = 'var(--border-color)'}
                                         >
-                                            {material}
+                                            <Minus size={18} />
                                         </button>
-                                    ))}
+                                        <span style={{ fontSize: '1.5rem', fontWeight: '700', minWidth: '30px', textAlign: 'center' }}>
+                                            {quantity}
+                                        </span>
+                                        <button
+                                            onClick={() => setQuantity(quantity + 1)}
+                                            style={{
+                                                width: '40px', height: '40px',
+                                                borderRadius: '12px',
+                                                background: 'var(--bg-card)',
+                                                color: 'var(--text-main)',
+                                                border: '1px solid var(--border-color)',
+                                                cursor: 'pointer',
+                                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                transition: '0.2s'
+                                            }}
+                                            onMouseEnter={(e) => e.currentTarget.style.borderColor = 'var(--primary)'}
+                                            onMouseLeave={(e) => e.currentTarget.style.borderColor = 'var(--border-color)'}
+                                        >
+                                            <Plus size={18} />
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
-                        )}
 
-                        {/* Quantity */}
-                        <div>
-                            <label style={{ display: 'block', marginBottom: '15px', fontWeight: 'bold', fontSize: '1.1rem' }}>الكمية</label>
-                            <div style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '20px',
-                                background: 'var(--bg-main)',
-                                padding: '8px',
-                                borderRadius: '15px',
-                                width: 'fit-content',
-                                border: '1px solid var(--border-color)'
-                            }}>
+                            {/* Messages */}
+                            <AnimatePresence>
+                                {error && (
+                                    <motion.div
+                                        initial={{ opacity: 0, y: -10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        style={{
+                                            color: '#ff6b6b', background: 'rgba(255,107,107,0.1)',
+                                            padding: '16px', borderRadius: '12px', marginBottom: '20px',
+                                            textAlign: 'center', border: '1px solid rgba(255,107,107,0.2)'
+                                        }}
+                                    >
+                                        {error}
+                                    </motion.div>
+                                )}
+                                {success && (
+                                    <motion.div
+                                        initial={{ opacity: 0, y: -10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        style={{
+                                            color: '#4ecb71', background: 'rgba(78, 203, 113, 0.1)',
+                                            padding: '16px', borderRadius: '12px', marginBottom: '20px',
+                                            textAlign: 'center', border: '1px solid rgba(78, 203, 113, 0.2)'
+                                        }}
+                                    >
+                                        {success}
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+
+                            {/* Actions */}
+                            <div style={{ display: 'flex', gap: '16px', flexDirection: 'column' }}>
                                 <button
-                                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                                    onClick={handleConfirm}
+                                    className="btn-primary"
                                     style={{
-                                        padding: '12px',
-                                        borderRadius: '10px',
-                                        background: 'var(--bg-card)',
-                                        color: 'var(--text-main)',
-                                        border: 'none',
-                                        cursor: 'pointer',
-                                        display: 'flex'
+                                        width: '100%',
+                                        justifyContent: 'center',
+                                        padding: '20px',
+                                        fontSize: '1.2rem',
+                                        borderRadius: '16px',
+                                        boxShadow: '0 10px 20px rgba(212, 175, 55, 0.2)'
                                     }}
                                 >
-                                    <Minus size={20} />
+                                    <ShoppingCart size={24} />
+                                    <span>إضافة وإنهاء - {(getCurrentPrice() * quantity).toLocaleString()} ر.س</span>
                                 </button>
-                                <span style={{ fontSize: '1.4rem', fontWeight: 'bold', minWidth: '40px', textAlign: 'center' }}>
-                                    {quantity}
-                                </span>
-                                <button
-                                    onClick={() => setQuantity(quantity + 1)}
-                                    style={{
-                                        padding: '12px',
-                                        borderRadius: '10px',
-                                        background: 'var(--bg-card)',
-                                        color: 'var(--text-main)',
-                                        border: 'none',
-                                        cursor: 'pointer',
-                                        display: 'flex'
-                                    }}
-                                >
-                                    <Plus size={20} />
-                                </button>
+
+                                {((product.colors && product.colors.length > 1) || (product.materials && product.materials.length > 1)) && (
+                                    <button
+                                        onClick={handleAddAnother}
+                                        style={{
+                                            width: '100%',
+                                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                            gap: '12px', padding: '18px', fontSize: '1.1rem',
+                                            background: 'rgba(255,255,255,0.02)',
+                                            border: '2px solid var(--primary)',
+                                            color: 'var(--primary)',
+                                            borderRadius: '16px',
+                                            cursor: 'pointer',
+                                            fontWeight: '700',
+                                            transition: '0.3s'
+                                        }}
+                                        onMouseEnter={(e) => {
+                                            e.currentTarget.style.background = 'rgba(212, 175, 55, 0.1)';
+                                            e.currentTarget.style.transform = 'translateY(-2px)';
+                                        }}
+                                        onMouseLeave={(e) => {
+                                            e.currentTarget.style.background = 'rgba(255,255,255,0.02)';
+                                            e.currentTarget.style.transform = 'translateY(0)';
+                                        }}
+                                    >
+                                        <Plus size={24} />
+                                        <span>إضافة واختيار ساعة أخرى</span>
+                                    </button>
+                                )}
                             </div>
                         </div>
                     </div>
-
-                    {error && (
-                        <div style={{
-                            color: '#ff6b6b',
-                            background: 'rgba(255,107,107,0.1)',
-                            padding: '15px',
-                            borderRadius: '12px',
-                            marginBottom: '20px',
-                            fontSize: '1rem',
-                            textAlign: 'center',
-                            border: '1px solid #ff6b6b'
-                        }}>
-                            {error}
-                        </div>
-                    )}
-
-                    {success && (
-                        <div style={{
-                            color: '#4ecb71',
-                            background: 'rgba(78, 203, 113, 0.1)',
-                            padding: '15px',
-                            borderRadius: '12px',
-                            marginBottom: '20px',
-                            fontSize: '1rem',
-                            textAlign: 'center',
-                            border: '1px solid #4ecb71'
-                        }}>
-                            {success}
-                        </div>
-                    )}
-
-                    <div style={{ display: 'flex', gap: '15px', flexDirection: 'column' }}>
-                        <button
-                            onClick={handleConfirm}
-                            className="btn-primary"
-                            style={{
-                                width: '100%',
-                                justifyContent: 'center',
-                                padding: '18px',
-                                fontSize: '1.2rem',
-                                borderRadius: '15px'
-                            }}
-                        >
-                            <ShoppingCart size={24} />
-                            <span>إضافة وإنهاء - {(getCurrentPrice() * quantity).toLocaleString()} ر.س</span>
-                        </button>
-
-                        {((product.colors && product.colors.length > 1) || (product.materials && product.materials.length > 1)) && (
-                            <button
-                                onClick={handleAddAnother}
-                                style={{
-                                    width: '100%',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    gap: '10px',
-                                    padding: '18px',
-                                    fontSize: '1.1rem',
-                                    background: 'transparent',
-                                    border: '2px solid var(--primary)',
-                                    color: 'var(--primary)',
-                                    borderRadius: '15px',
-                                    cursor: 'pointer',
-                                    fontWeight: 'bold'
-                                }}
-                            >
-                                <Plus size={24} />
-                                <span>إضافة واختيار ساعة أخرى</span>
-                            </button>
-                        )}
-                    </div>
-
                 </div>
             </motion.div>
         </AnimatePresence>,

@@ -1,12 +1,14 @@
 import { createContext, useState, useContext, useEffect, useCallback } from 'react';
 import { supabase } from '../supabase/client';
 import emailjs from '@emailjs/browser';
+import { useLoader } from './LoaderContext';
 
 const AuthContext = createContext();
 
 export const useAuth = () => useContext(AuthContext);
 
 export const AuthProvider = ({ children }) => {
+    const { showLoader, hideLoader } = useLoader();
     const [currentUser, setCurrentUser] = useState(null);
     const [loading, setLoading] = useState(true);
     const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
@@ -54,7 +56,12 @@ export const AuthProvider = ({ children }) => {
         // Listen for Supabase Auth changes
         const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
             if ((event === 'SIGNED_IN' || event === 'USER_UPDATED' || event === 'INITIAL_SESSION') && session?.user) {
-                // Removed popup closing code
+                // Determine if it was an OAuth login to show the loader
+                const isOAuth = session.user.app_metadata?.provider === 'google';
+                const isGooglePending = sessionStorage.getItem('isGoogleLoginPending') === 'true';
+                if (event === 'SIGNED_IN' && isOAuth && isGooglePending) {
+                     showLoader('جاري تسجيل الدخول وحفظ البيانات...');
+                }
 
                 // Map Supabase user to our app user format
                 const user = {
@@ -81,6 +88,13 @@ export const AuthProvider = ({ children }) => {
                 } else {
                     setIsAuthModalOpen(false);
                 }
+
+                if (event === 'SIGNED_IN' && isOAuth && isGooglePending) {
+                     sessionStorage.removeItem('isGoogleLoginPending');
+                     // Hide loader after a short delay for smooth transition
+                     setTimeout(hideLoader, 1000);
+                }
+
             } else if (event === 'SIGNED_OUT') {
                 setCurrentUser(null);
                 localStorage.removeItem('time-tick-user');
@@ -128,6 +142,7 @@ export const AuthProvider = ({ children }) => {
     };
 
     const loginWithGoogle = async () => {
+        sessionStorage.setItem('isGoogleLoginPending', 'true');
         const { error } = await supabase.auth.signInWithOAuth({
             provider: 'google',
             options: {
@@ -248,24 +263,53 @@ export const AuthProvider = ({ children }) => {
     };
 
     const logout = async () => {
+        showLoader('جاري تسجيل الخروج...');
         await supabase.auth.signOut(); // Sign out from Supabase
         setCurrentUser(null);
         localStorage.removeItem('time-tick-user');
         setIsLogoutConfirmOpen(false);
         setIsProfileModalOpen(false);
+        setTimeout(hideLoader, 800);
     };
 
     const updateUser = async (updatedData) => {
         if (!currentUser) return;
 
+        // Ensure full_name is updated because onAuthStateChange prioritizes full_name
+        const payloadData = { ...updatedData };
+        if (payloadData.name) {
+            payloadData.full_name = payloadData.name;
+        }
+        
+        // Ensure email isn't updated via metadata
+        delete payloadData.email;
+
         // Update Supabase Auth Metadata (persists across devices)
         const { error } = await supabase.auth.updateUser({
-            data: updatedData
+            data: payloadData
         });
 
         if (error) {
             console.error("Error updating Supabase user metadata:", error);
             throw error;
+        }
+
+        // Also update the 'profiles' table explicitly so the dashboard can see the data
+        const profileUpdateData = {};
+        if (payloadData.name) profileUpdateData.full_name = payloadData.name;
+        if (payloadData.image) profileUpdateData.image = payloadData.image;
+        if (payloadData.whatsapp !== undefined) profileUpdateData.whatsapp = payloadData.whatsapp;
+        if (payloadData.governorate !== undefined) profileUpdateData.governorate = payloadData.governorate;
+        if (payloadData.district !== undefined) profileUpdateData.district = payloadData.district;
+        if (payloadData.neighborhood !== undefined) profileUpdateData.neighborhood = payloadData.neighborhood;
+
+        const { error: profileError } = await supabase
+            .from('profiles')
+            .update(profileUpdateData)
+            .eq('id', currentUser.uid);
+
+        if (profileError) {
+            console.error("Error updating profiles table:", profileError);
         }
 
         const updatedUser = { ...currentUser, ...updatedData };

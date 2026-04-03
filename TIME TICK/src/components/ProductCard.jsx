@@ -3,7 +3,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ShoppingCart, Image as ImageIcon, PlayCircle, Heart, CircleHelp } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useFavorites } from '../context/FavoritesContext';
+import { useVideo } from '../context/VideoContext';
 import { useNavigate } from 'react-router-dom';
+import { useEffect } from 'react';
 import ProductOptionsModal from './ProductOptionsModal';
 
 export default function ProductCard({ product }) {
@@ -16,6 +18,13 @@ export default function ProductCard({ product }) {
     );
     const [isHovered, setIsHovered] = useState(false);
     const [showModal, setShowModal] = useState(false);
+    const { activeVideoId, setActiveVideoId } = useVideo();
+
+    useEffect(() => {
+        if (activeVideoId !== product.id && mediaMode === 'video') {
+            setMediaMode('image');
+        }
+    }, [activeVideoId, product.id, mediaMode]);
 
 
 
@@ -116,6 +125,7 @@ export default function ProductCard({ product }) {
                 {product.video && (
                     <div
                         onClick={(e) => e.stopPropagation()}
+                        className="media-toggles"
                         style={{
                             position: 'absolute',
                             bottom: '10px',
@@ -132,6 +142,7 @@ export default function ProductCard({ product }) {
                     >
                         <button
                             onClick={(e) => { e.stopPropagation(); setMediaMode('image'); }}
+                            className="media-toggle-btn"
                             style={{
                                 background: mediaMode === 'image' ? 'var(--primary)' : 'transparent',
                                 color: mediaMode === 'image' ? '#000' : '#fff',
@@ -149,7 +160,12 @@ export default function ProductCard({ product }) {
                             <ImageIcon size={14} /> صورة
                         </button>
                         <button
-                            onClick={(e) => { e.stopPropagation(); setMediaMode('video'); }}
+                            onClick={(e) => { 
+                                e.stopPropagation(); 
+                                setMediaMode('video'); 
+                                setActiveVideoId(product.id);
+                            }}
+                            className="media-toggle-btn"
                             style={{
                                 background: mediaMode === 'video' ? 'var(--primary)' : 'transparent',
                                 color: mediaMode === 'video' ? '#000' : '#fff',
@@ -173,37 +189,52 @@ export default function ProductCard({ product }) {
             </div>
 
             {/* Content */}
-            <div style={{
-                padding: '20px',
-                flex: 1,
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'space-between',
-                background: 'var(--bg-card)'
-            }}>
+            <div 
+                className="product-card-content"
+                style={{
+                    padding: '20px',
+                    flex: 1,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'space-between',
+                    background: 'var(--bg-card)'
+                }}
+            >
                 <div>
-                    <h3 style={{
-                        fontSize: '1.2rem', fontWeight: '700',
-                        color: 'var(--text-main)', marginBottom: '8px',
-                        whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'
-                    }}>
+                    <h3 
+                        className="product-card-title"
+                        style={{
+                            fontSize: '1.2rem', fontWeight: '700',
+                            color: 'var(--text-main)', marginBottom: '8px',
+                            whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'
+                        }}
+                    >
                         {product.name}
                     </h3>
-                    <p style={{
-                        color: 'var(--text-dim)', fontSize: '0.9rem', lineHeight: '1.5',
-                        display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical',
-                        overflow: 'hidden', height: '4.5em'
-                    }}>
+                    <p 
+                        className="product-card-desc"
+                        style={{
+                            color: 'var(--text-dim)', fontSize: '0.9rem', lineHeight: '1.5',
+                            display: '-webkit-box', WebkitLineClamp: 3, lineClamp: 3, WebkitBoxOrient: 'vertical',
+                            overflow: 'hidden', height: '4.5em'
+                        }}
+                    >
                         {product.description}
                     </p>
                 </div>
 
-                <div style={{
-                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                    marginTop: '15px', paddingTop: '15px',
-                    borderTop: '1px solid var(--border-color)'
-                }}>
-                    <span style={{ fontSize: '1.4rem', fontWeight: '700', color: 'var(--primary)' }}>
+                <div 
+                    className="product-card-actions"
+                    style={{
+                        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                        marginTop: '15px', paddingTop: '15px',
+                        borderTop: '1px solid var(--border-color)'
+                    }}
+                >
+                    <span 
+                        className="product-card-price"
+                        style={{ fontSize: '1.4rem', fontWeight: '700', color: 'var(--primary)' }}
+                    >
                         {(Number(product.price) || 0).toLocaleString()} <span style={{ fontSize: '0.8rem' }}>ر.س</span>
                     </span>
 
@@ -212,7 +243,7 @@ export default function ProductCard({ product }) {
                             whileHover={{ scale: 1.05 }}
                             whileTap={{ scale: 0.95 }}
                             onClick={() => navigate(`/product/${product.id}`)}
-                            className="btn-icon"
+                            className="btn-icon product-card-btn"
                             style={{
                                 padding: '10px', borderRadius: '12px',
                                 background: '#ff4b4b',
@@ -230,7 +261,7 @@ export default function ProductCard({ product }) {
                             whileHover={{ scale: 1.05 }}
                             whileTap={{ scale: 0.95 }}
                             onClick={(e) => { e.stopPropagation(); setShowModal(true); }}
-                            className="btn-primary"
+                            className="btn-primary product-card-btn"
                             style={{
                                 padding: '10px 16px', borderRadius: '12px', fontSize: '0.9rem',
                                 boxShadow: isHovered ? '0 5px 15px rgba(212, 175, 55, 0.4)' : '0 5px 15px rgba(245, 214, 113, 0.4)'

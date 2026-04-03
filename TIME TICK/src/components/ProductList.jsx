@@ -312,11 +312,8 @@ export default function ProductList() {
                                         initial="hidden"
                                         animate="visible"
                                         exit={{ opacity: 0 }}
-                                        style={{
-                                            display: 'grid',
-                                            gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
-                                            gap: '30px'
-                                        }}
+                                        style={{}}
+                                        className="product-grid"
                                     >
                                         {products.map((product, index) => {
                                             if (products.length === index + 1) {

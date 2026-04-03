@@ -3,7 +3,9 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../supabase/client';
 
 import { useCart } from '../context/CartContext';
-import { ShoppingCart, ArrowRight, PlayCircle, Image as ImageIcon } from 'lucide-react';
+import { useVideo } from '../context/VideoContext';
+import { useLoader } from '../context/LoaderContext';
+import { ShoppingCart, ArrowRight, PlayCircle, Image as ImageIcon, Link, Check } from 'lucide-react';
 import { subscribeToProducts, subscribeToProduct } from '../services/productService';
 import ProductCard from '../components/ProductCard';
 import ProductOptionsModal from '../components/ProductOptionsModal';
@@ -12,14 +14,24 @@ const ProductDetails = () => {
     const { id } = useParams();
     const navigate = useNavigate();
     const { addToCart } = useCart();
+    const { showLoader, hideLoader } = useLoader();
     const [product, setProduct] = useState(null);
     const [relatedProducts, setRelatedProducts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [mediaMode, setMediaMode] = useState('image'); // 'image' or 'video'
     const [activeImage, setActiveImage] = useState('');
     const [showModal, setShowModal] = useState(false);
+    const [copied, setCopied] = useState(false);
+    const { activeVideoId, setActiveVideoId } = useVideo();
 
     useEffect(() => {
+        if (activeVideoId !== id && mediaMode === 'video') {
+            setMediaMode('image');
+        }
+    }, [activeVideoId, id, mediaMode]);
+
+    useEffect(() => {
+        showLoader('جاري تحميل تفاصيل المنتج...');
         setLoading(true);
         const unsubscribe = subscribeToProduct(id, (data) => {
             if (data) {
@@ -30,9 +42,11 @@ const ProductDetails = () => {
                 const firstImage = data.imageUrl || (data.images && data.images.length > 0 ? data.images[0] : '');
                 setActiveImage(firstImage);
                 setLoading(false);
+                hideLoader();
             } else {
                 setProduct(null);
                 setLoading(false);
+                hideLoader();
             }
         });
 
@@ -122,11 +136,7 @@ const ProductDetails = () => {
     };
 
     if (loading) {
-        return (
-            <div style={{ padding: '100px', textAlign: 'center' }}>
-                <div className="loader" style={{ margin: '0 auto', width: '50px', height: '50px', border: '4px solid var(--glass-border)', borderTopColor: 'var(--primary)' }} />
-            </div>
-        );
+        return <div style={{ minHeight: '80vh' }}></div>;
     }
 
     if (!product) {
@@ -214,7 +224,10 @@ const ProductDetails = () => {
                                     <ImageIcon size={16} /> صورة
                                 </button>
                                 <button
-                                    onClick={() => setMediaMode('video')}
+                                    onClick={() => { 
+                                        setMediaMode('video'); 
+                                        setActiveVideoId(id);
+                                    }}
                                     style={{
                                         background: mediaMode === 'video' ? 'var(--primary)' : 'transparent',
                                         color: mediaMode === 'video' ? '#000' : '#fff',
@@ -293,13 +306,49 @@ const ProductDetails = () => {
                     </p>
 
                     <div style={{ marginTop: 'auto' }}>
-                        <button
-                            onClick={() => setShowModal(true)}
-                            className="btn-primary"
-                            style={{ width: '100%', justifyContent: 'center', padding: '16px', fontSize: '1.1rem' }}
-                        >
-                            <ShoppingCart size={22} /> إضافة للسلة
-                        </button>
+                        <div style={{ display: 'flex', gap: '10px' }}>
+                            <button
+                                onClick={() => setShowModal(true)}
+                                className="btn-primary"
+                                style={{ flex: 1, justifyContent: 'center', padding: '16px', fontSize: '1.1rem' }}
+                            >
+                                <ShoppingCart size={22} /> إضافة للسلة
+                            </button>
+                            <button
+                                onClick={() => {
+                                    navigator.clipboard.writeText(window.location.href);
+                                    setCopied(true);
+                                    setTimeout(() => setCopied(false), 2000);
+                                }}
+                                style={{
+                                    width: '60px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    borderRadius: 'var(--radius, 12px)',
+                                    border: `1px solid ${copied ? '#10B981' : 'rgba(255,255,255,0.1)'}`,
+                                    color: copied ? '#10B981' : 'var(--text-main)',
+                                    background: copied ? 'rgba(16, 185, 129, 0.1)' : 'rgba(255, 255, 255, 0.05)',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
+                                }}
+                                onMouseEnter={(e) => {
+                                    if (!copied) {
+                                        e.currentTarget.style.borderColor = 'var(--primary)';
+                                        e.currentTarget.style.color = 'var(--primary)';
+                                    }
+                                }}
+                                onMouseLeave={(e) => {
+                                    if (!copied) {
+                                        e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)';
+                                        e.currentTarget.style.color = 'var(--text-main)';
+                                    }
+                                }}
+                                title="نسخ رابط المنتج"
+                            >
+                                {copied ? <Check size={22} /> : <Link size={22} />}
+                            </button>
+                        </div>
                         <ProductOptionsModal
                             isOpen={showModal}
                             onClose={() => setShowModal(false)}
@@ -325,11 +374,7 @@ const ProductDetails = () => {
                     }}>
                         منتجات أخرى قد تعجبك
                     </h2>
-                    <div style={{
-                        display: 'grid',
-                        gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
-                        gap: '30px'
-                    }}>
+                    <div className="product-grid">
                         {relatedProducts.map(p => (
                             <div key={p.id} >
                                 <ProductCard product={p} />

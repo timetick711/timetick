@@ -4,6 +4,8 @@ import { CartProvider } from './context/CartContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { AuthProvider } from './context/AuthContext';
 import { FavoritesProvider } from './context/FavoritesContext';
+import { VideoProvider } from './context/VideoContext';
+import { LoaderProvider } from './context/LoaderContext';
 import Navbar from './components/Navbar';
 import Hero from './components/Hero';
 import Features from './components/Features';
@@ -69,23 +71,27 @@ function App() {
     <Router>
       <ScrollToTop />
       <ThemeProvider>
-        <AuthProvider>
-          <FavoritesProvider>
-            <CartProvider>
-              <SEOHelper />
-              <div className="app-container">
-                <Navbar />
-                <CartSidebar />
-                <AuthModal />
-                <LogoutConfirmModal />
-                <ProfileModal />
-                <FavoritesModal />
-                <AnimatedRoutes />
-                <Footer />
-              </div>
-            </CartProvider>
-          </FavoritesProvider>
-        </AuthProvider>
+        <LoaderProvider>
+          <AuthProvider>
+              <FavoritesProvider>
+                <VideoProvider>
+                  <CartProvider>
+                    <SEOHelper />
+                    <div className="app-container">
+                      <Navbar />
+                      <CartSidebar />
+                      <AuthModal />
+                      <LogoutConfirmModal />
+                      <ProfileModal />
+                      <FavoritesModal />
+                      <AnimatedRoutes />
+                      <Footer />
+                    </div>
+                  </CartProvider>
+                </VideoProvider>
+              </FavoritesProvider>
+          </AuthProvider>
+        </LoaderProvider>
       </ThemeProvider>
     </Router>
   );

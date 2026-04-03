@@ -1,5 +1,6 @@
-import { Trash2, ShoppingBag, X, Loader2 } from 'lucide-react';
+import { Trash2, ShoppingBag, X } from 'lucide-react';
 import { useCart } from '../context/CartContext';
+import { useLoader } from '../context/LoaderContext';
 import { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ClearCartConfirmModal from './ClearCartConfirmModal';
@@ -10,12 +11,12 @@ import { useAuth } from '../context/AuthContext';
 export default function CartSidebar() {
     const { cart, removeFromCart, updateQuantity, total, prepareWhatsAppCheckout, isCartOpen, closeCart, clearCart } = useCart();
     const { currentUser, openAuthModal } = useAuth();
+    const { showLoader, hideLoader } = useLoader();
     const sidebarRef = useRef(null);
     const [isClearConfirmOpen, setIsClearConfirmOpen] = useState(false);
     const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
     const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
     const [whatsappUrl, setWhatsappUrl] = useState('');
-    const [isProcessing, setIsProcessing] = useState(false);
 
     // Close when clicking outside
     useEffect(() => {
@@ -47,19 +48,17 @@ export default function CartSidebar() {
 
     const handleConfirmCheckout = async (paymentMethod) => {
         setIsPaymentModalOpen(false); // Close payment modal first
-        setIsProcessing(true);
+        
+        showLoader('جاري تأكيد الطلب وإتمام العملية...');
 
         const result = await prepareWhatsAppCheckout(paymentMethod);
-
-        // Ensure loading shows for at least a second for "premium" feel
-        await new Promise(resolve => setTimeout(resolve, 1500));
 
         if (result && result.success) {
             setWhatsappUrl(result.url);
             setIsSuccessModalOpen(true);
             clearCart();
         }
-        setIsProcessing(false);
+        hideLoader();
     };
 
     const handleProceedToWhatsApp = () => {
@@ -72,34 +71,6 @@ export default function CartSidebar() {
 
     return (
         <>
-            <AnimatePresence>
-                {isProcessing && (
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        style={{
-                            position: 'fixed',
-                            top: 0,
-                            left: 0,
-                            width: '100%',
-                            height: '100%',
-                            background: 'rgba(0,0,0,0.8)',
-                            backdropFilter: 'blur(8px)',
-                            zIndex: 2000,
-                            display: 'flex',
-                            flexDirection: 'column',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            gap: '20px'
-                        }}
-                    >
-                        <Loader2 className="animate-spin" size={60} color="var(--primary)" />
-                        <h3 style={{ color: '#fff', fontSize: '1.2rem', fontFamily: 'cairo' }}>جاري تجهيز طلبك...</h3>
-                    </motion.div>
-                )}
-            </AnimatePresence>
-
             <ClearCartConfirmModal
                 isOpen={isClearConfirmOpen}
                 onClose={() => setIsClearConfirmOpen(false)}

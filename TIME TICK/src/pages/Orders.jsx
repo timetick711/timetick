@@ -2,10 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Package, Calendar, CreditCard, ChevronDown, ChevronUp, ShoppingBag, Clock, CheckCircle2, XCircle, User } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useLoader } from '../context/LoaderContext';
 import { useNavigate } from 'react-router-dom';
 
 export default function Orders() {
     const { currentUser, openAuthModal } = useAuth();
+    const { showLoader, hideLoader } = useLoader();
     const navigate = useNavigate();
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -18,6 +20,7 @@ export default function Orders() {
         }
 
         const fetchOrders = async () => {
+            showLoader('جاري جلب السجل...');
             try {
                 const { supabase } = await import('../supabase/client');
                 const { data, error } = await supabase
@@ -32,6 +35,7 @@ export default function Orders() {
                 console.error("Error fetching orders:", error);
             } finally {
                 setLoading(false);
+                hideLoader();
             }
         };
 
@@ -52,11 +56,7 @@ export default function Orders() {
     };
 
     if (loading) {
-        return (
-            <div style={{ minHeight: '80vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <div className="loader"></div>
-            </div>
-        );
+        return <div style={{ minHeight: '80vh' }}></div>;
     }
 
     return (

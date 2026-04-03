@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useLoader } from '../context/LoaderContext';
 import { X, User, Mail, Phone, MapPin, Lock, Save } from 'lucide-react';
 
 
 export default function AuthModal() {
     const { isAuthModalOpen, closeAuthModal, register, verifyEmailOtp, resendOtp, login, loginWithGoogle, updateUser, currentUser, isVerifyingOtp: isVerifyingOtpGlobal, pendingUserData } = useAuth();
+    const { showLoader, hideLoader } = useLoader();
     const [isLogin, setIsLogin] = useState(true);
     const [isCompletingProfile, setIsCompletingProfile] = useState(false);
     const [otpArray, setOtpArray] = useState(['', '', '', '', '', '']);
@@ -141,7 +143,10 @@ export default function AuthModal() {
                     return;
                 }
 
+                showLoader('جاري إرسال رمز التحقق إلى بريدك...');
                 const result = await register(formData);
+                hideLoader();
+                
                 if (result.needsConfirmation) {
                     setError(''); // Clear error to show instruction instead
                 } else {
@@ -459,7 +464,10 @@ export default function AuthModal() {
 
                             <button
                                 type="button"
-                                onClick={loginWithGoogle}
+                                onClick={() => {
+                                    showLoader('جاري توجيهك إلى Google...');
+                                    loginWithGoogle().catch(() => hideLoader());
+                                }}
                                 style={{
                                     width: '100%',
                                     padding: '12px',

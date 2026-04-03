@@ -1,12 +1,15 @@
 import { useState, useEffect } from 'react';
 import { X, User, Save, Edit2, Camera, ZoomIn, ZoomOut, Check } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useLoader } from '../context/LoaderContext';
 import ToastNotification from './ToastNotification';
 import Cropper from 'react-easy-crop';
 import { getCroppedImg } from '../utils/cropImage';
+import { uploadToCloudinary } from '../utils/cloudinary';
 
 export default function ProfileModal() {
     const { isProfileModalOpen, closeProfileModal, currentUser, updateUser } = useAuth();
+    const { showLoader, hideLoader } = useLoader();
 
     // Form & UI State
     const [isEditing, setIsEditing] = useState(false);
@@ -82,11 +85,25 @@ export default function ProfileModal() {
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            await updateUser(formData);
+            showLoader('جاري حفظ التعديلات...');
+            
+            let finalData = { ...formData };
+            
+            // Check if there is a new image to upload (base64 from crop)
+            if (finalData.image && finalData.image.startsWith('data:image')) {
+                const uploadedUrl = await uploadToCloudinary(finalData.image, 'image');
+                finalData.image = uploadedUrl;
+            }
+
+            await updateUser(finalData);
+            setFormData(finalData); // Update local form so image is URL now
             setIsEditing(false);
             setToastMessage('تم حفظ التعديلات بنجاح! ✅');
         } catch (error) {
+            console.error(error);
             alert('حدث خطأ أثناء الحفظ');
+        } finally {
+            hideLoader();
         }
     };
 
@@ -334,9 +351,13 @@ export default function ProfileModal() {
                                 type="email"
                                 name="email"
                                 value={formData.email}
-                                onChange={handleChange}
-                                disabled={!isEditing}
-                                style={isEditing ? inputStyle : textStyle}
+                                disabled={true}
+                                style={{
+                                    ...(isEditing ? inputStyle : textStyle),
+                                    opacity: 0.6,
+                                    cursor: 'not-allowed',
+                                    userSelect: 'none'
+                                }}
                             />
                         </div>
 
