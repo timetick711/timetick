@@ -167,7 +167,7 @@ export default function Navbar() {
             <nav className="glass-panel" style={{
                 position: 'fixed',
                 top: '10px',
-                zIndex: 100,
+                zIndex: 1000,
                 width: '100%',
                 padding: '10px 40px',
                 display: 'flex',

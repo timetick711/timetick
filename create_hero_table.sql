@@ -34,8 +34,3 @@ WITH CHECK (true);
 -- 5. Enable Realtime
 ALTER PUBLICATION supabase_realtime ADD TABLE public.hero;
 ALTER TABLE public.hero REPLICA IDENTITY FULL;
-
--- 6. Explicitly Grant permissions for anon/authenticated roles
-GRANT ALL ON TABLE public.hero TO anon;
-GRANT ALL ON TABLE public.hero TO authenticated;
-GRANT ALL ON TABLE public.hero TO service_role;

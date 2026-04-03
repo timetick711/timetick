@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import { supabase } from '../supabase/client';
 import { useLoading } from '../context/LoadingContext';
 import { uploadToCloudinary } from '../utils/cloudinary';
@@ -45,12 +46,24 @@ const Settings = () => {
         
         startLoading();
         try {
-            const imageUrl = await uploadToCloudinary(file, 'banners');
+            // Fix: Cloudinary resource type must be 'image', 'video', or 'auto'
+            const imageUrl = await uploadToCloudinary(file, 'image');
+            
+            // Update UI
             handleSlideChange(id, 'image_url', imageUrl);
+
+            // Update Database immediately to ensure it's saved
+            const { error } = await supabase
+                .from('hero')
+                .update({ image_url: imageUrl })
+                .eq('id', id);
+
+            if (error) throw error;
+
             Swal.fire({
                 icon: 'success',
-                title: 'تم الرفع',
-                text: 'تم رفع الصورة بنجاح!',
+                title: 'تم الرفع والحفظ',
+                text: 'تم رفع الصورة وحفظها في قاعدة البيانات بنجاح!',
                 toast: true,
                 position: 'top-end',
                 showConfirmButton: false,
@@ -60,7 +73,7 @@ const Settings = () => {
             });
         } catch (error) {
             console.error("Upload error:", error);
-            Swal.fire({ icon: 'error', title: 'خطأ', text: 'فشل رفع الصورة', background: '#141414', color: '#fff' });
+            Swal.fire({ icon: 'error', title: 'خطأ', text: 'فشل رفع الصورة: ' + (error.message || ''), background: '#141414', color: '#fff' });
         } finally {
             stopLoading();
         }
@@ -85,21 +98,11 @@ const Settings = () => {
                 .select()
                 .single();
 
-            if (error) {
-                console.error("Supabase Insert Error Detail:", error);
-                throw error;
-            }
+            if (error) throw error;
             setHeroSlides([...heroSlides, data]);
         } catch (error) {
-            console.error("Add error full object:", error);
-            Swal.fire({ 
-                icon: 'error', 
-                title: 'خطأ في قاعدة البيانات', 
-                text: `فشل الإضافة: ${error.message || 'تأكد من تشغيل كود SQL في Supabase'}`,
-                footer: error.details ? `Details: ${error.details}` : '',
-                background: '#141414', 
-                color: '#fff' 
-            });
+            console.error("Add error:", error);
+            Swal.fire({ icon: 'error', title: 'خطأ', text: 'فشل إضافة سلايد جديد', background: '#141414', color: '#fff' });
         } finally {
             stopLoading();
         }
@@ -151,10 +154,7 @@ const Settings = () => {
             const results = await Promise.all(promises);
             const errors = results.filter(r => r.error);
 
-            if (errors.length > 0) {
-                console.error("Save Errors:", errors);
-                throw errors[0].error;
-            }
+            if (errors.length > 0) throw errors[0].error;
 
             Swal.fire({
                 icon: 'success',
@@ -169,6 +169,15 @@ const Settings = () => {
         } finally {
             stopLoading();
         }
+    };
+
+    const [expandedSlides, setExpandedSlides] = useState({});
+
+    const toggleExpand = (id) => {
+        setExpandedSlides(prev => ({
+            ...prev,
+            [id]: !prev[id]
+        }));
     };
 
     if (loading) return null;
@@ -190,89 +199,122 @@ const Settings = () => {
                     </button>
                 </div>
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '25px' }}>
-                    {heroSlides.map((slide, index) => (
-                        <div key={slide.id} style={{ 
-                            padding: '20px', 
-                            background: 'rgba(255,255,255,0.01)', 
-                            borderRadius: '12px', 
-                            border: '1px solid var(--border-color)',
-                            position: 'relative'
-                        }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px' }}>
-                                <span style={{ color: 'var(--primary)', fontWeight: 'bold' }}>سلايد #{index + 1}</span>
-                                {heroSlides.length > 1 && (
-                                    <button onClick={() => removeSlide(slide.id)} style={{ background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer' }}>
-                                        <Trash2 size={18} />
-                                    </button>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                    {heroSlides.map((slide, index) => {
+                        const isExpanded = expandedSlides[slide.id];
+                        return (
+                            <div key={slide.id} style={{ 
+                                background: 'rgba(255,255,255,0.01)', 
+                                borderRadius: '12px', 
+                                border: '1px solid var(--border-color)',
+                                overflow: 'hidden',
+                                transition: 'all 0.3s ease'
+                            }}>
+                                {/* Slide Header - Click to Toggle */}
+                                <div 
+                                    onClick={() => toggleExpand(slide.id)}
+                                    style={{ 
+                                        padding: '15px 20px', 
+                                        display: 'flex', 
+                                        justifyContent: 'space-between', 
+                                        alignItems: 'center',
+                                        cursor: 'pointer',
+                                        background: isExpanded ? 'rgba(212, 175, 55, 0.05)' : 'transparent',
+                                        borderBottom: isExpanded ? '1px solid var(--border-color)' : 'none'
+                                    }}
+                                >
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                                        <span style={{ color: 'var(--primary)', fontWeight: 'bold', fontSize: '1.1rem' }}>سلايد #{index + 1}</span>
+                                        <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>{slide.title || 'بدون عنوان'}</span>
+                                    </div>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                                        {heroSlides.length > 1 && (
+                                            <button 
+                                                onClick={(e) => { e.stopPropagation(); removeSlide(slide.id); }} 
+                                                style={{ background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+                                                title="حذف السلايد"
+                                            >
+                                                <Trash2 size={18} />
+                                            </button>
+                                        )}
+                                        <span style={{ color: 'var(--primary)', transition: 'transform 0.3s', transform: isExpanded ? 'rotate(180deg)' : 'rotate(0)' }}>
+                                            ▼
+                                        </span>
+                                    </div>
+                                </div>
+
+                                {/* Slide Content - Collapsible */}
+                                {isExpanded && (
+                                    <motion.div 
+                                        initial={{ height: 0, opacity: 0 }}
+                                        animate={{ height: 'auto', opacity: 1 }}
+                                        style={{ padding: '20px' }}
+                                    >
+                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px' }}>
+                                            {/* Image Upload */}
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                                <label style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>صورة الخلفية</label>
+                                                <div style={{ 
+                                                    width: '100%', 
+                                                    height: '150px', 
+                                                    borderRadius: '10px', 
+                                                    border: '2px dashed var(--border-color)', 
+                                                    display: 'flex', 
+                                                    alignItems: 'center', 
+                                                    justifyContent: 'center',
+                                                    overflow: 'hidden',
+                                                    position: 'relative'
+                                                }}>
+                                                    {(slide.image_url || slide.image) ? (
+                                                        <img src={slide.image_url || slide.image} alt="Hero" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                                    ) : (
+                                                        <ImageIcon size={40} color="var(--border-color)" />
+                                                    )}
+                                                    <input 
+                                                        type="file" 
+                                                        accept="image/*" 
+                                                        onChange={(e) => handleImageUpload(slide.id, e.target.files[0])}
+                                                        style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', opacity: 0, cursor: 'pointer' }}
+                                                    />
+                                                </div>
+                                                <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textAlign: 'center' }}>انقر للرفع</p>
+                                            </div>
+
+                                            {/* Text Fields */}
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                                                <div>
+                                                    <label style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'block', marginBottom: '8px' }}>العنوان الرئيسي</label>
+                                                    <input 
+                                                        type="text" 
+                                                        value={slide.title} 
+                                                        onChange={(e) => handleSlideChange(slide.id, 'title', e.target.value)}
+                                                        style={{ width: '100%', padding: '10px', background: 'rgba(0,0,0,0.2)', border: '1px solid var(--border-color)', borderRadius: '8px', color: '#fff' }}
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'block', marginBottom: '8px' }}>العنوان الفرعي</label>
+                                                    <input 
+                                                        type="text" 
+                                                        value={slide.subtitle} 
+                                                        onChange={(e) => handleSlideChange(slide.id, 'subtitle', e.target.value)}
+                                                        style={{ width: '100%', padding: '10px', background: 'rgba(0,0,0,0.2)', border: '1px solid var(--border-color)', borderRadius: '8px', color: '#fff' }}
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'block', marginBottom: '8px' }}>الوصف</label>
+                                                    <textarea 
+                                                        value={slide.description || ''} 
+                                                        onChange={(e) => handleSlideChange(slide.id, 'description', e.target.value)}
+                                                        style={{ width: '100%', padding: '10px', background: 'rgba(0,0,0,0.2)', border: '1px solid var(--border-color)', borderRadius: '8px', color: '#fff', minHeight: '60px', fontFamily: 'inherit' }}
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </motion.div>
                                 )}
                             </div>
-
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px' }}>
-                                {/* Image Upload */}
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                                    <label style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>صورة الخلفية</label>
-                                    <div style={{ 
-                                        width: '100%', 
-                                        height: '150px', 
-                                        borderRadius: '10px', 
-                                        border: '2px dashed var(--border-color)', 
-                                        display: 'flex', 
-                                        alignItems: 'center', 
-                                        justifyContent: 'center',
-                                        overflow: 'hidden',
-                                        position: 'relative'
-                                    }}>
-                                        {(slide.image_url || slide.image) ? (
-                                            <img src={slide.image_url || slide.image} alt="Hero" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                                        ) : (
-                                            <ImageIcon size={40} color="var(--border-color)" />
-                                        )}
-                                        <input 
-                                            type="file" 
-                                            accept="image/*" 
-                                            onChange={(e) => handleImageUpload(slide.id, e.target.files[0])}
-                                            style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', opacity: 0, cursor: 'pointer' }}
-                                        />
-                                    </div>
-                                    <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textAlign: 'center' }}>انقر للرفع (يفضل صور عريضة عالية الجودة)</p>
-                                </div>
-
-                                {/* Text Fields */}
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                                    <div>
-                                        <label style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'block', marginBottom: '8px' }}>العنوان الرئيسي</label>
-                                        <input 
-                                            type="text" 
-                                            value={slide.title} 
-                                            onChange={(e) => handleSlideChange(slide.id, 'title', e.target.value)}
-                                            style={{ width: '100%', padding: '10px', background: 'rgba(0,0,0,0.2)', border: '1px solid var(--border-color)', borderRadius: '8px', color: '#fff' }}
-                                            placeholder="مثلاً: كلاسيك"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'block', marginBottom: '8px' }}>العنوان الفرعي</label>
-                                        <input 
-                                            type="text" 
-                                            value={slide.subtitle} 
-                                            onChange={(e) => handleSlideChange(slide.id, 'subtitle', e.target.value)}
-                                            style={{ width: '100%', padding: '10px', background: 'rgba(0,0,0,0.2)', border: '1px solid var(--border-color)', borderRadius: '8px', color: '#fff' }}
-                                            placeholder="مثلاً: الزمن بمنظور فني"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'block', marginBottom: '8px' }}>الوصف</label>
-                                        <textarea 
-                                            value={slide.description || ''} 
-                                            onChange={(e) => handleSlideChange(slide.id, 'description', e.target.value)}
-                                            style={{ width: '100%', padding: '10px', background: 'rgba(0,0,0,0.2)', border: '1px solid var(--border-color)', borderRadius: '8px', color: '#fff', minHeight: '60px', fontFamily: 'inherit' }}
-                                            placeholder="مثلاً: مجموعة حصرية تجمع بين أصالة الماضي..."
-                                        />
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    ))}
+                        );
+                    })}
                 </div>
 
                 <button 

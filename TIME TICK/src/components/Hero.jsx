@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import { supabase } from '../supabase/client';
 import heroImage1 from '../assets/hero-watch.png';
 import heroImage2 from '../assets/hero-watch-2.png';
@@ -11,7 +12,9 @@ const defaultSlides = [
 ];
 
 export default function Hero() {
-    const [slides, setSlides] = useState(defaultSlides);
+    const [slides, setSlides] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [logoLoaded, setLogoLoaded] = useState(false); // New state to handle logo flash
     const [currentSlide, setCurrentSlide] = useState(0);
 
     useEffect(() => {
@@ -24,9 +27,14 @@ export default function Hero() {
 
                 if (data && data.length > 0) {
                     setSlides(data);
+                } else {
+                    setSlides(defaultSlides);
                 }
             } catch (err) {
                 console.error("Hero fetch error:", err);
+                setSlides(defaultSlides);
+            } finally {
+                setTimeout(() => setLoading(false), 1000);
             }
         };
 
@@ -34,12 +42,12 @@ export default function Hero() {
     }, []);
 
     useEffect(() => {
-        if (slides.length <= 1) return;
+        if (slides.length <= 1 || loading) return;
         const timer = setInterval(() => {
             setCurrentSlide((prev) => (prev + 1) % slides.length);
         }, 5000); 
         return () => clearInterval(timer);
-    }, [slides.length]);
+    }, [slides.length, loading]);
 
     return (
         <div style={{
@@ -51,47 +59,117 @@ export default function Hero() {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            marginTop: '0px', // Pull behind flush navbar (approx height)
-            paddingTop: '0px'
+            background: '#0a0a0a'
         }}>
-
-            {/* Background Slideshow */}
-            {slides.map((slide, index) => (
-                <div key={slide.id} style={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    width: '100%',
-                    height: '100%',
-                    opacity: currentSlide === index ? 1 : 0,
-                    transition: 'opacity 1.5s ease-in-out',
-                    zIndex: 0
-                }}>
-                    <div style={{
+            {/* Loading / Glow Layer */}
+            {loading && (
+                <motion.div 
+                    exit={{ opacity: 0 }}
+                    style={{
                         position: 'absolute',
                         top: 0,
                         left: 0,
                         width: '100%',
                         height: '100%',
-                        backgroundColor: '#000', // Fallback
-                        backgroundImage: `url(${slide.image_url || slide.image})`,
-                        backgroundSize: 'cover',
-                        backgroundPosition: 'center',
-                        filter: 'brightness(0.7)' // Slight dim for text pop
-                    }} />
-                    {/* Gradient Overlay */}
-                    <div style={{
+                        background: 'linear-gradient(-45deg, #050505, #1a150a, #050505, #120f06)',
+                        backgroundSize: '400% 400%',
+                        animation: 'glowBg 8s ease infinite',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flexDirection: 'column',
+                        zIndex: 50,
+                        paddingBottom: '100px'
+                    }}
+                >
+                    <motion.div
+                        animate={{ 
+                            scale: [1, 1.02, 1],
+                            opacity: [0.8, 1, 0.8] 
+                        }}
+                        transition={{ duration: 3, repeat: Infinity }}
+                        style={{ textAlign: 'center' }}
+                    >
+                        {/* Only show image tag if it is fully loaded to avoid broken icon mark */}
+                        <img 
+                            src="/logo.png" 
+                            onLoad={() => setLogoLoaded(true)}
+                            style={{ 
+                                width: '150px', 
+                                height: '150px', 
+                                border: 'none', 
+                                outline: 'none',
+                                opacity: logoLoaded ? 1 : 0,
+                                transition: 'opacity 0.5s ease-in',
+                                filter: 'drop-shadow(0 0 30px rgba(212, 175, 55, 0.4))' 
+                            }}
+                        />
+                        <h2 style={{ 
+                            color: 'var(--primary)', 
+                            marginTop: '20px',
+                            fontSize: '2.8rem',
+                            letterSpacing: '10px', 
+                            fontWeight: '700', 
+                            textTransform: 'uppercase',
+                            fontFamily: 'var(--font-main)',
+                            opacity: logoLoaded ? 1 : 0, // Wait for logo to show text for cleaner look
+                            transition: 'opacity 0.8s ease-in'
+                        }}>
+                            TIME TICK
+                        </h2>
+                    </motion.div>
+                </motion.div>
+            )}
+
+            {/* Slider Layer */}
+            {!loading && (
+                <motion.div 
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 1.5 }}
+                    style={{
                         position: 'absolute',
                         top: 0,
                         left: 0,
                         width: '100%',
                         height: '100%',
-                        background: 'linear-gradient(to top, rgba(0,0,0,0.8), transparent 60%)',
-                    }} />
-                </div>
-            ))}
+                        zIndex: 0
+                    }}
+                >
+                    {slides.map((slide, index) => (
+                        <div key={slide.id} style={{
+                            position: 'absolute',
+                            top: 0,
+                            left: 0,
+                            width: '100%',
+                            height: '100%',
+                            opacity: currentSlide === index ? 1 : 0,
+                            transition: 'opacity 1.5s ease-in-out'
+                        }}>
+                            <div style={{
+                                position: 'absolute',
+                                top: 0,
+                                left: 0,
+                                width: '100%',
+                                height: '100%',
+                                backgroundImage: `url(${slide.image_url || slide.image})`,
+                                backgroundSize: 'cover',
+                                backgroundPosition: 'center',
+                                filter: 'brightness(0.6)'
+                            }} />
+                            <div style={{
+                                position: 'absolute',
+                                top: 0,
+                                left: 0,
+                                width: '100%',
+                                height: '100%',
+                                background: 'linear-gradient(to top, rgba(0,0,0,0.8), transparent 60%)',
+                            }} />
+                        </div>
+                    ))}
+                </motion.div>
+            )}
 
-            {/* Content */}
             <div className="container" style={{
                 position: 'relative',
                 zIndex: 10,
@@ -100,47 +178,58 @@ export default function Hero() {
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
+                justifyContent: 'center', // Center the whole group
+                height: '100%',
                 gap: '20px'
             }}>
-                {slides.map((slide, index) => (
-                    <div key={slide.id} style={{
-                        display: currentSlide === index ? 'block' : 'none',
-                        animation: 'slideUp 1s ease-out'
-                    }}>
-                        <h1 style={{
-                            fontSize: '5rem',
-                            fontWeight: '700',
-                            marginBottom: '10px',
-                            textShadow: '0 4px 20px rgba(0,0,0,0.5)',
-                            fontFamily: 'var(--font-main)'
-                        }}>
-                            {slide.title}
-                            <br />
-                            <span style={{
-                                color: 'var(--primary)',
-                                fontSize: '2.5rem',
-                                fontWeight: '300',
-                                display: 'block',
-                                marginTop: '10px'
+                {/* Text Area - Reserved Space to prevent button jump */}
+                <div style={{ minHeight: '320px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    {!loading && slides.map((slide, index) => (
+                        <motion.div 
+                            key={slide.id} 
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ 
+                                opacity: currentSlide === index ? 1 : 0,
+                                y: currentSlide === index ? 0 : 20
+                            }}
+                            transition={{ duration: 0.8 }}
+                            style={{
+                                position: currentSlide === index ? 'relative' : 'absolute',
+                                display: currentSlide === index ? 'block' : 'none',
+                                marginBottom: '10px'
+                            }}
+                        >
+                            <h1 style={{
+                                fontSize: '5rem',
+                                fontWeight: '700',
+                                marginBottom: '10px',
+                                textShadow: '0 4px 20px rgba(0,0,0,0.5)',
                             }}>
-                                {slide.subtitle}
-                            </span>
-                        </h1>
+                                {slide.title}
+                                <br />
+                                <span style={{
+                                    color: 'var(--primary)',
+                                    fontSize: '2.5rem',
+                                    fontWeight: '300',
+                                    display: 'block'
+                                }}>
+                                    {slide.subtitle}
+                                </span>
+                            </h1>
+                            <p style={{
+                                fontSize: '1.1rem',
+                                color: '#e0e0e0',
+                                maxWidth: '600px',
+                                margin: '0 auto'
+                            }}>
+                                {slide.description || 'مجموعة حصرية تجمع بين أصالة الماضي وتقنيات المستقبل'}
+                            </p>
+                        </motion.div>
+                    ))}
+                </div>
 
-                        <p style={{
-                            fontSize: '1.1rem',
-                            color: '#e0e0e0',
-                            maxWidth: '600px',
-                            textShadow: '0 2px 5px rgba(0,0,0,0.8)',
-                            marginBottom: '30px',
-                            margin: '0 auto 30px'
-                        }}>
-                            {slide.description || 'مجموعة حصرية تجمع بين أصالة الماضي وتقنيات المستقبل'}
-                        </p>
-                    </div>
-                ))}
-
-                <div style={{ display: 'flex', gap: '20px' }}>
+                {/* Permanent Shop Now Button */}
+                <div style={{ marginTop: '0px' }}>
                     <button
                         className="btn-primary"
                         onClick={() => document.getElementById('products').scrollIntoView({ behavior: 'smooth' })}
@@ -150,38 +239,41 @@ export default function Hero() {
                 </div>
 
                 {/* Indicators */}
-                <div style={{
-                    display: 'flex',
-                    gap: '12px',
-                    marginTop: '50px',
-                    background: 'rgba(0,0,0,0.3)',
-                    padding: '10px 20px',
-                    borderRadius: '30px',
-                    backdropFilter: 'blur(5px)'
-                }}>
-                    {slides.map((_, index) => (
-                        <div
-                            key={index}
-                            onClick={() => setCurrentSlide(index)}
-                            style={{
-                                width: currentSlide === index ? '12px' : '8px',
-                                height: currentSlide === index ? '12px' : '8px',
-                                borderRadius: '50%',
-                                background: currentSlide === index ? 'var(--primary)' : 'rgba(255,255,255,0.5)',
-                                cursor: 'pointer',
-                                transition: 'all 0.3s ease'
-                            }}
-                        />
-                    ))}
+                <div style={{ height: '70px', display: 'flex', alignItems: 'center' }}>
+                    {!loading && (
+                        <div style={{
+                            display: 'flex',
+                            gap: '12px',
+                            background: 'rgba(0,0,0,0.3)',
+                            padding: '10px 20px',
+                            borderRadius: '30px',
+                            backdropFilter: 'blur(5px)'
+                        }}>
+                            {slides.map((_, index) => (
+                                <div
+                                    key={index}
+                                    onClick={() => setCurrentSlide(index)}
+                                    style={{
+                                        width: currentSlide === index ? '12px' : '8px',
+                                        height: currentSlide === index ? '12px' : '8px',
+                                        borderRadius: '50%',
+                                        background: currentSlide === index ? 'var(--primary)' : 'rgba(255,255,255,0.5)',
+                                        cursor: 'pointer'
+                                    }}
+                                />
+                            ))}
+                        </div>
+                    )}
                 </div>
             </div>
 
             <style>{`
-        @keyframes slideUp {
-          from { opacity: 0; transform: translateY(30px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-      `}</style>
+                @keyframes glowBg {
+                    0% { background-position: 0% 50%; }
+                    50% { background-position: 100% 50%; }
+                    100% { background-position: 0% 50%; }
+                }
+            `}</style>
         </div>
     );
 }
