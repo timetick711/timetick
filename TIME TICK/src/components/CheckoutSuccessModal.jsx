@@ -55,18 +55,18 @@ export default function CheckoutSuccessModal({ isOpen, onClose, onProceed }) {
                             width: '80px',
                             height: '80px',
                             borderRadius: '50%',
-                            background: 'rgba(34, 197, 94, 0.1)',
+                            background: 'rgba(212, 175, 55, 0.1)',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
                             margin: '0 auto 25px',
-                            border: '2px solid #22c55e',
-                            color: '#22c55e'
+                            border: '2px solid var(--primary)',
+                            color: 'var(--primary)'
                         }}>
                             <CheckCircle size={40} />
                         </div>
 
-                        <h2 style={{ color: '#fff', marginBottom: '15px', fontSize: '1.6rem', fontWeight: 'bold' }}>تم تجهيز طلبك!</h2>
+                        <h2 style={{ color: 'var(--primary)', marginBottom: '15px', fontSize: '1.6rem', fontWeight: 'bold' }}>تم إرسال طلبك!</h2>
 
                         <p style={{ color: 'var(--text-dim)', marginBottom: '30px', lineHeight: '1.6', fontSize: '1rem' }}>
                             لقد تلقينا تفاصيل طلبك. يرجى المتابعة إلى الواتساب الآن لإرسال الرسالة وتأكيد عملية الشراء.
@@ -100,13 +100,18 @@ export default function CheckoutSuccessModal({ isOpen, onClose, onProceed }) {
                                 style={{
                                     width: '100%',
                                     padding: '12px',
-                                    background: 'transparent',
-                                    border: '1px solid rgba(255,255,255,0.1)',
-                                    color: 'var(--text-dim)',
-                                    borderRadius: '10px',
+                                    background: 'rgba(255,255,255,0.05)',
+                                    border: '1px solid var(--glass-border)',
+                                    color: 'var(--text-main)',
+                                    borderRadius: '12px',
                                     cursor: 'pointer',
-                                    fontSize: '0.9rem'
+                                    fontSize: '1rem',
+                                    fontWeight: '500',
+                                    fontFamily: 'cairo',
+                                    transition: 'all 0.3s'
                                 }}
+                                onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
+                                onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
                             >
                                 إغلاق
                             </button>

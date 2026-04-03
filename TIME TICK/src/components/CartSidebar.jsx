@@ -156,7 +156,7 @@ export default function CartSidebar() {
                         <p style={{ textAlign: 'center', marginTop: '50px', color: 'var(--text-dim)' }}>السلة فارغة حالياً</p>
                     ) : (
                         cart.map(item => (
-                            <div key={item.id} style={{
+                            <div key={item.variantId || item.id} style={{
                                 display: 'flex',
                                 gap: '10px',
                                 marginBottom: '15px',
@@ -172,12 +172,12 @@ export default function CartSidebar() {
                                     <p style={{ color: 'var(--primary)', fontSize: '0.8rem' }}>{item.price.toLocaleString()} ر.س</p>
 
                                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '5px' }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '5px', background: 'rgba(255,255,255,0.05)', borderRadius: '4px' }}>
-                                            <button onClick={() => updateQuantity(item.id, -1)} style={{ background: 'transparent', border: 'none', color: 'var(--text-main)', padding: '2px 8px', cursor: 'pointer' }}>-</button>
-                                            <span style={{ fontSize: '0.9rem' }}>{item.dp_qty}</span>
-                                            <button onClick={() => updateQuantity(item.id, 1)} style={{ background: 'transparent', border: 'none', color: 'var(--text-main)', padding: '2px 8px', cursor: 'pointer' }}>+</button>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(255,255,255,0.08)', borderRadius: '6px', padding: '2px 5px' }}>
+                                            <button onClick={() => updateQuantity(item.variantId || item.id, -1)} style={{ background: 'transparent', border: 'none', color: 'var(--text-main)', padding: '4px 10px', fontSize: '1.2rem', cursor: 'pointer' }}>-</button>
+                                            <span style={{ fontSize: '1.1rem', fontWeight: 'bold', minWidth: '20px', textAlign: 'center' }}>{item.dp_qty}</span>
+                                            <button onClick={() => updateQuantity(item.variantId || item.id, 1)} style={{ background: 'transparent', border: 'none', color: 'var(--text-main)', padding: '4px 10px', fontSize: '1.2rem', cursor: 'pointer' }}>+</button>
                                         </div>
-                                        <button onClick={() => removeFromCart(item.id)} style={{ color: '#ff4444', background: 'transparent', border: 'none', cursor: 'pointer' }}>
+                                        <button onClick={() => removeFromCart(item.variantId || item.id)} style={{ color: '#ff4444', background: 'transparent', border: 'none', cursor: 'pointer' }}>
                                             <Trash2 size={16} />
                                         </button>
                                     </div>
