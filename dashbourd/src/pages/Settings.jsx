@@ -19,18 +19,12 @@ const Settings = () => {
         setLoading(true);
         try {
             const { data, error } = await supabase
-                .from('site_settings')
-                .select('value')
-                .eq('key', 'hero_slides')
-                .single();
+                .from('hero')
+                .select('*')
+                .order('created_at', { ascending: true });
 
             if (data) {
-                setHeroSlides(data.value);
-            } else if (!error) {
-                // If the key doesn't exist, we can initialize with local defaults
-                setHeroSlides([
-                    { id: Date.now(), image: '', title: 'كلاسيك', subtitle: 'الزمن .. بمنظور فني' }
-                ]);
+                setHeroSlides(data);
             }
         } catch (error) {
             console.error("Error fetching settings:", error);
@@ -52,7 +46,7 @@ const Settings = () => {
         startLoading();
         try {
             const imageUrl = await uploadToCloudinary(file, 'banners');
-            handleSlideChange(id, 'image', imageUrl);
+            handleSlideChange(id, 'image_url', imageUrl);
             Swal.fire({
                 icon: 'success',
                 title: 'تم الرفع',
@@ -72,32 +66,87 @@ const Settings = () => {
         }
     };
 
-    const addNewSlide = () => {
-        if (heroSlides.length >= 5) {
-            Swal.fire({ icon: 'warning', title: 'تنبيه', text: 'الحد الأقصى هو 5 سلايدات', background: '#141414', color: '#fff' });
+    const addNewSlide = async () => {
+        if (heroSlides.length >= 7) {
+            Swal.fire({ icon: 'warning', title: 'تنبيه', text: 'الحد الأقصى هو 7 سلايدات للحفاظ على الأداء', background: '#141414', color: '#fff' });
             return;
         }
-        setHeroSlides([...heroSlides, { id: Date.now(), image: '', title: '', subtitle: '' }]);
+
+        startLoading();
+        try {
+            const { data, error } = await supabase
+                .from('hero')
+                .insert([{ 
+                    title: 'عنوان جديد', 
+                    subtitle: 'عنوان فرعي', 
+                    description: '', 
+                    image_url: 'https://images.unsplash.com/photo-1542496658-e33a6d0d50f6?q=80&w=2070' // Placeholder
+                }])
+                .select()
+                .single();
+
+            if (error) throw error;
+            setHeroSlides([...heroSlides, data]);
+        } catch (error) {
+            console.error("Add error:", error);
+            Swal.fire({ icon: 'error', title: 'خطأ', text: 'فشل إضافة سلايد جديد', background: '#141414', color: '#fff' });
+        } finally {
+            stopLoading();
+        }
     };
 
-    const removeSlide = (id) => {
-        if (heroSlides.length <= 1) return;
-        setHeroSlides(prev => prev.filter(s => s.id !== id));
+    const removeSlide = async (id) => {
+        const result = await Swal.fire({
+            title: 'حذف السلايد؟',
+            text: "سيتم حذف هذا السلايد نهائياً من المتجر",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#ef4444',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'نعم، احذف',
+            cancelButtonText: 'إلغاء',
+            background: '#141414',
+            color: '#fff'
+        });
+
+        if (result.isConfirmed) {
+            startLoading();
+            try {
+                const { error } = await supabase.from('hero').delete().eq('id', id);
+                if (error) throw error;
+                setHeroSlides(prev => prev.filter(s => s.id !== id));
+            } catch (error) {
+                console.error("Delete error:", error);
+                Swal.fire({ icon: 'error', title: 'خطأ', text: 'فشل الحذف', background: '#141414', color: '#fff' });
+            } finally {
+                stopLoading();
+            }
+        }
     };
 
     const saveSettings = async () => {
         startLoading();
         try {
-            const { error } = await supabase
-                .from('site_settings')
-                .upsert({ key: 'hero_slides', value: heroSlides }, { onConflict: 'key' });
+            // Bulk update title, subtitle, description for all currently loaded slides
+            // Since they existing rows, we can map through and update
+            const promises = heroSlides.map(slide => 
+                supabase.from('hero').update({
+                    title: slide.title,
+                    subtitle: slide.subtitle,
+                    description: slide.description,
+                    image_url: slide.image_url || slide.image // handle both naming conventions if any
+                }).eq('id', slide.id)
+            );
 
-            if (error) throw error;
+            const results = await Promise.all(promises);
+            const errors = results.filter(r => r.error);
+
+            if (errors.length > 0) throw errors[0].error;
 
             Swal.fire({
                 icon: 'success',
                 title: 'تم الحفظ',
-                text: 'تم تحديث إعدادات الهيرو بنجاح!',
+                text: 'تم تحديث الواجهة الرئيسية بنجاح!',
                 background: '#141414',
                 color: '#fff'
             });
@@ -161,8 +210,8 @@ const Settings = () => {
                                         overflow: 'hidden',
                                         position: 'relative'
                                     }}>
-                                        {slide.image ? (
-                                            <img src={slide.image} alt="Hero" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                        {(slide.image_url || slide.image) ? (
+                                            <img src={slide.image_url || slide.image} alt="Hero" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                         ) : (
                                             <ImageIcon size={40} color="var(--border-color)" />
                                         )}

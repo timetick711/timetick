@@ -18,16 +18,15 @@ export default function Hero() {
         const fetchHeroSlides = async () => {
             try {
                 const { data, error } = await supabase
-                    .from('site_settings')
-                    .select('value')
-                    .eq('key', 'hero_slides')
-                    .single();
+                    .from('hero')
+                    .select('*')
+                    .order('created_at', { ascending: true });
 
-                if (data && Array.isArray(data.value) && data.value.length > 0) {
-                    setSlides(data.value);
+                if (data && data.length > 0) {
+                    setSlides(data);
                 }
             } catch (err) {
-                console.error("Hero fecth error:", err);
+                console.error("Hero fetch error:", err);
             }
         };
 
@@ -75,7 +74,7 @@ export default function Hero() {
                         width: '100%',
                         height: '100%',
                         backgroundColor: '#000', // Fallback
-                        backgroundImage: `url(${slide.image})`,
+                        backgroundImage: `url(${slide.image_url || slide.image})`,
                         backgroundSize: 'cover',
                         backgroundPosition: 'center',
                         filter: 'brightness(0.7)' // Slight dim for text pop
