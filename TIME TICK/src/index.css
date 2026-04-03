@@ -398,7 +398,7 @@ body {
 
 @media (max-width: 1024px) {
   .product-grid {
-    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)) !important;
     gap: 20px;
   }
 }
@@ -406,28 +406,36 @@ body {
 @media (max-width: 768px) {
   .product-grid {
     grid-template-columns: repeat(2, 1fr) !important;
-    gap: 12px !important;
+    gap: 15px !important;
   }
   
   .product-card {
-    min-height: 480px !important; /* Unified taller height for better mobile text space */
+    min-height: 440px !important; 
   }
 }
 
-@media (max-width: 480px) {
+@media (max-width: 500px) {
   .container {
-    padding: 0 10px !important; /* Minimal padding to maximize grid width */
+    padding: 0 12px !important;
   }
 
   .product-grid {
-    grid-template-columns: repeat(2, 1fr) !important;
-    gap: 8px !important;
+    grid-template-columns: repeat(2, 1fr) !important; /* Back to perfect 2-columns */
+    gap: 10px !important;
     width: 100% !important;
-    margin: 0 !important;
   }
   
   .product-card {
-    min-height: 420px !important; /* Adjusted for smaller screens */
+    min-height: 380px !important; /* Compact but elegant for 2-columns */
+  }
+}
+
+@media (max-width: 360px) {
+  .container {
+    padding: 0 8px !important;
+  }
+  .product-grid {
+    gap: 8px !important;
   }
 }
 

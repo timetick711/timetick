@@ -193,12 +193,13 @@ export default function ProductCard({ product }) {
             <div 
                 className="product-card-content"
                 style={{
-                    padding: '20px',
+                    padding: window.innerWidth < 500 ? '12px' : '20px',
                     flex: 1,
                     display: 'flex',
                     flexDirection: 'column',
                     justifyContent: 'space-between',
-                    background: 'var(--bg-card)'
+                    background: 'var(--bg-card)',
+                    gap: window.innerWidth < 500 ? '10px' : '0'
                 }}
             >
                 <div>

@@ -107,19 +107,67 @@ export default function Hero() {
                         <h2 style={{ 
                             color: 'var(--primary)', 
                             marginTop: '20px',
-                            fontSize: '2.8rem',
-                            letterSpacing: '10px', 
-                            fontWeight: '700', 
+                            fontSize: 'clamp(2.5rem, 8vw, 4.5rem)', // Responsive bold font
+                            letterSpacing: '12px', 
+                            fontWeight: '900', 
                             textTransform: 'uppercase',
                             fontFamily: 'var(--font-main)',
-                            opacity: logoLoaded ? 1 : 0, // Wait for logo to show text for cleaner look
-                            transition: 'opacity 0.8s ease-in'
+                            textShadow: '0 0 40px rgba(212, 175, 55, 0.4)',
+                            textAlign: 'center',
+                            width: '100%'
                         }}>
-                            TIME TICK
+                            Time Tick
                         </h2>
+                    </motion.div>
+
+                    {/* Scroll Icon during loading */}
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1, y: [0, 10, 0] }}
+                        transition={{ delay: 1, duration: 2, repeat: Infinity }}
+                        onClick={() => document.getElementById('products')?.scrollIntoView({ behavior: 'smooth' })}
+                        style={{
+                            position: 'absolute',
+                            bottom: '40px',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            gap: '10px',
+                            color: 'var(--primary)'
+                        }}
+                    >
+                        <span style={{ fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '2px' }}>اسحب للأسفل</span>
+                        <div style={{
+                            width: '26px',
+                            height: '45px',
+                            border: '2px solid var(--primary)',
+                            borderRadius: '15px',
+                            position: 'relative'
+                        }}>
+                            <div style={{
+                                width: '4px',
+                                height: '8px',
+                                background: 'var(--primary)',
+                                borderRadius: '2px',
+                                position: 'absolute',
+                                top: '8px',
+                                left: '50%',
+                                transform: 'translateX(-50%)',
+                                animation: 'scrollAnim 2s infinite'
+                            }} />
+                        </div>
                     </motion.div>
                 </motion.div>
             )}
+
+            <style>{`
+                @keyframes scrollAnim {
+                    0% { opacity: 0; transform: translate(-50%, 0); }
+                    50% { opacity: 1; transform: translate(-50%, 15px); }
+                    100% { opacity: 0; transform: translate(-50%, 25px); }
+                }
+            `}</style>
 
             {/* Slider Layer */}
             {!loading && (
