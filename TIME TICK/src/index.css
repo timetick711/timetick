@@ -48,6 +48,8 @@
 
 html {
   scroll-behavior: smooth;
+  overflow-x: hidden;
+  width: 100%;
 }
 
 body {
@@ -55,9 +57,19 @@ body {
   color: var(--text-main);
   font-family: var(--font-main);
   overflow-x: hidden;
+  width: 100%;
+  position: relative;
   direction: rtl;
   transition: background-color 0.4s ease, color 0.4s ease;
   line-height: 1.6;
+}
+
+.app-container {
+  width: 100%;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow-x: hidden;
 }
 
 /* Utilities */
@@ -65,6 +77,7 @@ body {
   max-width: 1280px;
   margin: 0 auto;
   padding: 0 24px;
+  width: 100%;
 }
 
 .btn-primary {
@@ -393,64 +406,45 @@ body {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 30px;
-  grid-auto-rows: 1fr; /* Make all cards in a row equals height */
+  grid-auto-rows: 1fr;
+  width: 100%;
 }
 
 @media (max-width: 1024px) {
   .product-grid {
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)) !important;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
     gap: 20px;
   }
 }
 
 @media (max-width: 768px) {
   .product-grid {
-    grid-template-columns: repeat(2, 1fr) !important;
-    gap: 15px !important;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 15px;
   }
-  
   .product-card {
-    min-height: 440px !important; 
+    min-height: 400px; /* Reduced from 440 */
   }
 }
 
-@media (max-width: 500px) {
+@media (max-width: 480px) {
   .container {
-    padding: 0 12px !important;
+    padding: 0 10px;
   }
-
   .product-grid {
-    grid-template-columns: repeat(2, 1fr) !important; /* Back to perfect 2-columns */
-    gap: 10px !important;
-    width: 100% !important;
+    gap: 10px;
   }
-  
   .product-card {
-    min-height: 380px !important; /* Compact but elegant for 2-columns */
+    min-height: 320px; /* Reduced from 380 */
   }
 }
 
 @media (max-width: 360px) {
   .container {
-    padding: 0 8px !important;
+    padding: 0 6px;
   }
   .product-grid {
-    gap: 8px !important;
-  }
-}
-
-/* Ultra-narrow devices (iPhone SE, etc.) */
-@media (max-width: 360px) {
-  .container {
-    padding: 0 6px !important;
-  }
-  
-  .product-grid {
-    gap: 5px !important;
-  }
-  
-  .product-card {
-    min-height: 380px !important;
+    gap: 5px;
   }
 }
 

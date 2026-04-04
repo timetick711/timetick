@@ -305,7 +305,7 @@ export default function ProductList() {
                 <>
                     {/* Grid */}
                     <div style={{ position: 'relative', minHeight: '400px' }}>
-                        <AnimatePresence mode="popLayout" initial={false}>
+                        <AnimatePresence>
                             {products.length > 0 ? (
                                 <>
                                     <motion.div
@@ -317,13 +317,13 @@ export default function ProductList() {
                                         style={{}}
                                         className="product-grid"
                                     >
-                                        {products.map((product, index) => {
-                                            if (products.length === index + 1) {
-                                                return <div ref={lastProductRef} key={product.id}><ProductCard product={product} /></div>
-                                            } else {
-                                                return <div key={product.id}><ProductCard product={product} /></div>
-                                            }
-                                        })}
+                                        {products.map((product, index) => (
+                                            <ProductCard 
+                                                key={product.id} 
+                                                product={product} 
+                                                ref={products.length === index + 1 ? lastProductRef : null}
+                                            />
+                                        ))}
                                     </motion.div>
 
                                     {/* Loading more indicator */}

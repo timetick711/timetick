@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, forwardRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ShoppingCart, Image as ImageIcon, PlayCircle, Heart, CircleHelp } from 'lucide-react';
 import { useCart } from '../context/CartContext';
@@ -8,7 +8,7 @@ import { useNavigate } from 'react-router-dom';
 import { useEffect } from 'react';
 import ProductOptionsModal from './ProductOptionsModal';
 
-export default function ProductCard({ product }) {
+const ProductCard = forwardRef(({ product }, ref) => {
     const { addToCart } = useCart();
     const { toggleFavorite, isFavorite } = useFavorites();
     const navigate = useNavigate();
@@ -54,7 +54,7 @@ export default function ProductCard({ product }) {
 
     return (
         <motion.div
-            layout
+            ref={ref}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             whileHover={{ y: -5 }}
@@ -65,7 +65,7 @@ export default function ProductCard({ product }) {
                 overflow: 'hidden',
                 display: 'flex',
                 flexDirection: 'column',
-                minHeight: '420px', // Standard height for desktop
+                minHeight: '380px', // Standard height for desktop
                 height: '100%', // Use full row height
                 position: 'relative'
             }}
@@ -284,4 +284,6 @@ export default function ProductCard({ product }) {
 
         </motion.div>
     );
-}
+});
+
+export default ProductCard;
