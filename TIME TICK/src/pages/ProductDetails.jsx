@@ -376,9 +376,7 @@ const ProductDetails = () => {
                     </h2>
                     <div className="product-grid">
                         {relatedProducts.map(p => (
-                            <div key={p.id} >
-                                <ProductCard product={p} />
-                            </div>
+                            <ProductCard key={p.id} product={p} />
                         ))}
                     </div>
                 </div>
