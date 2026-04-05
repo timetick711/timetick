@@ -111,3 +111,32 @@ export const subscribeToProduct = (id, callback) => {
         supabase.removeChannel(subscription);
     };
 };
+
+export const subscribeToHero = (callback) => {
+    const fetchHero = async () => {
+        const { data, error } = await supabase
+            .from('hero')
+            .select('*')
+            .order('sort_order', { ascending: true });
+
+        if (error) {
+            console.error('Error fetching hero:', error);
+        } else {
+            callback(data || []);
+        }
+    };
+
+    fetchHero();
+
+    const subscription = supabase
+        .channel('public:hero')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'hero' }, (payload) => {
+            console.log('Hero change received!', payload);
+            fetchHero();
+        })
+        .subscribe();
+
+    return () => {
+        supabase.removeChannel(subscription);
+    };
+};

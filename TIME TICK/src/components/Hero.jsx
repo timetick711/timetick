@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { supabase } from '../supabase/client';
+import { subscribeToHero } from '../services/productService';
 import heroImage1 from '../assets/hero-watch.png';
 import heroImage2 from '../assets/hero-watch-2.png';
 import heroImage3 from '../assets/hero-watch-3.png';
@@ -18,27 +19,16 @@ export default function Hero() {
     const [currentSlide, setCurrentSlide] = useState(0);
 
     useEffect(() => {
-        const fetchHeroSlides = async () => {
-            try {
-                const { data, error } = await supabase
-                    .from('hero')
-                    .select('*')
-                    .order('created_at', { ascending: true });
-
-                if (data && data.length > 0) {
-                    setSlides(data);
-                } else {
-                    setSlides(defaultSlides);
-                }
-            } catch (err) {
-                console.error("Hero fetch error:", err);
+        const unsubscribe = subscribeToHero((data) => {
+            if (data && data.length > 0) {
+                setSlides(data);
+            } else {
                 setSlides(defaultSlides);
-            } finally {
-                setTimeout(() => setLoading(false), 1000);
             }
-        };
+            setTimeout(() => setLoading(false), 800);
+        });
 
-        fetchHeroSlides();
+        return () => unsubscribe();
     }, []);
 
     useEffect(() => {
