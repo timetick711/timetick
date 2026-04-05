@@ -2,10 +2,15 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useLoading } from '../context/LoadingContext';
 import { supabase } from '../supabase/client';
 import Swal from 'sweetalert2';
-import { Plus, Trash2, Edit, Loader2 } from 'lucide-react';
+import { 
+    Plus, Trash2, Edit, Loader2, Search, Layers, Users, 
+    Activity, ShoppingBag, Clock, Filter, LayoutGrid, 
+    LayoutList, Check, MoreVertical, Package, ArrowUpRight,
+    TrendingUp, Star, Box, Tag
+} from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { deleteFromCloudinary } from '../utils/cloudinary';
 import { Link } from 'react-router-dom';
-import ProductStats from '../components/ProductStats';
 import FilterBar from '../components/FilterBar';
 
 const Products = () => {
@@ -16,6 +21,7 @@ const Products = () => {
     const [hasMore, setHasMore] = useState(true);
     const [totalStats, setTotalStats] = useState({ total: 0, men: 0, women: 0, kids: 0 });
     const { startLoading, stopLoading } = useLoading();
+    const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'list'
 
     // Filter States
     const [filterType, setFilterType] = useState('all');
@@ -157,13 +163,6 @@ const Products = () => {
             supabase.removeChannel(subscription);
         };
     }, []);
-
-    const stats = [
-        { label: 'إجمالي القطع', value: totalStats.total, color: 'var(--primary)' },
-        { label: 'ساعات رجالية', value: totalStats.men },
-        { label: 'ساعات نسائية', value: totalStats.women },
-        { label: 'ساعات أطفال', value: totalStats.kids },
-    ];
 
     const handleDelete = async (id) => {
         const result = await Swal.fire({
@@ -328,40 +327,58 @@ const Products = () => {
         }
     };
 
+    const summaryStats = [
+        { label: 'إجمالي المخزون', value: totalStats.total, icon: <Package size={22} />, color: 'var(--primary)', bg: 'rgba(212, 175, 55, 0.1)' },
+        { label: 'ساعات رجالية', value: totalStats.men, icon: <Users size={22} />, color: '#10b981', bg: 'rgba(16, 185, 129, 0.1)' },
+        { label: 'ساعات نسائية', value: totalStats.women, icon: <ShoppingBag size={22} />, color: '#ec4899', bg: 'rgba(236, 72, 153, 0.1)' },
+        { label: 'ساعات أطفال', value: totalStats.kids, icon: <Activity size={22} />, color: '#3b82f6', bg: 'rgba(59, 130, 246, 0.1)' },
+    ];
+
     return (
-        <div style={{ direction: 'rtl' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3rem', flexWrap: 'wrap', gap: '20px' }}>
+        <div style={{ direction: 'rtl', padding: '10px' }}>
+            {/* Header Section */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '3rem', flexWrap: 'wrap', gap: '24px' }}>
                 <div>
-                    <h1 style={{ fontSize: '2.5rem', marginBottom: '8px', color: '#fff' }}>المخزون</h1>
-                    <p style={{ color: 'var(--text-muted)' }}>إدارة الساعات والمنتجات المتاحة في المتجر</p>
+                    <h1 style={{ fontSize: '2.8rem', fontWeight: '900', color: '#fff', marginBottom: '8px', letterSpacing: '-1.5px' }}>
+                        إدارة المخزون <span style={{ color: 'var(--primary)', fontSize: '1.2rem', verticalAlign: 'middle', opacity: 0.8 }}>| مركز المنتجات</span>
+                    </h1>
+                    <p style={{ color: 'var(--text-muted)', fontSize: '1.1rem' }}>التحكم الكامل في تشكيلة الساعات الراقية لمجر تايم تك.</p>
                 </div>
-                <div style={{ display: 'flex', gap: '10px' }}>
+                <div style={{ display: 'flex', gap: '12px' }}>
                     {selectedProducts.size > 0 ? (
-                        <>
-                            <button
-                                onClick={toggleAll}
-                                className="btn-primary"
-                                style={{ background: 'var(--surface)', border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', gap: '8px', color: '#fff' }}
-                            >
-                                {selectedProducts.size === totalMatchingCount && totalMatchingCount > 0 ? 'إلغاء التحديد' : 'تحديد الكل'}
+                        <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} style={{ display: 'flex', gap: '12px' }}>
+                            <button onClick={toggleAll} style={{ padding: '12px 24px', borderRadius: '14px', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-color)', color: '#fff', fontWeight: '700', cursor: 'pointer' }}>
+                                {selectedProducts.size === totalMatchingCount ? 'إلغاء الكل' : 'تحديد الكل'}
                             </button>
-                            <button
-                                onClick={handleBulkDelete}
-                                className="btn-primary"
-                                style={{ background: '#ef4444', border: 'none', display: 'flex', alignItems: 'center', gap: '8px' }}
-                            >
-                                <Trash2 size={20} /> حذف المحدد ({selectedProducts.size})
+                            <button onClick={handleBulkDelete} style={{ padding: '12px 24px', borderRadius: '14px', background: '#ef4444', border: 'none', color: '#fff', fontWeight: '800', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <Trash2 size={18} /> حذف ({selectedProducts.size})
                             </button>
-                        </>
+                        </motion.div>
                     ) : (
-                        <Link to="/products/add" className="btn-primary" style={{ textDecoration: 'none' }}>
-                            <Plus size={22} /> إضافة ساعة جديدة
+                        <Link to="/products/add" style={{ textDecoration: 'none' }}>
+                            <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} style={{ padding: '14px 28px', borderRadius: '16px', background: 'var(--primary)', color: '#000', border: 'none', fontWeight: '800', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '10px', boxShadow: '0 10px 25px rgba(212, 175, 55, 0.2)' }}>
+                                <Plus size={22} /> إضافة ساعة جديدة
+                            </motion.button>
                         </Link>
                     )}
                 </div>
             </div>
 
-            <ProductStats stats={stats} />
+            {/* Stats Section */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '20px', marginBottom: '3rem' }}>
+                {summaryStats.map((stat, idx) => (
+                    <motion.div key={idx} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.1 }}
+                        style={{ padding: '24px', borderRadius: '24px', background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', gap: '20px' }}>
+                        <div style={{ width: '56px', height: '56px', borderRadius: '16px', background: stat.bg, color: stat.color, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            {stat.icon}
+                        </div>
+                        <div>
+                            <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '4px', fontWeight: '600' }}>{stat.label}</p>
+                            <h4 style={{ fontSize: '1.8rem', fontWeight: '900', color: '#fff' }}>{stat.value}</h4>
+                        </div>
+                    </motion.div>
+                ))}
+            </div>
 
             <FilterBar
                 searchQuery={searchQuery} setSearchQuery={setSearchQuery}
@@ -373,198 +390,147 @@ const Products = () => {
             />
 
             {loading ? (
-                <div style={{ textAlign: 'center', padding: '100px', color: 'var(--primary)' }}>
-                    <Loader2 className="animate-spin" style={{ margin: '0 auto 20px', width: '40px', height: '40px' }} />
-                    <p style={{ fontWeight: '600' }}>جاري تحميل المخزون...</p>
+                <div style={{ textAlign: 'center', padding: '120px 0', color: 'var(--primary)' }}>
+                    <Loader2 className="animate-spin" style={{ margin: '0 auto 24px', width: '56px', height: '56px' }} />
+                    <p style={{ fontWeight: '800', fontSize: '1.1rem', letterSpacing: '1px' }}>جاري استحضار المجموعة الملكية...</p>
                 </div>
             ) : (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '30px' }}>
-                    {products.map((product, index) => (
-                        <div
-                            key={product.id}
-                            ref={products.length === index + 1 ? lastProductRef : null}
-                            className="glass-card"
-                            style={{
-                                borderRadius: 'var(--radius-md)',
-                                overflow: 'hidden',
-                                position: 'relative',
-                                display: 'flex',
-                                flexDirection: 'column',
-                                background: 'rgba(255,255,255,0.02)'
-                            }}
-                        >
-                            <div style={{ position: 'relative', height: '240px' }}>
-                                <div style={{
-                                    position: 'absolute',
-                                    top: '12px',
-                                    left: '12px',
-                                    background: 'var(--primary)',
-                                    color: '#000',
-                                    padding: '4px 10px',
-                                    borderRadius: '8px',
-                                    fontSize: '0.8rem',
-                                    fontWeight: '800',
-                                    zIndex: 5
-                                }}>
-                                    #{product.displayId || '---'}
-                                </div>
-
-                                {product.old_price && Number(product.old_price) > Number(product.price) && (
-                                    <div style={{
-                                        position: 'absolute',
-                                        top: '48px',
-                                        left: '12px',
-                                        background: '#ef4444',
-                                        color: '#fff',
-                                        padding: '4px 10px',
-                                        borderRadius: '8px',
-                                        fontSize: '0.75rem',
-                                        fontWeight: '800',
-                                        zIndex: 5,
-                                        boxShadow: '0 4px 12px rgba(239, 68, 68, 0.3)'
-                                    }}>
-                                        خصم {Math.round(((Number(product.old_price) - Number(product.price)) / Number(product.old_price)) * 100)}%
-                                    </div>
-                                )}
-
-                                <div style={{
-                                    position: 'absolute',
-                                    top: '12px',
-                                    right: '12px',
-                                    zIndex: 10
-                                }}>
-                                    <input
-                                        type="checkbox"
-                                        checked={selectedProducts.has(product.id)}
-                                        onChange={() => toggleProduct(product.id)}
-                                        className="custom-checkbox"
-                                    />
-                                </div>
-
-                                <div style={{
-                                    position: 'absolute',
-                                    top: '12px',
-                                    right: '48px',
-                                    background: 'rgba(0,0,0,0.6)',
-                                    backdropFilter: 'blur(10px)',
-                                    padding: '6px 14px',
-                                    borderRadius: '50px',
-                                    fontSize: '0.75rem',
-                                    fontWeight: '700',
-                                    color: '#fff',
-                                    border: '1px solid rgba(255,255,255,0.1)'
-                                }}>
-                                    {product.style === 'classic' ? 'كلاسيكي' : product.style === 'formal' ? 'رسمي' : 'عرائسي'}
-                                </div>
-
-                                <img
-                                    src={product.imageUrl || (product.images && product.images[0]) || 'https://placehold.co/400x400/1a1a1a/ffffff?text=No+Image'}
-                                    alt={product.name}
-                                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: '30px', paddingBottom: '60px' }}>
+                    <AnimatePresence mode="popLayout">
+                        {products.length === 0 ? (
+                            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ gridColumn: '1/-1', textAlign: 'center', padding: '100px 0', opacity: 0.3 }}>
+                                <Box size={80} style={{ marginBottom: '24px' }} />
+                                <p style={{ fontSize: '1.4rem', fontWeight: '700' }}>عذراً، لم نجد أي قطع تطابق بحثك</p>
+                            </motion.div>
+                        ) : (
+                            products.map((product, index) => (
+                                <ProductCard 
+                                    key={product.id}
+                                    product={product}
+                                    index={index}
+                                    isSelected={selectedProducts.has(product.id)}
+                                    onToggle={() => toggleProduct(product.id)}
+                                    onDelete={() => handleDelete(product.id)}
+                                    lastProductRef={products.length === index + 1 ? lastProductRef : null}
                                 />
-                            </div>
-
-                            <div style={{ padding: '24px', flex: 1, display: 'flex', flexDirection: 'column' }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
-                                    <h3 style={{ fontSize: '1.3rem', color: '#fff' }}>{product.name}</h3>
-                                    <div style={{ textAlign: 'left' }}>
-                                        {product.old_price && Number(product.old_price) > Number(product.price) && (
-                                            <div style={{ 
-                                                fontSize: '0.9rem', 
-                                                color: 'rgba(255,255,255,0.4)', 
-                                                textDecoration: 'line-through',
-                                                marginBottom: '-2px'
-                                            }}>
-                                                {Number(product.old_price).toLocaleString()} ر.س
-                                            </div>
-                                        )}
-                                        <div style={{ fontSize: '1.4rem', fontWeight: '900', color: 'var(--primary)', letterSpacing: '0.5px' }}>
-                                            {product.variants && product.variants.length > 0 ? (
-                                                <div style={{ fontSize: '1.1rem' }}>
-                                                    {Math.min(...[Number(product.price), ...product.variants.map(v => v.price)]).toLocaleString()} - {Math.max(...[Number(product.price), ...product.variants.map(v => v.price)]).toLocaleString()}
-                                                </div>
-                                            ) : (
-                                                <>
-                                                    {Number(product.price).toLocaleString()} <span style={{ fontSize: '0.85rem', fontWeight: '500' }}>ر.س</span>
-                                                </>
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
-                                <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', lineHeight: '1.6', flex: 1, marginBottom: '24px' }}>
-                                    {product.description?.length > 100 ? product.description.substring(0, 100) + '...' : product.description}
-                                </p>
-
-                                <div style={{ display: 'flex', gap: '12px', borderTop: '1px solid var(--border-color)', paddingTop: '20px' }}>
-                                    <Link
-                                        to={`/products/edit/${product.id}`}
-                                        className="btn-icon"
-                                        style={{ flex: 1, borderRadius: '14px', gap: '8px', width: 'auto', fontWeight: '600', textDecoration: 'none', justifyContent: 'center' }}
-                                    >
-                                        <Edit size={18} /> تعديل
-                                    </Link>
-                                    <button
-                                        onClick={() => handleDelete(product.id)}
-                                        className="btn-icon"
-                                        style={{ border: '1px solid rgba(239, 68, 68, 0.15)', color: '#ef4444', background: 'rgba(239, 68, 68, 0.05)' }}
-                                    >
-                                        <Trash2 size={18} />
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    ))}
-
-                    {!loading && !loadingMore && products.length === 0 && (
-                        <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '50px', color: 'var(--text-muted)' }}>لا توجد منتجات مطابقة للبحث</div>
-                    )}
+                            ))
+                        )}
+                    </AnimatePresence>
                 </div>
-            )
-            }
+            )}
 
-            {
-                loadingMore && (
-                    <div style={{ textAlign: 'center', padding: '40px' }}>
-                        <Loader2 className="animate-spin" style={{ width: '30px', height: '30px', color: 'var(--primary)', margin: '0 auto' }} />
-                    </div>
-                )
-            }
+            {loadingMore && (
+                <div style={{ textAlign: 'center', padding: '40px' }}>
+                    <Loader2 className="animate-spin" style={{ width: '40px', height: '40px', color: 'var(--primary)', margin: '0 auto' }} />
+                </div>
+            )}
 
             <style>{`
                 @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-                .loader { border-radius: 50%; }
                 .animate-spin { animation: spin 1s linear infinite; }
-                
                 .custom-checkbox {
-                    appearance: none;
-                    -webkit-appearance: none;
-                    width: 24px;
-                    height: 24px;
-                    border: 2px solid var(--primary);
-                    border-radius: 6px;
-                    background-color: transparent;
-                    cursor: pointer;
-                    position: relative;
-                    transition: all 0.2s ease;
+                    appearance: none; -webkit-appearance: none;
+                    width: 26px; height: 26px;
+                    border: 2px solid rgba(255,255,255,0.2);
+                    border-radius: 8px; background: rgba(0,0,0,0.4);
+                    cursor: pointer; position: relative; transition: 0.3s;
                 }
-                
-                .custom-checkbox:checked {
-                    background-color: var(--primary);
-                }
-                
+                .custom-checkbox:checked { background: var(--primary); border-color: var(--primary); }
                 .custom-checkbox:checked::after {
-                    content: '';
-                    position: absolute;
-                    left: 7px;
-                    top: 2px;
-                    width: 6px;
-                    height: 12px;
-                    border: solid #000;
-                    border-width: 0 2px 2px 0;
-                    transform: rotate(45deg);
+                    content: '✓'; position: absolute; color: #000;
+                    font-size: 16px; font-weight: 900; left: 5px; top: 0;
                 }
             `}</style>
-        </div >
+        </div>
+    );
+};
+
+const ProductCard = ({ product, index, isSelected, onToggle, onDelete, lastProductRef }) => {
+    return (
+        <motion.div
+            ref={lastProductRef}
+            layout
+            initial={{ opacity: 0, scale: 0.9, y: 30 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.8 }}
+            transition={{ duration: 0.4, delay: (index % 6) * 0.05 }}
+            style={{
+                borderRadius: '28px', background: 'rgba(255,255,255,0.02)',
+                border: '1px solid var(--border-color)', overflow: 'hidden',
+                display: 'flex', flexDirection: 'column', position: 'relative',
+                backdropFilter: 'blur(10px)', boxShadow: '0 20px 40px rgba(0,0,0,0.2)'
+            }}
+        >
+            {/* Visual Header */}
+            <div style={{ position: 'relative', height: '280px', overflow: 'hidden' }}>
+                <img
+                    src={product.imageUrl || (product.images && product.images[0]) || 'https://placehold.co/600x600/1a1a1a/ffffff?text=Premium+Watch'}
+                    alt={product.name}
+                    style={{ width: '100%', height: '100%', objectFit: 'cover', transition: '0.5s' }}
+                />
+                <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(0,0,0,0.4), transparent 40%, transparent 60%, rgba(0,0,0,0.8))' }} />
+                
+                {/* ID Badge */}
+                <div style={{ position: 'absolute', top: '16px', right: '16px', background: 'rgba(212, 175, 55, 0.9)', color: '#000', padding: '6px 14px', borderRadius: '12px', fontSize: '0.8rem', fontWeight: '900', backdropFilter: 'blur(5px)' }}>
+                    #{product.displayId || '---'}
+                </div>
+
+                {/* Selection Checkbox */}
+                <div style={{ position: 'absolute', top: '16px', left: '16px' }}>
+                    <input type="checkbox" checked={isSelected} onChange={onToggle} className="custom-checkbox" />
+                </div>
+
+                {/* Discount Badge */}
+                {product.old_price && Number(product.old_price) > Number(product.price) && (
+                    <div style={{ position: 'absolute', bottom: '16px', right: '16px', background: '#ef4444', color: '#fff', padding: '6px 12px', borderRadius: '10px', fontSize: '0.8rem', fontWeight: '900', boxShadow: '0 4px 15px rgba(239,68,68,0.4)' }}>
+                        خصم {Math.round(((Number(product.old_price) - Number(product.price)) / Number(product.old_price)) * 100)}%
+                    </div>
+                )}
+
+                {/* Style Tag */}
+                <div style={{ position: 'absolute', bottom: '16px', left: '16px', background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', backdropFilter: 'blur(10px)', color: '#fff', padding: '6px 14px', borderRadius: '50px', fontSize: '0.75rem', fontWeight: '700' }}>
+                    {product.style === 'classic' ? 'كلاسيكي' : product.style === 'formal' ? 'رسمي' : 'عرض خاص'}
+                </div>
+            </div>
+
+            {/* Card Content */}
+            <div style={{ padding: '24px', flex: 1, display: 'flex', flexDirection: 'column' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
+                    <h3 style={{ fontSize: '1.4rem', fontWeight: '800', color: '#fff', flex: 1 }}>{product.name}</h3>
+                    <div style={{ textAlign: 'left' }}>
+                        <div style={{ fontSize: '1.6rem', fontWeight: '950', color: 'var(--primary)', lineHeight: 1 }}>
+                            {Number(product.price).toLocaleString()}
+                            <span style={{ fontSize: '0.9rem', fontWeight: '600', marginRight: '4px' }}>ر.س</span>
+                        </div>
+                        {product.old_price && Number(product.old_price) > Number(product.price) && (
+                            <span style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.3)', textDecoration: 'line-through', fontWeight: '600' }}>
+                                {Number(product.old_price).toLocaleString()} ر.س
+                            </span>
+                        )}
+                    </div>
+                </div>
+
+                <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', lineHeight: '1.7', marginBottom: '24px', height: '48px', overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
+                    {product.description || 'لا يوجد وصف متاح لهذا المنتج الملكي.'}
+                </p>
+
+                {/* Action Buttons */}
+                <div style={{ display: 'flex', gap: '12px', marginTop: 'auto' }}>
+                    <Link to={`/products/edit/${product.id}`} style={{ flex: 1, textDecoration: 'none' }}>
+                        <motion.button whileHover={{ y: -3, background: 'rgba(255,255,255,0.08)' }} style={{ width: '100%', height: '50px', borderRadius: '14px', background: 'rgba(255,255,255,0.04)', border: '1px solid var(--border-color)', color: '#fff', fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
+                            <Edit size={18} /> تعديل القطعة
+                        </motion.button>
+                    </Link>
+                    <motion.button 
+                        whileHover={{ scale: 1.05, background: '#ef4444', color: '#fff' }}
+                        onClick={onDelete}
+                        style={{ width: '50px', height: '50px', borderRadius: '14px', background: 'rgba(239, 68, 68, 0.08)', border: '1px solid rgba(239,68,68,0.2)', color: '#ef4444', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                    >
+                        <Trash2 size={20} />
+                    </motion.button>
+                </div>
+            </div>
+        </motion.div>
     );
 };
 

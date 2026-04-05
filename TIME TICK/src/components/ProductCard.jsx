@@ -72,107 +72,62 @@ const ProductCard = forwardRef(({ product }, ref) => {
         >
             {/* Media Container */}
             <div style={{
-                aspectRatio: '1/1', // Use square aspect ratio for consistency
+                aspectRatio: '1/1',
                 position: 'relative',
-                background: '#000',
-                overflow: 'hidden'
+                background: '#050505',
+                overflow: 'hidden',
+                borderRadius: 'var(--radius, 12px)'
             }}>
                 {renderMedia()}
 
-                {/* Overlays */}
-                {product.displayId && (
-                    <motion.div
-                        initial={{ x: -20, opacity: 0 }}
-                        animate={{ x: 0, opacity: 1 }}
-                        style={{
-                            position: 'absolute', top: '12px', left: '12px',
-                            background: 'var(--primary)', color: '#000',
-                            padding: '4px 8px', borderRadius: '6px',
-                            fontSize: '0.75rem', fontWeight: '800', zIndex: 10
-                        }}
-                    >
-                        #{product.displayId}
-                    </motion.div>
-                )}
-
-                {product.old_price && Number(product.old_price) > Number(product.price) && (
-                    <motion.div
-                        initial={{ x: -20, opacity: 0 }}
-                        animate={{ x: 0, opacity: 1 }}
-                        transition={{ delay: 0.1 }}
-                        style={{
-                            position: 'absolute', top: '45px', left: '12px',
-                            background: '#ef4444', color: '#fff',
-                            padding: '4px 8px', borderRadius: '6px',
-                            fontSize: '0.75rem', fontWeight: '800', zIndex: 10,
-                            boxShadow: '0 4px 12px rgba(239, 68, 68, 0.3)'
-                        }}
-                    >
-                        خصم {Math.round(((Number(product.old_price) - Number(product.price)) / Number(product.old_price)) * 100)}%
-                    </motion.div>
-                )}
-
+                {/* Overlays - Only Favorite */}
                 <div style={{
-                    position: 'absolute', top: '12px', right: '12px',
-                    display: 'flex', gap: '8px', zIndex: 10
+                    position: 'absolute', top: '10px', right: '10px',
+                    zIndex: 10
                 }}>
                     <motion.button
-                        whileHover={{ scale: 1.15 }}
+                        whileHover={{ scale: 1.1 }}
                         whileTap={{ scale: 0.9 }}
                         onClick={(e) => { e.stopPropagation(); toggleFavorite(product); }}
                         style={{
-                            background: isFav ? 'var(--primary)' : 'rgba(0,0,0,0.4)',
-                            backdropFilter: 'blur(4px)',
+                            background: isFav ? 'var(--primary)' : 'rgba(0,0,0,0.5)',
+                            backdropFilter: 'blur(8px)',
                             border: '1px solid rgba(255,255,255,0.1)',
                             borderRadius: '50%',
-                            width: '35px',
-                            height: '35px',
+                            width: '36px',
+                            height: '36px',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
                             cursor: 'pointer',
                             color: isFav ? '#000' : '#fff',
-                            boxShadow: isHovered ? '0 4px 12px rgba(0,0,0,0.3)' : 'none'
+                            boxShadow: '0 4px 12px rgba(0,0,0,0.2)'
                         }}
                     >
                         <Heart size={18} fill={isFav ? "currentColor" : "none"} />
                     </motion.button>
                 </div>
 
-                {/* Media Toggles - Pill Style */}
+                {/* Media Toggles */}
                 {product.video && (
                     <div
                         onClick={(e) => e.stopPropagation()}
-                        className="media-toggles"
                         style={{
-                            position: 'absolute',
-                            bottom: '10px',
-                            left: '50%',
-                            transform: 'translateX(-50%)',
-                            display: 'flex',
-                            gap: '5px',
-                            background: 'rgba(0,0,0,0.6)',
-                            padding: '4px 8px',
-                            borderRadius: '20px',
-                            zIndex: 10,
-                            backdropFilter: 'blur(4px)'
+                            position: 'absolute', bottom: '12px', left: '50%',
+                            transform: 'translateX(-50%)', display: 'flex', gap: '6px',
+                            background: 'rgba(0,0,0,0.7)', padding: '4px 10px',
+                            borderRadius: '20px', zIndex: 10, backdropFilter: 'blur(10px)',
+                            border: '1px solid rgba(255,255,255,0.05)'
                         }}
                     >
                         <button
                             onClick={(e) => { e.stopPropagation(); setMediaMode('image'); }}
-                            className="media-toggle-btn"
                             style={{
                                 background: mediaMode === 'image' ? 'var(--primary)' : 'transparent',
                                 color: mediaMode === 'image' ? '#000' : '#fff',
-                                border: 'none',
-                                padding: '4px 10px',
-                                borderRadius: '12px',
-                                cursor: 'pointer',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '4px',
-                                fontSize: '0.75rem',
-                                fontWeight: '600'
+                                border: 'none', padding: '4px 10px', borderRadius: '12px',
+                                cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px',
+                                fontSize: '0.75rem', fontWeight: '700'
                             }}
                         >
                             <ImageIcon size={14} /> صورة
@@ -183,126 +138,119 @@ const ProductCard = forwardRef(({ product }, ref) => {
                                 setMediaMode('video'); 
                                 setActiveVideoId(product.id);
                             }}
-                            className="media-toggle-btn"
                             style={{
                                 background: mediaMode === 'video' ? 'var(--primary)' : 'transparent',
                                 color: mediaMode === 'video' ? '#000' : '#fff',
-                                border: 'none',
-                                padding: '4px 10px',
-                                borderRadius: '12px',
-                                cursor: 'pointer',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '4px',
-                                fontSize: '0.75rem',
-                                fontWeight: '600'
+                                border: 'none', padding: '4px 10px', borderRadius: '12px',
+                                cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px',
+                                fontSize: '0.75rem', fontWeight: '700'
                             }}
                         >
                             <PlayCircle size={14} /> فيديو
                         </button>
                     </div>
                 )}
-
-
             </div>
 
-            {/* Content */}
+            {/* Content Section */}
             <div 
-                className="product-card-content"
                 style={{
-                    padding: window.innerWidth < 500 ? '12px' : '20px',
-                    flex: 1,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    justifyContent: 'space-between',
-                    background: 'var(--bg-card)',
-                    gap: window.innerWidth < 500 ? '10px' : '0'
+                    padding: '16px', flex: 1,
+                    display: 'flex', flexDirection: 'column',
+                    background: 'var(--bg-card, rgba(255,255,255,0.02))',
+                    borderTop: '1px solid var(--border-color, rgba(255,255,255,0.05))'
                 }}
             >
                 <div>
+                    {product.displayId && (
+                        <div style={{
+                            display: 'inline-block',
+                            background: 'rgba(212, 175, 55, 0.1)',
+                            color: 'var(--primary)',
+                            padding: '3px 10px',
+                            borderRadius: '4px',
+                            fontSize: '0.75rem',
+                            fontWeight: '800',
+                            marginBottom: '8px',
+                            border: '1px solid rgba(212, 175, 55, 0.2)'
+                        }}>
+                            #{product.displayId}
+                        </div>
+                    )}
                     <h3 
-                        className="product-card-title"
                         style={{
-                            fontSize: '1.2rem', fontWeight: '700',
-                            color: 'var(--text-main)', marginBottom: '8px',
+                            fontSize: '1.25rem', fontWeight: '700',
+                            color: 'var(--text-main, #fff)', marginBottom: '14px',
+                            fontFamily: 'cairo',
                             whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'
                         }}
                     >
                         {product.name}
                     </h3>
-                    <p 
-                        className="product-card-desc"
-                        style={{
-                            color: 'var(--text-dim)', fontSize: '0.85rem', lineHeight: '1.4',
-                            display: '-webkit-box', WebkitLineClamp: 2, lineClamp: 2, WebkitBoxOrient: 'vertical',
-                            overflow: 'hidden', height: '2.8em' // Stabilize text height
-                        }}
-                    >
-                        {product.description}
-                    </p>
                 </div>
 
                 <div 
-                    className="product-card-actions"
                     style={{
-                        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                        marginTop: '15px', paddingTop: '15px',
-                        borderTop: '1px solid var(--border-color)'
+                        marginTop: 'auto',
+                        paddingTop: '12px', borderTop: '1px solid var(--border-color, rgba(255,255,255,0.05))'
                     }}
                 >
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
-                        {product.old_price && Number(product.old_price) > Number(product.price) && (
-                            <span 
-                                style={{ 
-                                    fontSize: '0.9rem', 
-                                    color: 'var(--text-dim)', 
-                                    textDecoration: 'line-through',
-                                    marginBottom: '-2px',
-                                    opacity: 0.8
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                            {product.old_price && Number(product.old_price) > Number(product.price) && (
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                                    <span style={{ 
+                                        fontSize: '1rem', color: 'var(--text-dim, rgba(255,255,255,0.4))', 
+                                        textDecoration: 'line-through' 
+                                    }}>
+                                        {Number(product.old_price).toLocaleString()} ر.س
+                                    </span>
+                                    <span style={{
+                                        background: '#ef4444', color: '#fff',
+                                        padding: '2px 8px', borderRadius: '4px',
+                                        fontSize: '0.8rem', fontWeight: '900'
+                                    }}>
+                                        {Math.round(((Number(product.old_price) - Number(product.price)) / Number(product.old_price)) * 100)}%-
+                                    </span>
+                                </div>
+                            )}
+                            <div style={{ fontSize: '1.6rem', fontWeight: '800', color: 'var(--primary)', lineHeight: '1' }}>
+                                {(Number(product.price) || 0).toLocaleString()} <span style={{ fontSize: '0.8rem', fontWeight: '400' }}>ر.س</span>
+                            </div>
+                        </div>
+
+                        <div style={{ display: 'flex', gap: '10px' }}>
+                            <motion.button
+                                whileHover={{ scale: 1.05, background: '#ff3b3b' }}
+                                whileTap={{ scale: 0.95 }}
+                                onClick={() => navigate(`/product/${product.id}`)}
+                                style={{
+                                    width: '42px', height: '42px', borderRadius: '12px',
+                                    background: '#ef4444', color: '#fff',
+                                    border: 'none',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    cursor: 'pointer', transition: 'all 0.3s',
+                                    boxShadow: '0 4px 12px rgba(239, 68, 68, 0.2)'
+                                }}
+                                title="استعلام"
+                            >
+                                <CircleHelp size={22} />
+                            </motion.button>
+
+                            <motion.button
+                                whileHover={{ scale: 1.05, boxShadow: '0 8px 25px rgba(212, 175, 55, 0.4)' }}
+                                whileTap={{ scale: 0.95 }}
+                                onClick={(e) => { e.stopPropagation(); setShowModal(true); }}
+                                className="btn-primary"
+                                style={{
+                                    width: '42px', height: '42px', borderRadius: '12px',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    padding: '0', fontSize: '1rem'
                                 }}
                             >
-                                {Number(product.old_price).toLocaleString()} ر.س
-                            </span>
-                        )}
-                        <span 
-                            className="product-card-price"
-                            style={{ fontSize: '1.4rem', fontWeight: '700', color: 'var(--primary)' }}
-                        >
-                            {(Number(product.price) || 0).toLocaleString()} <span style={{ fontSize: '0.8rem' }}>ر.س</span>
-                        </span>
-                    </div>
-
-                    <div style={{ display: 'flex', gap: '8px' }}>
-                        <motion.button
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                            onClick={() => navigate(`/product/${product.id}`)}
-                            className="btn-icon product-card-btn"
-                            style={{
-                                padding: '10px', borderRadius: '12px',
-                                background: '#ff4b4b',
-                                color: 'white',
-                                border: '1px solid var(--border-color)',
-                                cursor: 'pointer',
-                                boxShadow: isHovered ? '0 5px 15px #ff4b4b' : '0 5px 15px #fa6c6cff'
-                            }}
-                            title="التفاصيل"
-                        >
-                            <CircleHelp size={20} />
-                        </motion.button>
-
-                        <motion.button
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                            onClick={(e) => { e.stopPropagation(); setShowModal(true); }}
-                            className="btn-primary product-card-btn"
-                            style={{
-                                padding: '10px 16px', borderRadius: '12px', fontSize: '0.9rem',
-                                boxShadow: isHovered ? '0 5px 15px rgba(212, 175, 55, 0.4)' : '0 5px 15px rgba(245, 214, 113, 0.4)'
-                            }}
-                        >
-                            <ShoppingCart size={18} />
-                        </motion.button>
+                                <ShoppingCart size={22} />
+                            </motion.button>
+                        </div>
                     </div>
                 </div>
             </div>

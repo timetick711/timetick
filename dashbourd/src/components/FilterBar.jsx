@@ -1,5 +1,6 @@
 import React from 'react';
 import { Search, ArrowUpDown, DollarSign, RotateCcw } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 const FilterBar = ({
     searchQuery, setSearchQuery,
@@ -13,115 +14,133 @@ const FilterBar = ({
         <div
             className="glass-card"
             style={{
-                padding: '20px',
-                marginBottom: '30px',
+                padding: '24px',
+                marginBottom: '40px',
                 display: 'flex',
                 flexWrap: 'wrap',
-                gap: '20px',
+                justifyContent: 'space-between',
+                gap: '24px',
                 alignItems: 'center',
-                background: 'rgba(255,255,255,0.02)',
-                borderRadius: 'var(--radius-md)'
+                background: 'rgba(255,255,255,0.03)',
+                borderRadius: '24px',
+                backdropFilter: 'blur(10px)',
+                border: '1px solid var(--border-color)'
             }}
         >
-            {/* Search */}
-            <div style={{ position: 'relative', minWidth: '200px', flex: 1 }}>
-                <Search size={18} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+            {/* Search Section */}
+            <div style={{ position: 'relative', minWidth: '320px', flex: 1.5 }}>
+                <Search size={20} style={{ position: 'absolute', right: '16px', top: '50%', transform: 'translateY(-50%)', color: 'var(--primary)', opacity: 0.7 }} />
                 <input
                     type="text"
-                    placeholder="بحث باسم المنتج أو الرقم..."
+                    placeholder="بحث في المخزون: اسم المنتج، الرقم، أو التوصيف..."
                     value={searchQuery}
                     onChange={e => setSearchQuery(e.target.value)}
                     style={{
                         width: '100%',
-                        padding: '10px 40px 10px 10px',
-                        background: 'rgba(0,0,0,0.2)',
+                        padding: '14px 48px 14px 16px',
+                        background: 'rgba(0,0,0,0.3)',
                         border: '1px solid var(--border-color)',
-                        borderRadius: '8px',
+                        borderRadius: '14px',
                         color: '#fff',
-                        fontFamily: 'var(--font-main)'
+                        fontSize: '1rem',
+                        outline: 'none',
+                        transition: '0.3s',
+                        fontFamily: 'inherit'
                     }}
+                    onFocus={(e) => e.target.style.borderColor = 'var(--primary)'}
+                    onBlur={(e) => e.target.style.borderColor = 'var(--border-color)'}
                 />
             </div>
 
-            {/* Type Filter */}
-            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                {[
-                    { label: 'الكل', value: 'all' },
-                    { label: 'رجالي', value: 'men' },
-                    { label: 'نسائي', value: 'women' },
-                    { label: 'أطفال', value: 'kids' }
-                ].map(type => (
-                    <button
-                        key={type.value}
-                        onClick={() => setFilterType(type.value)}
-                        style={{
-                            padding: '8px 16px',
-                            borderRadius: '20px',
-                            border: filterType === type.value ? '1px solid var(--primary)' : '1px solid var(--border-color)',
-                            background: filterType === type.value ? 'var(--primary)' : 'transparent',
-                            color: filterType === type.value ? '#000' : 'var(--text-muted)',
-                            cursor: 'pointer',
-                            transition: 'all 0.3s',
-                            fontSize: '0.9rem'
-                        }}
-                    >
-                        {type.label}
-                    </button>
-                ))}
-            </div>
-
-            {/* Style and Price */}
+            {/* Filters Section */}
             <div style={{ display: 'flex', gap: '15px', alignItems: 'center', flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', gap: '8px', background: 'rgba(255,255,255,0.03)', padding: '6px', borderRadius: '16px', border: '1px solid var(--border-color)' }}>
+                    {[
+                        { label: 'الكل', value: 'all' },
+                        { label: 'رجالي', value: 'men' },
+                        { label: 'نسائي', value: 'women' },
+                        { label: 'أطفال', value: 'kids' }
+                    ].map(type => (
+                        <button
+                            key={type.value}
+                            onClick={() => setFilterType(type.value)}
+                            style={{
+                                padding: '10px 22px',
+                                borderRadius: '12px',
+                                border: 'none',
+                                background: filterType === type.value ? 'var(--primary)' : 'transparent',
+                                color: filterType === type.value ? '#000' : 'var(--text-muted)',
+                                cursor: 'pointer',
+                                transition: 'all 0.3s',
+                                fontSize: '0.9rem',
+                                fontWeight: '700'
+                            }}
+                        >
+                            {type.label}
+                        </button>
+                    ))}
+                </div>
+
                 <select
                     value={filterStyle}
                     onChange={(e) => setFilterStyle(e.target.value)}
                     style={{
-                        padding: '8px 15px',
-                        borderRadius: '8px',
-                        background: 'rgba(0,0,0,0.2)',
+                        padding: '12px 20px',
+                        borderRadius: '14px',
+                        background: 'rgba(255,255,255,0.03)',
                         border: '1px solid var(--border-color)',
-                        color: 'var(--text-muted)',
-                        fontFamily: 'var(--font-main)',
+                        color: '#fff',
+                        cursor: 'pointer',
                         outline: 'none',
-                        cursor: 'pointer'
+                        fontSize: '0.95rem',
+                        fontWeight: '600'
                     }}
                 >
-                    <option value="all">جميع الأنماط</option>
-                    <option value="classic">كلاسيكي</option>
-                    <option value="formal">رسمي</option>
-                    <option value="wedding">عرائسي</option>
+                    <option value="all" style={{ background: '#141414' }}>جميع الأنماط</option>
+                    <option value="classic" style={{ background: '#141414' }}>كلاسيكي</option>
+                    <option value="formal" style={{ background: '#141414' }}>رسمي</option>
+                    <option value="wedding" style={{ background: '#141414' }}>عرائسي</option>
                 </select>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                    <DollarSign size={16} color="var(--primary)" />
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px', background: 'rgba(255,255,255,0.03)', borderRadius: '14px', border: '1px solid var(--border-color)' }}>
+                    <DollarSign size={18} color="var(--primary)" />
                     <input
                         type="number"
-                        placeholder="Min"
+                        placeholder="الأدنى"
                         value={minPrice}
                         onChange={(e) => setMinPrice(e.target.value)}
-                        style={{ width: '70px', padding: '8px', borderRadius: '8px', background: 'rgba(0,0,0,0.2)', border: '1px solid var(--border-color)', color: '#fff', textAlign: 'center' }}
+                        style={{ width: '80px', background: 'transparent', border: 'none', color: '#fff', textAlign: 'center', outline: 'none' }}
                     />
-                    <span style={{ color: 'var(--text-muted)' }}>-</span>
+                    <span style={{ color: 'var(--border-color)' }}>|</span>
                     <input
                         type="number"
-                        placeholder="Max"
+                        placeholder="الأقصى"
                         value={maxPrice}
                         onChange={(e) => setMaxPrice(e.target.value)}
-                        style={{ width: '70px', padding: '8px', borderRadius: '8px', background: 'rgba(0,0,0,0.2)', border: '1px solid var(--border-color)', color: '#fff', textAlign: 'center' }}
+                        style={{ width: '80px', background: 'transparent', border: 'none', color: '#fff', textAlign: 'center', outline: 'none' }}
                     />
                 </div>
 
                 <button
                     onClick={() => setSortPrice(prev => prev === 'asc' ? 'desc' : prev === 'desc' ? 'none' : 'asc')}
-                    style={{ padding: '8px', background: 'transparent', border: 'none', color: sortPrice !== 'none' ? 'var(--primary)' : 'var(--text-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px' }}
-                    title="ترتيب حسب السعر"
+                    style={{ 
+                        width: '48px', height: '48px', borderRadius: '14px', 
+                        background: sortPrice !== 'none' ? 'var(--primary)' : 'rgba(255,255,255,0.03)', 
+                        border: '1px solid var(--border-color)', 
+                        color: sortPrice !== 'none' ? '#000' : 'var(--text-muted)', 
+                        cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        transition: '0.3s'
+                    }}
+                    title="ترتيب الأسعار"
                 >
                     <ArrowUpDown size={20} />
                 </button>
 
-                {/* Reset Button */}
+                {/* Reset Action */}
                 {(searchQuery || filterType !== 'all' || filterStyle !== 'all' || minPrice || maxPrice || sortPrice !== 'none') && (
-                    <button
+                    <motion.button
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ opacity: 1, scale: 1 }}
                         onClick={() => {
                             setSearchQuery('');
                             setFilterType('all');
@@ -131,22 +150,21 @@ const FilterBar = ({
                             setSortPrice('none');
                         }}
                         style={{
-                            padding: '8px 15px',
+                            padding: '12px 20px',
                             background: 'rgba(239, 68, 68, 0.1)',
                             border: '1px solid rgba(239, 68, 68, 0.2)',
-                            borderRadius: '8px',
+                            borderRadius: '14px',
                             color: '#ef4444',
                             cursor: 'pointer',
                             display: 'flex',
                             alignItems: 'center',
                             gap: '8px',
-                            fontSize: '0.85rem',
-                            fontWeight: '600',
-                            transition: '0.3s'
+                            fontSize: '0.9rem',
+                            fontWeight: '700'
                         }}
                     >
-                        <RotateCcw size={16} /> إعادة تعيين
-                    </button>
+                        <RotateCcw size={16} /> تهيئة
+                    </motion.button>
                 )}
             </div>
         </div>
