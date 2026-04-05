@@ -95,6 +95,23 @@ const ProductCard = forwardRef(({ product }, ref) => {
                     </motion.div>
                 )}
 
+                {product.old_price && Number(product.old_price) > Number(product.price) && (
+                    <motion.div
+                        initial={{ x: -20, opacity: 0 }}
+                        animate={{ x: 0, opacity: 1 }}
+                        transition={{ delay: 0.1 }}
+                        style={{
+                            position: 'absolute', top: '45px', left: '12px',
+                            background: '#ef4444', color: '#fff',
+                            padding: '4px 8px', borderRadius: '6px',
+                            fontSize: '0.75rem', fontWeight: '800', zIndex: 10,
+                            boxShadow: '0 4px 12px rgba(239, 68, 68, 0.3)'
+                        }}
+                    >
+                        خصم {Math.round(((Number(product.old_price) - Number(product.price)) / Number(product.old_price)) * 100)}%
+                    </motion.div>
+                )}
+
                 <div style={{
                     position: 'absolute', top: '12px', right: '12px',
                     display: 'flex', gap: '8px', zIndex: 10
@@ -233,12 +250,27 @@ const ProductCard = forwardRef(({ product }, ref) => {
                         borderTop: '1px solid var(--border-color)'
                     }}
                 >
-                    <span 
-                        className="product-card-price"
-                        style={{ fontSize: '1.4rem', fontWeight: '700', color: 'var(--primary)' }}
-                    >
-                        {(Number(product.price) || 0).toLocaleString()} <span style={{ fontSize: '0.8rem' }}>ر.س</span>
-                    </span>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+                        {product.old_price && Number(product.old_price) > Number(product.price) && (
+                            <span 
+                                style={{ 
+                                    fontSize: '0.9rem', 
+                                    color: 'var(--text-dim)', 
+                                    textDecoration: 'line-through',
+                                    marginBottom: '-2px',
+                                    opacity: 0.8
+                                }}
+                            >
+                                {Number(product.old_price).toLocaleString()} ر.س
+                            </span>
+                        )}
+                        <span 
+                            className="product-card-price"
+                            style={{ fontSize: '1.4rem', fontWeight: '700', color: 'var(--primary)' }}
+                        >
+                            {(Number(product.price) || 0).toLocaleString()} <span style={{ fontSize: '0.8rem' }}>ر.س</span>
+                        </span>
+                    </div>
 
                     <div style={{ display: 'flex', gap: '8px' }}>
                         <motion.button

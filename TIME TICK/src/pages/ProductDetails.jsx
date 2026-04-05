@@ -288,15 +288,39 @@ const ProductDetails = () => {
                         )}
                     </div>
 
-                    <div style={{ fontSize: '2rem', fontWeight: '700', color: 'var(--primary)' }}>
-                        {product.variants && product.variants.length > 0 ? (
-                            <>
-                                {Math.min(...[Number(product.price), ...product.variants.map(v => v.price)]).toLocaleString()} - {Math.max(...[Number(product.price), ...product.variants.map(v => v.price)]).toLocaleString()}
-                            </>
-                        ) : (
-                            Number(product.price).toLocaleString()
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                        {product.old_price && Number(product.old_price) > Number(product.price) && (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '-5px' }}>
+                                <span style={{ 
+                                    fontSize: '1.2rem', 
+                                    color: 'rgba(255,255,255,0.4)', 
+                                    textDecoration: 'line-through'
+                                }}>
+                                    {Number(product.old_price).toLocaleString()} ر.س
+                                </span>
+                                <span style={{
+                                    background: '#ef4444',
+                                    color: '#fff',
+                                    padding: '4px 10px',
+                                    borderRadius: '8px',
+                                    fontSize: '0.9rem',
+                                    fontWeight: '800',
+                                    boxShadow: '0 4px 12px rgba(239, 68, 68, 0.2)'
+                                }}>
+                                    خصم {Math.round(((Number(product.old_price) - Number(product.price)) / Number(product.old_price)) * 100)}%
+                                </span>
+                            </div>
                         )}
-                        <span style={{ fontSize: '1rem', fontWeight: '400' }}> ر.س</span>
+                        <div style={{ fontSize: '2rem', fontWeight: '700', color: 'var(--primary)' }}>
+                            {product.variants && product.variants.length > 0 ? (
+                                <>
+                                    {Math.min(...[Number(product.price), ...product.variants.map(v => v.price)]).toLocaleString()} - {Math.max(...[Number(product.price), ...product.variants.map(v => v.price)]).toLocaleString()}
+                                </>
+                            ) : (
+                                Number(product.price).toLocaleString()
+                            )}
+                            <span style={{ fontSize: '1rem', fontWeight: '400' }}> ر.س</span>
+                        </div>
                     </div>
 
                     <div style={{ height: '1px', background: 'var(--border-color)' }} />

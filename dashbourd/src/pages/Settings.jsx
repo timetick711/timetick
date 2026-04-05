@@ -9,6 +9,7 @@ import {
   closestCenter,
   KeyboardSensor,
   PointerSensor,
+  TouchSensor,
   useSensor,
   useSensors,
 } from '@dnd-kit/core';
@@ -66,7 +67,7 @@ const SortableSlide = ({ slide, index, isExpanded, onToggle, onRemove, onImageUp
                     <div 
                         {...attributes} 
                         {...listeners} 
-                        style={{ cursor: 'grab', padding: '5px', color: 'var(--text-muted)' }}
+                        style={{ cursor: 'grab', padding: '5px', color: 'var(--text-muted)', touchAction: 'none' }}
                         onClick={(e) => e.stopPropagation()} // Prevent expansion when clicking handle
                     >
                         <GripVertical size={20} />
@@ -158,6 +159,14 @@ const Settings = () => {
 
     const sensors = useSensors(
         useSensor(PointerSensor),
+        useSensor(TouchSensor, {
+            // Press and hold for 250ms to start dragging
+            // This prevents conflict with page scrolling
+            activationConstraint: {
+                delay: 250,
+                tolerance: 5,
+            },
+        }),
         useSensor(KeyboardSensor, {
             coordinateGetter: sortableKeyboardCoordinates,
         })

@@ -11,6 +11,7 @@ const ProductForm = ({ initialData, onSubmit, title, subTitle }) => {
         displayId: '',
         name: '',
         price: '',
+        old_price: '',
         category: '',
         style: 'classic',
         description: '',
@@ -28,6 +29,7 @@ const ProductForm = ({ initialData, onSubmit, title, subTitle }) => {
                 displayId: initialData.displayId || '',
                 name: initialData.name || '',
                 price: initialData.price || '',
+                old_price: initialData.old_price || '',
                 category: initialData.category || '',
                 style: initialData.style || 'classic',
                 description: initialData.description || '',
@@ -553,6 +555,10 @@ const ProductForm = ({ initialData, onSubmit, title, subTitle }) => {
                         <div style={formGroup}>
                             <label style={labelStyle}>السعر الأساسي (ر.س)</label>
                             <input type="number" placeholder="0.00" value={formData.price} onChange={e => setFormData({ ...formData, price: e.target.value })} required style={inputStyle} />
+                        </div>
+                        <div style={formGroup}>
+                            <label style={labelStyle}>السعر السابق (اختياري - للخصم)</label>
+                            <input type="number" placeholder="مثلاً: 500" value={formData.old_price} onChange={e => setFormData({ ...formData, old_price: e.target.value })} style={inputStyle} />
                         </div>
                     </div>
 

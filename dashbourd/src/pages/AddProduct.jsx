@@ -32,6 +32,7 @@ const AddProduct = () => {
                     displayId: displayId,
                     name: formData.name,
                     price: formData.price,
+                    old_price: formData.old_price || null,
                     category: formData.category,
                     style: formData.style,
                     description: formData.description,
