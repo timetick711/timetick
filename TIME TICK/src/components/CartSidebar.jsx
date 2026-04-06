@@ -96,12 +96,12 @@ export default function CartSidebar() {
                 left: 0,
                 width: '100%',
                 height: '100%',
-                background: 'rgba(0,0,0,0.5)',
-                zIndex: 999,
+                background: 'rgba(0,0,0,0.7)',
+                zIndex: 2000,
                 opacity: isCartOpen ? 1 : 0,
                 pointerEvents: isCartOpen ? 'auto' : 'none',
-                transition: 'opacity 0.3s ease',
-                backdropFilter: 'blur(2px)'
+                transition: 'opacity 0.4s ease',
+                backdropFilter: 'blur(8px)'
             }} />
 
             <div ref={sidebarRef} style={{
@@ -112,9 +112,9 @@ export default function CartSidebar() {
                 maxWidth: '90%',
                 height: '100%',
                 background: 'var(--bg-card)',
-                zIndex: 1000,
-                boxShadow: '-5px 0 15px rgba(0,0,0,0.3)',
-                transition: 'right 0.3s ease-in-out',
+                zIndex: 2001,
+                boxShadow: '-10px 0 30px rgba(0,0,0,0.5)',
+                transition: 'right 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
                 display: 'flex',
                 flexDirection: 'column',
                 padding: '20px',
