@@ -18,6 +18,7 @@ export default function ProductList() {
     const [sortPrice, setSortPrice] = useState('none');
     const [minPrice, setMinPrice] = useState('');
     const [maxPrice, setMaxPrice] = useState('');
+    const [searchQuery, setSearchQuery] = useState('');
 
     const observer = useRef();
     const lastProductRef = useCallback(node => {
@@ -41,7 +42,8 @@ export default function ProductList() {
                 style: filterStyle,
                 sortPrice,
                 minPrice: minPrice !== '' ? Number(minPrice) : null,
-                maxPrice: maxPrice !== '' ? Number(maxPrice) : null
+                maxPrice: maxPrice !== '' ? Number(maxPrice) : null,
+                search: searchQuery.trim() !== '' ? searchQuery : null
             };
 
             const data = await fetchProductsPaginated(pageNum, 6, filters);
@@ -70,11 +72,14 @@ export default function ProductList() {
         }
     };
 
-    // Initial load and filter change load
+    // Initial load and filter change load with DEBOUNCE to prevent excessive DB calls
     useEffect(() => {
-        setPage(0);
-        loadProducts(0, true);
-    }, [filterType, filterStyle, sortPrice, minPrice, maxPrice]);
+        const timer = setTimeout(() => {
+            setPage(0);
+            loadProducts(0, true);
+        }, 400); // 400ms delay for typing/selection
+        return () => clearTimeout(timer);
+    }, [filterType, filterStyle, sortPrice, minPrice, maxPrice, searchQuery]);
 
     // Load more when page changes
     useEffect(() => {
@@ -145,17 +150,51 @@ export default function ProductList() {
                 viewport={{ once: true }}
                 className="glass-panel filter-bar"
                 style={{
-                    padding: '15px',
+                    padding: '20px',
                     marginBottom: '40px',
                     display: 'flex',
                     flexWrap: 'wrap',
-                    gap: window.innerWidth < 480 ? '10px' : '15px',
+                    gap: '20px',
                     alignItems: 'center',
                     justifyContent: 'center',
                     maxWidth: '100%',
-                    overflow: 'hidden'
                 }}
             >
+                {/* Search Bar - Priority 1 */}
+                <div style={{ position: 'relative', flex: '1', minWidth: '300px', maxWidth: '450px' }}>
+                    <div style={{ position: 'absolute', right: '15px', top: '50%', transform: 'translateY(-50%)', color: 'var(--primary)', pointerEvents: 'none' }}>
+                        <Filter size={18} />
+                    </div>
+                    <input
+                        type="text"
+                        placeholder="ابحث بالاسم أو رقم الساعة (REF)..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        style={{
+                            width: '100%',
+                            padding: '12px 45px 12px 15px',
+                            background: 'rgba(255, 255, 255, 0.05)',
+                            border: '1.5px solid var(--border-color)',
+                            borderRadius: '12px',
+                            color: 'var(--text-main)',
+                            fontSize: '0.95rem',
+                            outline: 'none',
+                            transition: '0.3s',
+                            fontFamily: 'cairo'
+                        }}
+                        onFocus={(e) => { e.target.style.borderColor = 'var(--primary)'; e.target.style.boxShadow = '0 0 15px rgba(212, 175, 55, 0.1)'; }}
+                        onBlur={(e) => { e.target.style.borderColor = 'var(--border-color)'; e.target.style.boxShadow = 'none'; }}
+                    />
+                    {searchQuery && (
+                        <button 
+                            onClick={() => setSearchQuery('')}
+                            style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'var(--text-dim)', cursor: 'pointer', padding: '5px' }}
+                        >
+                            <Loader2 size={16} style={{ animation: 'none' }} /> 
+                        </button>
+                    )}
+                </div>
+
                 {/* Type Filter */}
                 <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
                     <Filter size={20} color="var(--primary)" />
@@ -209,6 +248,8 @@ export default function ProductList() {
                         <option value="classic">كلاسيكي</option>
                         <option value="formal">رسمي</option>
                         <option value="wedding">عرائسي</option>
+                        <option value="smart">سمارت</option>
+                        <option value="sport">سبورت</option>
                     </select>
                 </div>
 

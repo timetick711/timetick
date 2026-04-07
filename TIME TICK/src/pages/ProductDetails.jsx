@@ -264,7 +264,15 @@ const ProductDetails = () => {
 
                         {/* Extra Detail Tags */}
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
-                            <span className="badge-premium"><Tag size={14} /> موديل {product.style === 'classic' ? 'كلاسيك' : 'رسمي'}</span>
+                            <span className="badge-premium">
+                                <Tag size={14} /> موديل {
+                                    product.style === 'classic' ? 'كلاسيك' :
+                                    product.style === 'formal' ? 'رسمي' :
+                                    product.style === 'wedding' ? 'عرائسي' :
+                                    product.style === 'smart' ? 'سمارت' :
+                                    product.style === 'sport' ? 'سبورت' : 'أخرى'
+                                }
+                            </span>
                         </div>
 
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>

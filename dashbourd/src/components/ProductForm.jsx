@@ -662,6 +662,8 @@ const ProductForm = ({ initialData, onSubmit, title, subTitle }) => {
                                 <option value="classic">كلاسيكي</option>
                                 <option value="formal">رسمي</option>
                                 <option value="wedding">عرائسي</option>
+                                <option value="smart">سمارت</option>
+                                <option value="sport">سبورت</option>
                             </select>
                         </div>
                     </div>
@@ -756,8 +758,26 @@ const ProductForm = ({ initialData, onSubmit, title, subTitle }) => {
                     </div>
 
                     <div style={formGroup}>
-                        <label style={labelStyle}>وصف المنتج</label>
-                        <textarea placeholder="اكتب تفاصيل الساعة والمميزات هنا..." value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} style={{ ...inputStyle, height: '120px', resize: 'none' }} />
+                        <label style={labelStyle}>وصف المنتج (يتوسع تلقائياً)</label>
+                        <textarea 
+                            placeholder="اكتب تفاصيل الساعة والمميزات هنا..." 
+                            value={formData.description} 
+                            onChange={e => {
+                                setFormData({ ...formData, description: e.target.value });
+                                e.target.style.height = 'auto';
+                                e.target.style.height = e.target.scrollHeight + 'px';
+                            }} 
+                            onFocus={(e) => {
+                                e.target.style.height = 'auto';
+                                e.target.style.height = e.target.scrollHeight + 'px';
+                            }}
+                            style={{ 
+                                ...inputStyle, 
+                                minHeight: '120px', 
+                                overflow: 'hidden', 
+                                resize: 'none' 
+                            }} 
+                        />
                     </div>
 
                     <div style={formGroup}>

@@ -39,6 +39,10 @@ export const fetchProductsPaginated = async (page = 0, pageSize = 6, filters = {
         if (filters.maxPrice) {
             query = query.lte('price', filters.maxPrice);
         }
+        if (filters.search) {
+            // Search in name or displayId (REF) using case-insensitive ilike
+            query = query.or(`name.ilike.%${filters.search}%,displayId.ilike.%${filters.search}%`);
+        }
 
         // Apply sorting
         if (filters.sortPrice === 'asc') {
