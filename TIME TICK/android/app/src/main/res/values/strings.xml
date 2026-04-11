@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">تايم تك</string>
+    <string name="title_activity_main">تايم تك</string>
+    <string name="package_name">com.timetick.store</string>
+    <string name="custom_url_scheme">com.timetick.store</string>
+</resources>

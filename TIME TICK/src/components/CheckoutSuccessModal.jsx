@@ -15,7 +15,7 @@ export default function CheckoutSuccessModal({ isOpen, onClose, onProceed }) {
                     height: '100%',
                     background: 'rgba(0,0,0,0.9)',
                     backdropFilter: 'blur(10px)',
-                    zIndex: 1200,
+                    zIndex: 3010,
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',

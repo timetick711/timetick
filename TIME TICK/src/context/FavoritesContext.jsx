@@ -93,10 +93,20 @@ export const FavoritesProvider = ({ children }) => {
 
     const toggleFavorite = async (product) => {
         const isFav = favorites.some(fav => String(fav.id) === String(product.id));
-        let newFavs;
+        
+        // Capture previous state for potential rollback
+        const previousFavs = [...favorites];
+        
+        // Calculate new state immediately
+        const newFavs = isFav 
+            ? favorites.filter(fav => String(fav.id) !== String(product.id))
+            : [...favorites, product];
 
+        // 1. Update UI Immediately (Optimistic Update)
+        setFavorites(newFavs);
+
+        // 2. Persist to storage/database in background
         if (currentUser) {
-            // DATABASE MODE
             try {
                 if (isFav) {
                     const { error } = await supabase
@@ -105,7 +115,6 @@ export const FavoritesProvider = ({ children }) => {
                         .eq('user_id', currentUser.uid)
                         .eq('product_id', String(product.id));
                     if (error) throw error;
-                    newFavs = favorites.filter(fav => String(fav.id) !== String(product.id));
                 } else {
                     const { error } = await supabase
                         .from('favorites')
@@ -115,20 +124,16 @@ export const FavoritesProvider = ({ children }) => {
                             product_data: product
                         });
                     if (error) throw error;
-                    newFavs = [...favorites, product];
                 }
-                setFavorites(newFavs);
             } catch (err) {
-                console.error("Failed to update theater favorite:", err);
+                console.error("Failed to sync favorites with database:", err);
+                // 3. Rollback on failure
+                setFavorites(previousFavs);
+                alert("حدث خطأ أثناء مزامنة المفضلة. تم التراجع عن التغيير.");
             }
         } else {
-            // GUEST MODE (LOCAL)
-            if (isFav) {
-                newFavs = favorites.filter(fav => String(fav.id) !== String(product.id));
-            } else {
-                newFavs = [...favorites, product];
-            }
-            setFavorites(newFavs);
+            // Guest mode logic is already handled by the useEffect watching favorites
+            localStorage.setItem('time-tick-favorites', JSON.stringify(newFavs));
         }
     };
 

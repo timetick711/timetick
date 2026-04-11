@@ -10,6 +10,9 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@capacitor/android": "^8.3.0",
+    "@capacitor/cli": "^8.3.0",
+    "@capacitor/core": "^8.3.0",
     "@emailjs/browser": "^4.4.1",
     "@supabase/supabase-js": "^2.90.1",
     "framer-motion": "^12.26.2",

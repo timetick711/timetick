@@ -71,7 +71,7 @@ export default function PaymentMethodsModal({ isOpen, onClose, onConfirm }) {
                     height: '100%',
                     background: 'rgba(0,0,0,0.85)',
                     backdropFilter: 'blur(10px)',
-                    zIndex: 1100,
+                    zIndex: 3000,
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',

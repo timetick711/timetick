@@ -12,7 +12,7 @@ export default function ClearCartConfirmModal({ isOpen, onClose, onConfirm }) {
             height: '100%',
             background: 'rgba(0,0,0,0.85)',
             backdropFilter: 'blur(5px)',
-            zIndex: 1100, // Higher than sidebar
+            zIndex: 3000, // Higher than sidebar (2001)
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
