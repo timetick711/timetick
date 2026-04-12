@@ -6,7 +6,7 @@ import {
     Plus, Trash2, Edit, Loader2, Search, Layers, Users, 
     Activity, ShoppingBag, Clock, Filter, LayoutGrid, 
     LayoutList, Check, MoreVertical, Package, ArrowUpRight,
-    TrendingUp, Star, Box, Tag
+    TrendingUp, Star, Box, Tag, Flame
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { deleteFromCloudinary } from '../utils/cloudinary';
@@ -219,6 +219,68 @@ const Products = () => {
         }
     };
 
+    const toggleBestSellerStatus = async (id, currentStatus) => {
+        startLoading();
+        try {
+            const { error } = await supabase
+                .from('products')
+                .update({ is_best_seller: !currentStatus })
+                .eq('id', id);
+
+            if (error) throw error;
+            
+            setProducts(prev => prev.map(p => p.id === id ? { ...p, is_best_seller: !currentStatus } : p));
+            
+            Swal.fire({
+                icon: 'success',
+                title: !currentStatus ? 'تمت الإضافة' : 'تمت الإزالة',
+                text: !currentStatus ? 'تم نقل المنتج لقائمة أكثر الطلبات' : 'تم إزالة المنتج من قائمة أكثر الطلبات',
+                toast: true,
+                position: 'top-end',
+                showConfirmButton: false,
+                timer: 2000,
+                background: '#141414',
+                color: '#fff'
+            });
+        } catch (error) {
+            console.error(error);
+            Swal.fire({ icon: 'error', title: 'خطأ', text: 'فشل تحديث الحالة', background: '#141414', color: '#fff' });
+        } finally {
+            stopLoading();
+        }
+    };
+
+    const toggleLatestStatus = async (id, currentStatus) => {
+        startLoading();
+        try {
+            const { error } = await supabase
+                .from('products')
+                .update({ is_latest: !currentStatus })
+                .eq('id', id);
+
+            if (error) throw error;
+            
+            setProducts(prev => prev.map(p => p.id === id ? { ...p, is_latest: !currentStatus } : p));
+            
+            Swal.fire({
+                icon: 'success',
+                title: !currentStatus ? 'تمت الإضافة' : 'تمت الإزالة',
+                text: !currentStatus ? 'تم نقل المنتج لقائمة أحدث المنتجات' : 'تم إزالة المنتج من قائمة أحدث المنتجات',
+                toast: true,
+                position: 'top-end',
+                showConfirmButton: false,
+                timer: 2000,
+                background: '#141414',
+                color: '#fff'
+            });
+        } catch (error) {
+            console.error(error);
+            Swal.fire({ icon: 'error', title: 'خطأ', text: 'فشل تحديث الحالة', background: '#141414', color: '#fff' });
+        } finally {
+            stopLoading();
+        }
+    };
+
     const toggleProduct = (id) => {
         const newSelected = new Set(selectedProducts);
         if (newSelected.has(id)) {
@@ -411,6 +473,8 @@ const Products = () => {
                                     isSelected={selectedProducts.has(product.id)}
                                     onToggle={() => toggleProduct(product.id)}
                                     onDelete={() => handleDelete(product.id)}
+                                    onToggleLatest={() => toggleLatestStatus(product.id, product.is_latest)}
+                                    onToggleBestSeller={() => toggleBestSellerStatus(product.id, product.is_best_seller)}
                                     lastProductRef={products.length === index + 1 ? lastProductRef : null}
                                 />
                             ))
@@ -445,7 +509,7 @@ const Products = () => {
     );
 };
 
-const ProductCard = ({ product, index, isSelected, onToggle, onDelete, lastProductRef }) => {
+const ProductCard = ({ product, index, isSelected, onToggle, onDelete, onToggleLatest, onToggleBestSeller, lastProductRef }) => {
     return (
         <motion.div
             ref={lastProductRef}
@@ -475,9 +539,39 @@ const ProductCard = ({ product, index, isSelected, onToggle, onDelete, lastProdu
                     #{product.displayId || '---'}
                 </div>
 
-                {/* Selection Checkbox */}
-                <div style={{ position: 'absolute', top: '16px', left: '16px' }}>
+                {/* Selection Checkbox & Latest Toggle */}
+                <div style={{ position: 'absolute', top: '16px', left: '16px', display: 'flex', gap: '8px' }}>
                     <input type="checkbox" checked={isSelected} onChange={onToggle} className="custom-checkbox" />
+                    <motion.button 
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.9 }}
+                        onClick={(e) => { e.stopPropagation(); onToggleLatest(); }}
+                        style={{ 
+                            width: '26px', height: '26px', borderRadius: '8px', 
+                            background: product.is_latest ? 'var(--primary)' : 'rgba(0,0,0,0.4)', 
+                            border: '2px solid ' + (product.is_latest ? 'var(--primary)' : 'rgba(255,255,255,0.2)'),
+                            color: product.is_latest ? '#000' : 'rgba(255,255,255,0.5)',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
+                            fontSize: '14px', transition: '0.3s'
+                        }}
+                    >
+                        <Star size={14} fill={product.is_latest ? 'currentColor' : 'transparent'} />
+                    </motion.button>
+                    <motion.button 
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.9 }}
+                        onClick={(e) => { e.stopPropagation(); onToggleBestSeller(); }}
+                        style={{ 
+                            width: '26px', height: '26px', borderRadius: '8px', 
+                            background: product.is_best_seller ? '#f97316' : 'rgba(0,0,0,0.4)', 
+                            border: '2px solid ' + (product.is_best_seller ? '#f97316' : 'rgba(255,255,255,0.2)'),
+                            color: product.is_best_seller ? '#fff' : 'rgba(255,255,255,0.5)',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
+                            fontSize: '14px', transition: '0.3s'
+                        }}
+                    >
+                        <Flame size={14} fill={product.is_best_seller ? 'currentColor' : 'transparent'} />
+                    </motion.button>
                 </div>
 
                 {/* Discount Badge */}

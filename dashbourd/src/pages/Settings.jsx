@@ -5,7 +5,7 @@ import { useLoading } from '../context/LoadingContext';
 import { uploadToCloudinary } from '../utils/cloudinary';
 import { 
     Save, Image as ImageIcon, Plus, Trash2, Layout, 
-    GripVertical, ChevronDown, Monitor, Rocket, 
+    GripVertical, ChevronDown, Monitor, Rocket, Search, Flame,
     Sparkles, Settings as SettingsIcon, AlertCircle,
     ArrowUpRight, Check
 } from 'lucide-react';
@@ -395,6 +395,97 @@ const Settings = () => {
         }));
     };
 
+    // Management Hub State
+    const [hubSearch, setHubSearch] = useState('');
+    const [hubSearchResults, setHubSearchResults] = useState([]);
+    const [isSearchingHub, setIsSearchingHub] = useState(false);
+    const [hubActiveTab, setHubActiveTab] = useState('latest'); // 'latest' or 'best'
+
+    const [latestProducts, setLatestProducts] = useState([]);
+    const [bestSellers, setBestSellers] = useState([]);
+
+    useEffect(() => {
+        loadHubData();
+    }, []);
+
+    const loadHubData = async () => {
+        try {
+            const { data: latestData } = await supabase
+                .from('products')
+                .select('*')
+                .eq('is_latest', true)
+                .order('created_at', { ascending: false });
+            
+            const { data: bestData } = await supabase
+                .from('products')
+                .select('*')
+                .eq('is_best_seller', true)
+                .order('created_at', { ascending: false });
+
+            if (latestData) setLatestProducts(latestData);
+            if (bestData) setBestSellers(bestData);
+        } catch (err) { console.error(err); }
+    };
+
+    const handleHubSearch = async (query) => {
+        setHubSearch(query);
+        if (query.trim().length < 2) {
+            setHubSearchResults([]);
+            return;
+        }
+
+        setIsSearchingHub(true);
+        try {
+            let queryBuilder = supabase.from('products').select('*');
+            if (!isNaN(query)) {
+                queryBuilder = queryBuilder.or(`name.ilike.%${query}%,displayId.eq.${query}`);
+            } else {
+                queryBuilder = queryBuilder.ilike('name', `%${query}%`);
+            }
+            const { data } = await queryBuilder.limit(10);
+            if (data) setHubSearchResults(data);
+        } catch (err) { console.error(err); }
+        finally { setIsSearchingHub(false); }
+    };
+
+    const toggleCurationStatus = async (product, type, status) => {
+        startLoading();
+        try {
+            const column = type === 'latest' ? 'is_latest' : 'is_best_seller';
+            const { error } = await supabase
+                .from('products')
+                .update({ [column]: status })
+                .eq('id', product.id);
+            
+            if (error) throw error;
+            
+            if (type === 'latest') {
+                if (status) setLatestProducts(prev => [product, ...prev]);
+                else setLatestProducts(prev => prev.filter(p => p.id !== product.id));
+            } else {
+                if (status) setBestSellers(prev => [product, ...prev]);
+                else setBestSellers(prev => prev.filter(p => p.id !== product.id));
+            }
+
+            Swal.fire({
+                icon: 'success',
+                title: status ? 'تمت الإضافة' : 'تمت الإزالة',
+                text: `تم تحديث المنتج بنجاح`,
+                toast: true,
+                position: 'top-end',
+                showConfirmButton: false,
+                timer: 2000,
+                background: '#141414',
+                color: '#fff'
+            });
+        } catch (err) {
+            console.error(err);
+            Swal.fire({ icon: 'error', title: 'خطأ', text: 'فشل التحديث', background: '#141414', color: '#fff' });
+        } finally {
+            stopLoading();
+        }
+    };
+
     if (loading) return null;
 
     return (
@@ -403,9 +494,9 @@ const Settings = () => {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '3.5rem', flexWrap: 'wrap', gap: '24px' }}>
                 <div>
                     <h1 style={{ fontSize: '2.8rem', fontWeight: '900', color: '#fff', marginBottom: '8px', letterSpacing: '-1.5px' }}>
-                        إعدادات الواجهة <span style={{ color: 'var(--primary)', fontSize: '1.2rem', verticalAlign: 'middle', opacity: 0.8 }}>| إدارة الهيرو</span>
+                        إعدادات الواجهة <span style={{ color: 'var(--primary)', fontSize: '1.2rem', verticalAlign: 'middle', opacity: 0.8 }}>| إدارة الأقسام</span>
                     </h1>
-                    <p style={{ color: 'var(--text-muted)', fontSize: '1.1rem' }}>تخصيص محتوى وترتيب شرائح الواجهة الرئيسية (Hero Section) لمتجر تايم تك.</p>
+                    <p style={{ color: 'var(--text-muted)', fontSize: '1.1rem' }}>تخصيص محتوى وترتيب الأقسام المميزة في واجهة متجر تايم تك.</p>
                 </div>
                 <div>
                     <motion.button 
@@ -415,28 +506,29 @@ const Settings = () => {
                         onClick={saveSettings} 
                         style={{ padding: '14px 28px', borderRadius: '16px', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '10px', background: 'var(--primary)', color: '#000', border: 'none', cursor: 'pointer', boxShadow: '0 10px 25px rgba(212, 175, 55, 0.2)' }}
                     >
-                        حفظ التغييرات النهائية <Save size={20} />
+                        حفظ تغييرات الهيرو <Save size={20} />
                     </motion.button>
                 </div>
             </div>
 
+            {/* HERO SECTION MANAGEMENT */}
             <div style={{ 
                 background: 'rgba(255,255,255,0.02)', 
                 borderRadius: '32px', 
                 padding: '40px', 
                 border: '1px solid var(--border-color)',
-                backdropFilter: 'blur(10px)'
+                backdropFilter: 'blur(10px)',
+                marginBottom: '40px'
             }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                         <div style={{ width: '48px', height: '48px', borderRadius: '14px', background: 'rgba(212, 175, 55, 0.1)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                             <Layout size={24} />
                         </div>
-                        <h2 style={{ fontSize: '1.6rem', fontWeight: '800', color: '#fff' }}>تخصيص الشرائح (Slides)</h2>
+                        <h2 style={{ fontSize: '1.6rem', fontWeight: '800', color: '#fff' }}>تخصيص شرائح الهيرو (Slides)</h2>
                     </div>
                 </div>
 
-                {/* Hero Slides Reorderable List */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0' }}>
                     <DndContext 
                         sensors={sensors}
@@ -463,7 +555,6 @@ const Settings = () => {
                     </DndContext>
                 </div>
 
-                {/* Add New Trigger */}
                 <motion.button 
                     whileHover={{ background: 'rgba(212, 175, 55, 0.05)', scale: 1.01 }}
                     onClick={addNewSlide}
@@ -489,13 +580,221 @@ const Settings = () => {
                 </motion.button>
             </div>
 
+            {/* MANAGEMENT HUB SECTION */}
+            <div style={{ 
+                background: 'rgba(255,255,255,0.01)', 
+                borderRadius: '32px', 
+                border: '1px solid var(--border-color)',
+                backdropFilter: 'blur(30px)',
+                overflow: 'hidden',
+                boxShadow: '0 30px 60px rgba(0,0,0,0.5)',
+                marginTop: '40px'
+            }}>
+                <div style={{ padding: '32px', borderBottom: '1px solid var(--border-color)', background: 'linear-gradient(to right, rgba(212,175,55,0.05), transparent)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                        <div style={{ width: '48px', height: '48px', borderRadius: '14px', background: 'var(--primary)', color: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <Rocket size={24} />
+                        </div>
+                        <div>
+                            <h2 style={{ fontSize: '1.6rem', fontWeight: '900', color: '#fff' }}>مركز إدارة المجموعات الحصري</h2>
+                            <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>تحكم كامل في المنتجات المعروضة مباشرة في الصفحة الرئيسية</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '380px 1fr', minHeight: '650px' }}>
+                    {/* Sidebar: Master Control */}
+                    <div style={{ borderLeft: '1px solid var(--border-color)', padding: '32px', background: 'rgba(0,0,0,0.2)' }}>
+                        <h3 style={{ color: '#fff', fontSize: '1.1rem', fontWeight: '800', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <Search size={18} color="var(--primary)" /> التحكم السريع
+                        </h3>
+                        
+                        <div style={{ position: 'relative', marginBottom: '28px' }}>
+                            <input 
+                                type="text"
+                                placeholder="ابحث باسم الساعة أو الرقم..."
+                                value={hubSearch}
+                                onChange={(e) => handleHubSearch(e.target.value)}
+                                style={{ width: '100%', padding: '16px 20px', paddingRight: '48px', background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border-color)', borderRadius: '18px', color: '#fff', outline: 'none', fontSize: '0.95rem', transition: '0.3s' }}
+                                onFocus={(e) => e.target.style.borderColor = 'var(--primary)'}
+                                onBlur={(e) => e.target.style.borderColor = 'var(--border-color)'}
+                            />
+                            <div style={{ position: 'absolute', right: '18px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }}>
+                                <Search size={20} />
+                            </div>
+                        </div>
+
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                            <AnimatePresence mode="popLayout">
+                                {isSearchingHub ? (
+                                    <motion.div key="searching" initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ textAlign: 'center', padding: '20px', color: 'var(--primary)' }}>جاري البحث...</motion.div>
+                                ) : hubSearchResults.length > 0 ? (
+                                    hubSearchResults.map(product => (
+                                        <motion.div 
+                                            key={product.id}
+                                            initial={{ opacity: 0, x: 20 }}
+                                            animate={{ opacity: 1, x: 0 }}
+                                            className="admin-hub-item"
+                                            style={{ 
+                                                padding: '16px', background: 'rgba(255,255,255,0.02)', borderRadius: '18px',
+                                                border: '1px solid rgba(255,255,255,0.05)', marginBottom: '8px'
+                                            }}
+                                        >
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
+                                                <img src={product.imageUrl || product.image} alt={product.name} style={{ width: '44px', height: '44px', borderRadius: '10px', objectFit: 'cover', border: '1px solid rgba(255,255,255,0.1)' }} />
+                                                <div>
+                                                    <div style={{ color: '#fff', fontWeight: '700', fontSize: '0.9rem' }}>{product.name}</div>
+                                                    <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>#{product.displayId || '---'}</div>
+                                                </div>
+                                            </div>
+                                            
+                                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                                                <button 
+                                                    onClick={() => toggleCurationStatus(product, 'latest', !latestProducts.some(p => p.id === product.id))}
+                                                    style={{ 
+                                                        padding: '8px', borderRadius: '10px', fontSize: '0.7rem', fontWeight: '800', border: 'none', cursor: 'pointer', transition: '0.3s',
+                                                        background: latestProducts.some(p => p.id === product.id) ? 'rgba(59, 130, 246, 0.2)' : 'rgba(255,255,255,0.05)',
+                                                        color: latestProducts.some(p => p.id === product.id) ? '#60a5fa' : 'var(--text-muted)',
+                                                        border: latestProducts.some(p => p.id === product.id) ? '1px solid rgba(59, 130, 246, 0.3)' : '1px solid rgba(255,255,255,0.05)'
+                                                    }}
+                                                >
+                                                    {latestProducts.some(p => p.id === product.id) ? '✓ وصل حديثاً' : '+ وصل حديثاً'}
+                                                </button>
+                                                <button 
+                                                    onClick={() => toggleCurationStatus(product, 'best', !bestSellers.some(p => p.id === product.id))}
+                                                    style={{ 
+                                                        padding: '8px', borderRadius: '10px', fontSize: '0.7rem', fontWeight: '800', border: 'none', cursor: 'pointer', transition: '0.3s',
+                                                        background: bestSellers.some(p => p.id === product.id) ? 'rgba(249, 115, 22, 0.2)' : 'rgba(255,255,255,0.05)',
+                                                        color: bestSellers.some(p => p.id === product.id) ? '#fb923c' : 'var(--text-muted)',
+                                                        border: bestSellers.some(p => p.id === product.id) ? '1px solid rgba(249, 115, 22, 0.3)' : '1px solid rgba(255,255,255,0.05)'
+                                                    }}
+                                                >
+                                                    {bestSellers.some(p => p.id === product.id) ? '✓ الأكثر طلباً' : '+ الأكثر طلباً'}
+                                                </button>
+                                            </div>
+                                        </motion.div>
+                                    ))
+                                ) : hubSearch.length >= 2 ? (
+                                    <div style={{ textAlign: 'center', padding: '20px', color: 'var(--text-muted)' }}>لا توجد نتائج</div>
+                                ) : (
+                                    <div style={{ textAlign: 'center', padding: '40px 20px', border: '1px dashed rgba(255,255,255,0.05)', borderRadius: '20px', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+                                        <Monitor size={32} style={{ opacity: 0.1, marginBottom: '12px' }} />
+                                        <p>ابحث عن منتج للتحكم في ظهوره</p>
+                                    </div>
+                                )}
+                            </AnimatePresence>
+                        </div>
+                    </div>
+
+                    {/* Main Area: Active Lists */}
+                    <div style={{ padding: '32px', display: 'flex', flexDirection: 'column' }}>
+                        {/* Tab Switcher */}
+                        <div style={{ display: 'flex', gap: '8px', background: 'rgba(0,0,0,0.3)', padding: '6px', borderRadius: '16px', marginBottom: '32px', width: 'fit-content' }}>
+                            <button 
+                                onClick={() => setHubActiveTab('latest')}
+                                style={{ 
+                                    padding: '10px 24px', borderRadius: '12px', border: 'none', cursor: 'pointer', fontWeight: '800', fontSize: '0.9rem', transition: '0.3s',
+                                    background: hubActiveTab === 'latest' ? 'var(--primary)' : 'transparent',
+                                    color: hubActiveTab === 'latest' ? '#000' : 'var(--text-muted)'
+                                }}
+                            >
+                                وصل حديثاً ({latestProducts.length})
+                            </button>
+                            <button 
+                                onClick={() => setHubActiveTab('best')}
+                                style={{ 
+                                    padding: '10px 24px', borderRadius: '12px', border: 'none', cursor: 'pointer', fontWeight: '800', fontSize: '0.9rem', transition: '0.3s',
+                                    background: hubActiveTab === 'best' ? 'var(--primary)' : 'transparent',
+                                    color: hubActiveTab === 'best' ? '#000' : 'var(--text-muted)'
+                                }}
+                            >
+                                الأكثر طلباً ({bestSellers.length})
+                            </button>
+                        </div>
+
+                        {/* Current List Content */}
+                        <div style={{ flex: 1, maxHeight: '600px', overflowY: 'auto' }} className="hide-scrollbar">
+                            <AnimatePresence mode="wait">
+                                <motion.div
+                                    key={hubActiveTab}
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: -10 }}
+                                    style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '16px' }}
+                                >
+                                    {(hubActiveTab === 'latest' ? latestProducts : bestSellers).length > 0 ? (
+                                        (hubActiveTab === 'latest' ? latestProducts : bestSellers).map((product) => (
+                                            <div key={product.id} className="hub-active-card" style={{ padding: '16px', background: 'rgba(255,255,255,0.03)', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                                                    <img src={product.imageUrl || product.image} alt={product.name} style={{ width: '56px', height: '56px', borderRadius: '12px', objectFit: 'cover' }} />
+                                                    <div style={{ flex: 1 }}>
+                                                        <div style={{ color: '#fff', fontWeight: '800', fontSize: '0.95rem', marginBottom: '4px' }}>{product.name}</div>
+                                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                            <span style={{ color: 'var(--primary)', fontWeight: '900', fontSize: '0.85rem' }}>{Number(product.price).toLocaleString()} ر.س</span>
+                                                            <button 
+                                                                onClick={() => toggleCurationStatus(product, hubActiveTab, false)}
+                                                                style={{ background: 'rgba(239, 68, 68, 0.1)', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '6px', borderRadius: '8px', transition: '0.3s' }}
+                                                            >
+                                                                <Trash2 size={16} />
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))
+                                    ) : (
+                                        <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '100px 0', color: 'var(--text-muted)' }}>
+                                            <ImageIcon size={48} style={{ opacity: 0.1, marginBottom: '16px' }} />
+                                            <p style={{ fontSize: '1.1rem', fontWeight: '600' }}>هذه القائمة فارغة حالياً</p>
+                                        </div>
+                                    )}
+                                </motion.div>
+                            </AnimatePresence>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             {/* Info Tip */}
             <div style={{ marginTop: '30px', display: 'flex', alignItems: 'center', gap: '12px', padding: '20px', background: 'rgba(34, 197, 94, 0.05)', borderRadius: '18px', border: '1px solid rgba(34, 197, 94, 0.1)' }}>
                 <Sparkles size={20} color="#22c55e" />
                 <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.9rem' }}>
-                    <strong>نصيحة:</strong> يمكنك إعادة ترتيب الشرائح بسهولة عن طريق سحبها من المقبض الذهبي (<GripVertical size={14} />). الترتيب الجديد سيظهر فوراً في المتجر بعد الحفظ.
+                    <strong>نصيحة:</strong> مركز الإدارة الموحد يتيح لك التحكم في الصفحة الرئيسية من مكان واحد. التغييرات تظهر لحظياً للعملاء.
                 </p>
             </div>
+
+            <style>{`
+                .admin-hub-item {
+                    transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                }
+                .admin-hub-item:hover {
+                    background: rgba(255,255,255,0.05) !important;
+                    transform: translateX(-4px);
+                }
+
+                .hub-active-card {
+                    transition: 0.3s;
+                    animation: cardSlideIn 0.4s ease-out both;
+                }
+                .hub-active-card:hover {
+                    background: rgba(255,255,255,0.06) !important;
+                    border-color: var(--primary) !important;
+                    transform: translateY(-4px);
+                    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+                }
+
+                .hide-scrollbar::-webkit-scrollbar { display: none; }
+                .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+                @keyframes cardSlideIn {
+                    from { opacity: 0; transform: translateY(20px); }
+                    to { opacity: 1; transform: translateY(0); }
+                }
+
+                .custom-scroll::-webkit-scrollbar { width: 6px; }
+                .custom-scroll::-webkit-scrollbar-track { background: transparent; }
+                .custom-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); borderRadius: 10px; }
+            `}</style>
         </div>
     );
 };
