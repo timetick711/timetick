@@ -11,10 +11,9 @@ import Dock from './Dock';
 export default function Navbar() {
     const { cart, openCart } = useCart();
     const { theme, toggleTheme } = useTheme();
-    const { currentUser, openLogoutConfirm, openAuthModal, openProfileModal } = useAuth();
+    const { currentUser, openLogoutConfirm, openAuthModal, openProfileModal, isMenuOpen, setIsMenuOpen, toggleMenu } = useAuth();
     const { favorites, setIsFavoritesOpen } = useFavorites();
     const navigate = useNavigate();
-    const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
 
     const itemCount = cart.reduce((acc, item) => acc + item.dp_qty, 0);
@@ -36,8 +35,6 @@ export default function Navbar() {
         window.scrollTo(0, 0);
         setIsMenuOpen(false);
     };
-
-    const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
 
     const NavIcon = ({ icon: Icon, onClick, badge, color = "var(--text-main)", title = "" }) => (
         <div

@@ -19,6 +19,7 @@ export default function ProductList() {
     const [minPrice, setMinPrice] = useState('');
     const [maxPrice, setMaxPrice] = useState('');
     const [searchQuery, setSearchQuery] = useState('');
+    const [randomSeed, setRandomSeed] = useState(() => Math.random().toString(36).substring(7));
 
     const observer = useRef();
     const lastProductRef = useCallback(node => {
@@ -32,7 +33,7 @@ export default function ProductList() {
         if (node) observer.current.observe(node);
     }, [loading, loadingMore, hasMore]);
 
-    const loadProducts = async (pageNum, isInitial = false) => {
+    const loadProducts = async (pageNum, isInitial = false, currentSeed = randomSeed) => {
         try {
             if (isInitial) setLoading(true);
             else setLoadingMore(true);
@@ -43,7 +44,8 @@ export default function ProductList() {
                 sortPrice,
                 minPrice: minPrice !== '' ? Number(minPrice) : null,
                 maxPrice: maxPrice !== '' ? Number(maxPrice) : null,
-                search: searchQuery.trim() !== '' ? searchQuery : null
+                search: searchQuery.trim() !== '' ? searchQuery : null,
+                seed: currentSeed
             };
 
             const data = await fetchProductsPaginated(pageNum, 6, filters);
@@ -72,12 +74,15 @@ export default function ProductList() {
         }
     };
 
-    // Initial load and filter change load with DEBOUNCE to prevent excessive DB calls
+    // Initial load and filter change load with DEBOUNCE
     useEffect(() => {
         const timer = setTimeout(() => {
+            // Generate a NEW seed on every filter change as requested
+            const newSeed = Math.random().toString(36).substring(7);
+            setRandomSeed(newSeed);
             setPage(0);
-            loadProducts(0, true);
-        }, 400); // 400ms delay for typing/selection
+            loadProducts(0, true, newSeed);
+        }, 400); 
         return () => clearTimeout(timer);
     }, [filterType, filterStyle, sortPrice, minPrice, maxPrice, searchQuery]);
 
@@ -101,6 +106,16 @@ export default function ProductList() {
                             video: payload.new.video || ''
                         };
                         return prev.map(p => p.id === updatedProduct.id ? updatedProduct : p);
+                    }
+                    if (payload.eventType === 'INSERT') {
+                        const newProduct = {
+                            ...payload.new,
+                            price: Number(payload.new.price) || 0,
+                            image: payload.new.imageUrl || payload.new.image || 'https://placehold.co/400x500/1a1a1a/ffffff?text=No+Image',
+                            video: payload.new.video || ''
+                        };
+                        // Add to top of list if it doesn't already exist
+                        return [newProduct, ...prev.filter(p => p.id !== newProduct.id)];
                     }
                     if (payload.eventType === 'DELETE') {
                         return prev.filter(p => p.id !== payload.old.id);

@@ -20,13 +20,81 @@ export const fetchProductsFromFirestore = async () => {
     }
 };
 
+export const fetchLatestProducts = async () => {
+    try {
+        const { data, error } = await supabase
+            .from('products')
+            .select('*')
+            .eq('is_latest', true)
+            .order('created_at', { ascending: false });
+
+        if (error) throw error;
+        
+        return data || [];
+    } catch (error) {
+        console.error('Error in fetchLatestProducts:', error);
+        return [];
+    }
+};
+
+export const fetchBestSellers = async () => {
+    try {
+        const { data, error } = await supabase
+            .from('products')
+            .select('*')
+            .eq('is_best_seller', true)
+            .order('created_at', { ascending: false });
+        
+        if (error) throw error;
+
+        return data || [];
+    } catch (error) {
+        console.error('Error fetching best sellers:', error);
+        return [];
+    }
+};
+
 export const fetchProductsPaginated = async (page = 0, pageSize = 6, filters = {}) => {
     try {
+        const from = page * pageSize;
+        const to = from + pageSize - 1;
+
+        // If random sorting is requested (default)
+        if (filters.sortPrice === 'none' && filters.seed) {
+            try {
+                const { data, error } = await supabase.rpc('get_random_products', {
+                    p_seed: filters.seed,
+                    p_offset: from,
+                    p_limit: pageSize,
+                    p_category: filters.category || 'all',
+                    p_style: filters.style || 'all',
+                    p_min_price: filters.minPrice || null,
+                    p_max_price: filters.maxPrice || null,
+                    p_search: filters.search || null
+                });
+
+                if (!error && data) {
+                    return {
+                        products: data || [],
+                        // Simplified hasMore: if we got exactly pageSize, there's likely more
+                        hasMore: data.length === pageSize, 
+                        total: 0 // We don't have the exact total anymore but hasMore works for the UI
+                    };
+                }
+                
+                if (error) {
+                    console.warn('RPC random sort failed, falling back to standard sorting:', error.message);
+                }
+            } catch (rpcError) {
+                console.error('RPC Error:', rpcError);
+            }
+        }
+
+        // Standard filtering (Fallback or explicit sorting)
         let query = supabase
             .from('products')
             .select('*', { count: 'exact' });
 
-        // Apply filters if provided
         if (filters.category && filters.category !== 'all') {
             query = query.eq('category', filters.category);
         }
@@ -40,11 +108,9 @@ export const fetchProductsPaginated = async (page = 0, pageSize = 6, filters = {
             query = query.lte('price', filters.maxPrice);
         }
         if (filters.search) {
-            // Search in name or displayId (REF) using case-insensitive ilike
             query = query.or(`name.ilike.%${filters.search}%,displayId.ilike.%${filters.search}%`);
         }
 
-        // Apply sorting
         if (filters.sortPrice === 'asc') {
             query = query.order('price', { ascending: true });
         } else if (filters.sortPrice === 'desc') {
@@ -52,9 +118,6 @@ export const fetchProductsPaginated = async (page = 0, pageSize = 6, filters = {
         } else {
             query = query.order('created_at', { ascending: false });
         }
-
-        const from = page * pageSize;
-        const to = from + pageSize - 1;
 
         const { data, error, count } = await query.range(from, to);
 
@@ -72,12 +135,13 @@ export const fetchProductsPaginated = async (page = 0, pageSize = 6, filters = {
 };
 
 export const subscribeToProducts = (callback) => {
-    // Realtime subscription
+    // Unique channel name per subscription to avoid conflicts
+    const channelId = `products-changes-${Math.random().toString(36).substring(7)}`;
     const subscription = supabase
-        .channel('public:products')
+        .channel(channelId)
         .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, (payload) => {
-            console.log('Change received!', payload);
-            callback(payload); // Pass the payload to the callback for granular updates
+            console.log('Change received in channel:', channelId, payload);
+            callback(payload);
         })
         .subscribe();
 

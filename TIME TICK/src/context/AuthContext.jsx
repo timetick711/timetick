@@ -26,6 +26,10 @@ export const AuthProvider = ({ children }) => {
     const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
     const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false);
     const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+    const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+    const toggleMenu = () => setIsMenuOpen(prev => !prev);
+    const closeMenu = () => setIsMenuOpen(false);
 
     // Initial check for pending registration on load
     useEffect(() => {
@@ -331,6 +335,10 @@ export const AuthProvider = ({ children }) => {
             isAuthModalOpen,
             isLogoutConfirmOpen,
             isProfileModalOpen,
+            isMenuOpen,
+            setIsMenuOpen,
+            toggleMenu,
+            closeMenu,
             isVerifyingOtp,
             pendingUserData,
             register,

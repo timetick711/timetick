@@ -9,6 +9,8 @@ import { LoaderProvider } from './context/LoaderContext';
 import Navbar from './components/Navbar';
 import Hero from './components/Hero';
 import Features from './components/Features';
+import BestSellers from './components/BestSellers';
+import LatestProducts from './components/LatestProducts';
 import ProductList from './components/ProductList';
 import ProductDetails from './pages/ProductDetails';
 import Orders from './pages/Orders';
@@ -20,6 +22,7 @@ import FavoritesModal from './components/FavoritesModal';
 import Footer from './components/Footer';
 import SEOHelper from './components/SEOHelper';
 import ScrollToTop from './components/ScrollToTop';
+import BackButtonHandler from './components/BackButtonHandler';
 
 // Home Page Component
 const Home = () => (
@@ -31,6 +34,8 @@ const Home = () => (
   >
     <Hero />
     <Features />
+    <BestSellers />
+    <LatestProducts />
     <ProductList />
   </motion.div>
 );
@@ -70,6 +75,7 @@ function App() {
   return (
     <Router>
       <ScrollToTop />
+      <BackButtonHandler />
       <ThemeProvider>
         <LoaderProvider>
           <AuthProvider>
