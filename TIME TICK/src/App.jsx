@@ -75,13 +75,13 @@ function App() {
   return (
     <Router>
       <ScrollToTop />
-      <BackButtonHandler />
       <ThemeProvider>
         <LoaderProvider>
           <AuthProvider>
               <FavoritesProvider>
                 <VideoProvider>
                   <CartProvider>
+                    <BackButtonHandler />
                     <SEOHelper />
                     <div className="app-container">
                       <Navbar />
