@@ -2,6 +2,8 @@ import { createContext, useState, useContext, useEffect, useCallback } from 'rea
 import { supabase } from '../supabase/client';
 import emailjs from '@emailjs/browser';
 import { useLoader } from './LoaderContext';
+import { App } from '@capacitor/app';
+import { Capacitor } from '@capacitor/core';
 
 const AuthContext = createContext();
 
@@ -130,9 +132,40 @@ export const AuthProvider = ({ children }) => {
             )
             .subscribe();
 
+        // 2. LISTEN FOR DEEP LINKS (OAuth Redirects)
+        const deepLinkListener = App.addListener('appUrlOpen', async (data) => {
+            if (data.url.includes('com.timetick.store')) {
+                // Capacitor URLs can be tricky with fragment/hashes
+                // We convert it to a standard URL string that URL constructor can parse
+                // By replacing the custom scheme with http for parsing purposes
+                const url = new URL(data.url.replace('com.timetick.store://', 'http://localhost/'));
+                
+                // Supabase returns tokens in the hash (#)
+                const fragment = url.hash.substring(1); // Remove the '#'
+                const params = new URLSearchParams(fragment);
+                
+                const accessToken = params.get('access_token');
+                const refreshToken = params.get('refresh_token');
+
+                if (accessToken && refreshToken) {
+                    showLoader('جاري إكمال تسجيل الدخول...');
+                    const { error } = await supabase.auth.setSession({
+                        access_token: accessToken,
+                        refresh_token: refreshToken
+                    });
+                    
+                    if (error) {
+                        console.error("SetSession error:", error);
+                    }
+                    setTimeout(hideLoader, 1500);
+                }
+            }
+        });
+
         return () => {
             subscription.unsubscribe();
             supabase.removeChannel(channel);
+            deepLinkListener.remove();
         };
     }, []);
 
@@ -147,10 +180,17 @@ export const AuthProvider = ({ children }) => {
 
     const loginWithGoogle = async () => {
         sessionStorage.setItem('isGoogleLoginPending', 'true');
+        
+        // Define redirect URL based on platform
+        // Web uses current origin, Mobile uses Custom Scheme
+        const redirectTo = Capacitor.isNativePlatform() 
+            ? 'com.timetick.store://login-callback' 
+            : window.location.origin;
+
         const { error } = await supabase.auth.signInWithOAuth({
             provider: 'google',
             options: {
-                redirectTo: window.location.origin
+                redirectTo: redirectTo
             }
         });
 
