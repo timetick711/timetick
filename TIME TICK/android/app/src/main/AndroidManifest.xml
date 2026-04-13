@@ -26,6 +26,14 @@
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="com.timetick.store" />
             </intent-filter>
+
+            <!-- App Links (Direct Web URL to App) -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" android:host="timetick.vercel.app" />
+            </intent-filter>
         </activity>
 
         <provider

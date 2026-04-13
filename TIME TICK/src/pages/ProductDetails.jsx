@@ -29,6 +29,9 @@ const ProductDetails = () => {
     const [showModal, setShowModal] = useState(false);
     const [copied, setCopied] = useState(false);
     const { activeVideoId, setActiveVideoId } = useVideo();
+    
+    // Hardcoded production URL for sharing
+    const shareUrl = `https://timetick.vercel.app/product/${id}`;
 
     useEffect(() => {
         if (activeVideoId !== id && mediaMode === 'video') {
@@ -320,7 +323,7 @@ const ProductDetails = () => {
                             </motion.button>
                             <motion.button 
                                 whileHover={{ background: 'var(--border-color)' }}
-                                onClick={() => { navigator.clipboard.writeText(window.location.href); setCopied(true); setTimeout(() => setCopied(false), 2000); }}
+                                onClick={() => { navigator.clipboard.writeText(shareUrl); setCopied(true); setTimeout(() => setCopied(false), 2000); }}
                                 style={{ width: '52px', height: '52px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '14px', border: `1.5px solid ${copied ? '#10B981' : 'var(--border-color)'}`, color: copied ? '#10B981' : 'var(--text-main)', background: 'transparent', cursor: 'pointer', transition: '0.3s' }}
                             >
                                 {copied ? <Check size={22} /> : <Share2 size={22} />}
