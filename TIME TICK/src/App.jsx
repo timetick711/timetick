@@ -23,6 +23,9 @@ import Footer from './components/Footer';
 import SEOHelper from './components/SEOHelper';
 import ScrollToTop from './components/ScrollToTop';
 import BackButtonHandler from './components/BackButtonHandler';
+import { StatusBar } from '@capacitor/status-bar';
+import { Capacitor } from '@capacitor/core';
+import { useEffect } from 'react';
 
 // Home Page Component
 const Home = () => (
@@ -72,6 +75,13 @@ const AnimatedRoutes = () => {
 };
 
 function App() {
+  useEffect(() => {
+    // Force Immersive Full Screen on Mobile
+    if (Capacitor.isNativePlatform()) {
+      StatusBar.setOverlaysWebView({ overlay: true }).catch(err => console.log('StatusBar error:', err));
+    }
+  }, []);
+
   return (
     <Router>
       <ScrollToTop />

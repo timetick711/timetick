@@ -26,5 +26,6 @@
         <item name="android:background">@drawable/splash</item>
         <item name="android:statusBarColor">#0a0a0a</item>
         <item name="android:navigationBarColor">#0a0a0a</item>
+        <item name="android:windowLayoutInDisplayCutoutMode">shortEdges</item>
     </style>
 </resources>

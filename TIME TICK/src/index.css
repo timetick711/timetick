@@ -70,6 +70,10 @@ body {
   display: flex;
   flex-direction: column;
   overflow-x: hidden;
+  /* Handling Top and Bottom Safe Areas on Mobile */
+  padding-top: env(safe-area-inset-top, 0);
+  padding-bottom: env(safe-area-inset-bottom, 0);
+  background-color: var(--bg-main);
 }
 
 /* Utilities */
