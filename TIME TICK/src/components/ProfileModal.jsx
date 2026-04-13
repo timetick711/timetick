@@ -6,6 +6,8 @@ import ToastNotification from './ToastNotification';
 import Cropper from 'react-easy-crop';
 import { getCroppedImg } from '../utils/cropImage';
 import { uploadToCloudinary } from '../utils/cloudinary';
+import { Camera, CameraResultType } from '@capacitor/camera';
+import { Capacitor } from '@capacitor/core';
 
 export default function ProfileModal() {
     const { isProfileModalOpen, closeProfileModal, currentUser, updateUser } = useAuth();
@@ -47,7 +49,28 @@ export default function ProfileModal() {
 
     if (!isProfileModalOpen || !currentUser) return null;
 
-    const handleImageUpload = (e) => {
+    const handleImageUpload = async (e) => {
+        // If on native platform (Android/iOS), use Capacitor Camera
+        if (Capacitor.isNativePlatform()) {
+            try {
+                const image = await Camera.getPhoto({
+                    quality: 90,
+                    allowEditing: false, // We use our own cropper
+                    resultType: CameraResultType.DataUrl
+                });
+
+                if (image && image.dataUrl) {
+                    setImageSrc(image.dataUrl);
+                    setIsCropping(true);
+                }
+            } catch (error) {
+                console.error('Camera error:', error);
+                // User probably cancelled or denied permissions
+            }
+            return;
+        }
+
+        // Web Fallback
         const file = e.target.files[0];
         if (file) {
             const reader = new FileReader();
@@ -273,18 +296,26 @@ export default function ProfileModal() {
                         )}
 
                         {isEditing && (
-                            <label style={{
-                                position: 'absolute',
-                                bottom: 0,
-                                left: 0,
-                                width: '100%',
-                                height: '30px',
-                                background: 'rgba(0,0,0,0.6)',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                cursor: 'pointer'
-                            }}>
+                            <label 
+                                onClick={(e) => {
+                                    if(Capacitor.isNativePlatform()) {
+                                        e.preventDefault();
+                                        handleImageUpload();
+                                    }
+                                }}
+                                style={{
+                                    position: 'absolute',
+                                    bottom: 0,
+                                    left: 0,
+                                    width: '100%',
+                                    height: '30px',
+                                    background: 'rgba(0,0,0,0.6)',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    cursor: 'pointer'
+                                }}
+                            >
                                 <Camera size={16} color="white" />
                                 <input type="file" accept="image/*" onChange={handleImageUpload} style={{ display: 'none' }} />
                             </label>
