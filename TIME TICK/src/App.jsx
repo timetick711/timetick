@@ -118,7 +118,10 @@ function App() {
   useEffect(() => {
     // Force Immersive Full Screen on Mobile
     if (Capacitor.isNativePlatform()) {
-      StatusBar.setOverlaysWebView({ overlay: true }).catch(err => console.log('StatusBar error:', err));
+      // Make status bar transparent and overlay content
+      StatusBar.setOverlaysWebView({ overlay: true });
+      StatusBar.setBackgroundColor({ color: '#00000000' });
+      StatusBar.setStyle({ style: 'LIGHT' }); // Light icons for dark theme
     }
   }, []);
 
