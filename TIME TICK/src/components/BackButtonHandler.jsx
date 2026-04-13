@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { App } from '@capacitor/app';
+import { App as CapApp } from '@capacitor/app';
 import { Capacitor } from '@capacitor/core';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
@@ -42,7 +42,7 @@ const BackButtonHandler = () => {
                 // 2. Handle Page Navigation
                 if (location.pathname === '/') {
                     // We are at home, exit the app
-                    await App.exitApp();
+                    await CapApp.exitApp();
                 } else {
                     // Navigate back within React Router
                     navigate(-1);
@@ -50,7 +50,7 @@ const BackButtonHandler = () => {
             }
         };
 
-        const listener = App.addListener('backButton', (data) => {
+        const listener = CapApp.addListener('backButton', (data) => {
             // data.canGoBack is true if the native stack has items, but 
             // since we use a SPA, we handle the logic ourselves.
             handleBackButton();
