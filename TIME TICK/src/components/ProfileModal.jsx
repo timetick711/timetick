@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, User, Save, Edit2, Camera, ZoomIn, ZoomOut, Check } from 'lucide-react';
+import { X, User, Save, Edit2, Camera as CameraIcon, ZoomIn, ZoomOut, Check } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useLoader } from '../context/LoaderContext';
 import ToastNotification from './ToastNotification';
@@ -316,7 +316,7 @@ export default function ProfileModal() {
                                     cursor: 'pointer'
                                 }}
                             >
-                                <Camera size={16} color="white" />
+                                <CameraIcon size={16} color="white" />
                                 <input type="file" accept="image/*" onChange={handleImageUpload} style={{ display: 'none' }} />
                             </label>
                         )}
