@@ -24,7 +24,7 @@ import SEOHelper from './components/SEOHelper';
 import ScrollToTop from './components/ScrollToTop';
 import BackButtonHandler from './components/BackButtonHandler';
 import { StatusBar } from '@capacitor/status-bar';
-import { App } from '@capacitor/app';
+import { App as CapApp } from '@capacitor/app';
 import { Capacitor } from '@capacitor/core';
 import { useEffect } from 'react';
 
@@ -81,7 +81,9 @@ const DeepLinkHandler = () => {
 
   useEffect(() => {
     // 1. Handle links when the app is already open (Resume/Foreground)
-    const urlListener = App.addListener('appUrlOpen', (event) => {
+    if (!Capacitor.isNativePlatform()) return;
+
+    const urlListener = CapApp.addListener('appUrlOpen', (event) => {
       const url = event.url;
       
       // Extract path (e.g., from https://timetick.vercel.app/product/123 or com.timetick.store://product/123)

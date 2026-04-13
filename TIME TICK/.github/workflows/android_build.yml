@@ -48,6 +48,7 @@ jobs:
       - name: Show Fingerprint (SHA256)
         run: |
           cd android
+          chmod +x gradlew
           ./gradlew signingReport
 
       - name: Upload APK Artifact
