@@ -239,7 +239,6 @@ const LatestProducts = () => {
                     font-weight: 950;
                     color: var(--primary);
                 }
- Riverside
 
                 .card-arrow {
                     width: 36px;
