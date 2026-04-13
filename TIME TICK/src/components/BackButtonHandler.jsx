@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { App } from '@capacitor/app';
+import { Capacitor } from '@capacitor/core';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { useFavorites } from '../context/FavoritesContext';
@@ -20,6 +21,9 @@ const BackButtonHandler = () => {
     const { isFavoritesOpen, setIsFavoritesOpen } = useFavorites();
 
     useEffect(() => {
+        // Only run this logic on native mobile platforms
+        if (!Capacitor.isNativePlatform()) return;
+
         const handleBackButton = async () => {
             // 1. Check for open UI layers in order of priority
             if (isCartOpen) {
