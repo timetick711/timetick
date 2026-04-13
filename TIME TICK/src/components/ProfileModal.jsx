@@ -211,7 +211,7 @@ export default function ProfileModal() {
             height: '100%',
             background: 'rgba(0,0,0,0.85)',
             backdropFilter: 'blur(8px)',
-            zIndex: 1000,
+            zIndex: 2000,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',

@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useLocation, useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { CartProvider } from './context/CartContext';
 import { ThemeProvider } from './context/ThemeContext';
@@ -24,6 +24,7 @@ import SEOHelper from './components/SEOHelper';
 import ScrollToTop from './components/ScrollToTop';
 import BackButtonHandler from './components/BackButtonHandler';
 import { StatusBar } from '@capacitor/status-bar';
+import { App } from '@capacitor/app';
 import { Capacitor } from '@capacitor/core';
 import { useEffect } from 'react';
 
@@ -74,6 +75,43 @@ const AnimatedRoutes = () => {
   );
 };
 
+// Deep Link Handler Component
+const DeepLinkHandler = () => {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    // 1. Handle links when the app is already open (Resume/Foreground)
+    const urlListener = App.addListener('appUrlOpen', (event) => {
+      const url = event.url;
+      
+      // Extract path (e.g., from https://timetick.vercel.app/product/123 or com.timetick.store://product/123)
+      let path = '';
+      if (url.includes('timetick.vercel.app')) {
+        path = url.split('timetick.vercel.app')[1];
+      } else if (url.includes('com.timetick.store://')) {
+        path = url.split('com.timetick.store://')[1];
+        // Ensure path starts with /
+        if (path && !path.startsWith('/')) path = '/' + path;
+      }
+
+      if (path) {
+        // Remove hash/fragment/query for clean navigation if needed, 
+        // but React Router handles them well.
+        // We only navigate if it's a valid path like /product/ or /orders
+        if (path.startsWith('/product/') || path.startsWith('/orders')) {
+          navigate(path);
+        }
+      }
+    });
+
+    return () => {
+      urlListener.remove();
+    };
+  }, [navigate]);
+
+  return null;
+};
+
 function App() {
   useEffect(() => {
     // Force Immersive Full Screen on Mobile
@@ -91,6 +129,7 @@ function App() {
               <FavoritesProvider>
                 <VideoProvider>
                   <CartProvider>
+                    <DeepLinkHandler />
                     <BackButtonHandler />
                     <SEOHelper />
                     <div className="app-container">

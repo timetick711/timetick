@@ -93,7 +93,7 @@ const BestSellers = () => {
                                 exit={{ opacity: 0, scale: 0.5 }}
                                 onClick={() => scroll('right')} 
                                 className="nav-circle right"
-                                style={{ zIndex: 1000 }}
+                                style={{ zIndex: 100 }}
                             >
                                 <ChevronRight size={24} />
                             </motion.button>
@@ -179,7 +179,7 @@ const BestSellers = () => {
                                 exit={{ opacity: 0, scale: 0.5 }}
                                 onClick={() => scroll('left')} 
                                 className="nav-circle left"
-                                style={{ zIndex: 1000 }}
+                                style={{ zIndex: 100 }}
                             >
                                 <ChevronLeft size={24} />
                             </motion.button>
