@@ -130,13 +130,6 @@ export default function Navbar() {
                     <span style={{ fontSize: '1.1rem' }}>طلباتي</span>
                 </div>
 
-                <div className="action-icon" style={{ justifyContent: 'flex-start', padding: '10px 0' }} onClick={() => { window.location.href = '/download/'; setIsMenuOpen(false); }}>
-                    <div style={{ width: '22px', height: '22px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-                    </div>
-                    <span style={{ fontSize: '1.1rem' }}>تحميل التطبيق</span>
-                </div>
-
             </div>
 
             {/* Bottom: Service Icons */}

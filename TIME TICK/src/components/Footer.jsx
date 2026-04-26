@@ -59,7 +59,6 @@ export default function Footer() {
                     <ul style={{ listStyle: 'none', padding: 0, display: 'flex', flexDirection: 'column', gap: '12px' }}>
                         <li><a href="#" style={{ color: 'var(--text-dim)', textDecoration: 'none', transition: '0.3s' }}>الرئيسية</a></li>
                         <li><a href="#products" style={{ color: 'var(--text-dim)', textDecoration: 'none' }}>تسوق الساعات</a></li>
-                        <li><a href="/download/" style={{ color: 'var(--primary)', textDecoration: 'none', fontWeight: 'bold' }}>تحميل التطبيق</a></li>
                     </ul>
                 </div>
 
