@@ -130,6 +130,11 @@ export default function Navbar() {
                     <span style={{ fontSize: '1.1rem' }}>طلباتي</span>
                 </div>
 
+                <div className="action-icon" style={{ justifyContent: 'flex-start', padding: '10px 0' }} onClick={() => { window.location.href = '/download/'; setIsMenuOpen(false); }}>
+                    <Watch size={22} color="var(--primary)" />
+                    <span style={{ fontSize: '1.1rem' }}>تحميل التطبيق</span>
+                </div>
+
             </div>
 
             {/* Bottom: Service Icons */}
