@@ -59,6 +59,7 @@ const EditProduct = () => {
             const { error } = await supabase
                 .from('products')
                 .update({
+                    displayId: Number(formData.displayId),
                     name: formData.name,
                     price: formData.price,
                     old_price: formData.old_price || null,
