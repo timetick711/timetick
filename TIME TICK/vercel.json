@@ -5,7 +5,11 @@
             "destination": "/assets/$1"
         },
         {
-            "source": "/(.*)",
+            "source": "/app/(.*)",
+            "destination": "/app/$1"
+        },
+        {
+            "source": "/((?!app|assets|favicon.ico|manifest.json).*)",
             "destination": "/index.html"
         }
     ]

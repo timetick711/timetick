@@ -2,8 +2,10 @@ import { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Minus, Plus, ShoppingCart, Check } from 'lucide-react';
+import { useCart } from '../context/CartContext';
 
 export default function ProductOptionsModal({ isOpen, onClose, product, onConfirm }) {
+    const { setIsOptionsModalOpen } = useCart();
     const [quantity, setQuantity] = useState(1);
     const [selectedVariant, setSelectedVariant] = useState(null);
     const [error, setError] = useState('');
@@ -27,6 +29,19 @@ export default function ProductOptionsModal({ isOpen, onClose, product, onConfir
                 ? product.images.map(img => ({ image: img, price: Number(product.price) }))
                 : [];
     }, [product]);
+
+    useEffect(() => {
+        const handleRemoteClose = () => {
+            if (isOpen) onClose();
+        };
+        window.addEventListener('close-product-options', handleRemoteClose);
+        return () => window.removeEventListener('close-product-options', handleRemoteClose);
+    }, [isOpen, onClose]);
+
+    useEffect(() => {
+        setIsOptionsModalOpen(isOpen);
+        return () => setIsOptionsModalOpen(false);
+    }, [isOpen, setIsOptionsModalOpen]);
 
     useEffect(() => {
         if (isOpen) {

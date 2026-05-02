@@ -17,8 +17,9 @@ const BackButtonHandler = () => {
         isProfileModalOpen, closeProfileModal
     } = useAuth();
     
-    const { isCartOpen, closeCart } = useCart();
+    const { isCartOpen, closeCart, isOptionsModalOpen } = useCart();
     const { isFavoritesOpen, setIsFavoritesOpen } = useFavorites();
+    const { isVideoModalOpen, closeVideoModal } = useAuth(); // Assuming video modal might exist or be added
 
     useEffect(() => {
         // Only run this logic on native mobile platforms
@@ -26,7 +27,9 @@ const BackButtonHandler = () => {
 
         const handleBackButton = async () => {
             // 1. Check for open UI layers in order of priority
-            if (isCartOpen) {
+            if (isOptionsModalOpen) {
+                window.dispatchEvent(new CustomEvent('close-product-options'));
+            } else if (isCartOpen) {
                 closeCart();
             } else if (isMenuOpen) {
                 setIsMenuOpen(false);
@@ -61,7 +64,7 @@ const BackButtonHandler = () => {
         };
     }, [
         location, navigate, 
-        isCartOpen, closeCart,
+        isCartOpen, closeCart, isOptionsModalOpen,
         isMenuOpen, setIsMenuOpen,
         isFavoritesOpen, setIsFavoritesOpen,
         isAuthModalOpen, closeAuthModal,

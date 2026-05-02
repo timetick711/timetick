@@ -39,6 +39,7 @@
   box-sizing: border-box;
   margin: 0;
   padding: 0;
+  -webkit-tap-highlight-color: transparent;
 }
 
 ::selection {
@@ -62,6 +63,13 @@ body {
   direction: rtl;
   transition: background-color 0.4s ease, color 0.4s ease;
   line-height: 1.6;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+input, textarea, [contenteditable="true"] {
+  -webkit-user-select: text;
+  user-select: text;
 }
 
 .app-container {

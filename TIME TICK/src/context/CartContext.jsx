@@ -22,6 +22,7 @@ export const CartProvider = ({ children }) => {
     }, [cart]);
 
     const [isCartOpen, setIsCartOpen] = useState(false);
+    const [isOptionsModalOpen, setIsOptionsModalOpen] = useState(false);
     
     // Real-time listener for product deletions
     useEffect(() => {
@@ -336,7 +337,9 @@ export const CartProvider = ({ children }) => {
             prepareWhatsAppCheckout,
             isCartOpen,
             openCart,
-            closeCart
+            closeCart,
+            isOptionsModalOpen,
+            setIsOptionsModalOpen
         }}>
             {children}
         </CartContext.Provider>
