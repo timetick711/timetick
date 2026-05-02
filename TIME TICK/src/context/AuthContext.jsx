@@ -134,6 +134,8 @@ export const AuthProvider = ({ children }) => {
 
         // 2. LISTEN FOR DEEP LINKS (OAuth Redirects)
         let deepLinkListener;
+        let stateListener;
+        
         if (Capacitor.isNativePlatform()) {
             deepLinkListener = CapApp.addListener('appUrlOpen', async (data) => {
                 if (data.url.includes('com.timetick.store')) {
@@ -153,9 +155,23 @@ export const AuthProvider = ({ children }) => {
                         
                         if (error) {
                             console.error("SetSession error:", error);
+                            hideLoader();
                         }
-                        setTimeout(hideLoader, 1500);
+                        // onAuthStateChange will handle the rest
                     }
+                }
+            });
+
+            // Handle user returning to app without finishing login (Back button)
+            stateListener = CapApp.addListener('appStateChange', ({ isActive }) => {
+                if (isActive) {
+                    // Short delay to see if onAuthStateChange or deepLinkListener catches it
+                    setTimeout(() => {
+                        if (sessionStorage.getItem('isGoogleLoginPending') === 'true') {
+                            sessionStorage.removeItem('isGoogleLoginPending');
+                            hideLoader();
+                        }
+                    }, 2000);
                 }
             });
         }
@@ -164,6 +180,7 @@ export const AuthProvider = ({ children }) => {
             subscription.unsubscribe();
             supabase.removeChannel(channel);
             deepLinkListener?.remove();
+            stateListener?.remove();
         };
     }, []);
 

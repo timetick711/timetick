@@ -23,6 +23,7 @@ import Footer from './components/Footer';
 import SEOHelper from './components/SEOHelper';
 import ScrollToTop from './components/ScrollToTop';
 import BackButtonHandler from './components/BackButtonHandler';
+import PullToRefresh from './components/PullToRefresh';
 import { StatusBar } from '@capacitor/status-bar';
 import { App as CapApp } from '@capacitor/app';
 import { Capacitor } from '@capacitor/core';
@@ -152,7 +153,12 @@ function App() {
                       <LogoutConfirmModal />
                       <ProfileModal />
                       <FavoritesModal />
-                      <AnimatedRoutes />
+                      <PullToRefresh onRefresh={async () => {
+                          // Force a real reload for the whole app
+                          window.location.reload();
+                      }}>
+                        <AnimatedRoutes />
+                      </PullToRefresh>
                       <Footer />
                     </div>
                   </CartProvider>

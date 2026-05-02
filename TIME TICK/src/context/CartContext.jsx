@@ -2,6 +2,7 @@ import { createContext, useState, useContext, useEffect } from 'react';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { useAuth } from './AuthContext';
+import { supabase } from '../supabase/client';
 
 import logo from '../assets/logo.png';
 
@@ -21,6 +22,30 @@ export const CartProvider = ({ children }) => {
     }, [cart]);
 
     const [isCartOpen, setIsCartOpen] = useState(false);
+    
+    // Real-time listener for product deletions
+    useEffect(() => {
+        const cartChannel = supabase
+            .channel('realtime_cart_deletion')
+            .on(
+                'postgres_changes',
+                { event: 'DELETE', schema: 'public', table: 'products' },
+                (payload) => {
+                    const deletedId = payload.old?.id;
+                    if (!deletedId) return;
+                    
+                    setCart(prev => {
+                        const newCart = prev.filter(item => String(item.id) !== String(deletedId));
+                        return newCart;
+                    });
+                }
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(cartChannel);
+        };
+    }, []);
 
     const openCart = () => setIsCartOpen(true);
     const closeCart = () => setIsCartOpen(false);
@@ -30,9 +55,8 @@ export const CartProvider = ({ children }) => {
             const { quantity = 1, selectedColor, selectedMaterial, variantPrice } = options;
             const priceToUse = variantPrice !== undefined ? variantPrice : Number(product.price);
 
-            // Create a unique ID for the variant
-            // If no options, it falls back to product.id, but since we always want to support options now:
-            const variantId = `${product.id}-${selectedColor || 'default'}-${selectedMaterial || 'default'}`;
+            // Create a unique ID for the variant based on the specific image/model
+            const variantId = options.variantImage ? `${product.id}-${options.variantImage}` : product.id;
 
             const existing = prev.find(item => item.variantId === variantId);
 
@@ -48,7 +72,8 @@ export const CartProvider = ({ children }) => {
                 variantId, // Store the variant ID
                 dp_qty: quantity,
                 selectedColor,
-                selectedMaterial
+                selectedMaterial,
+                image: options.variantImage || product.imageUrl || product.image
             }];
         });
         // setIsCartOpen(true); // Auto open disabled by user request
@@ -153,13 +178,6 @@ export const CartProvider = ({ children }) => {
                             <td style="padding: 15px; text-align: right; color: #555; font-size: 13px; font-weight: bold;">#${item.displayId || '---'}</td>
                             <td style="padding: 15px; text-align: right; color: #000; font-weight: 600;">
                                 ${item.name}
-                                ${item.selectedColor || item.selectedMaterial ? `
-                                    <div style="font-size: 11px; color: #777; margin-top: 4px;">
-                                        ${item.selectedColor ? `اللون: ${item.selectedColor}` : ''}
-                                        ${item.selectedColor && item.selectedMaterial ? ' | ' : ''}
-                                        ${item.selectedMaterial ? `السوار: ${item.selectedMaterial}` : ''}
-                                    </div>
-                                ` : ''}
                             </td>
                             <td style="padding: 15px; text-align: center; color: #333;">${item.price.toLocaleString()} ر.س</td>
                             <td style="padding: 15px; text-align: center; color: #333;">${item.dp_qty}</td>
@@ -295,10 +313,8 @@ export const CartProvider = ({ children }) => {
 
         cart.forEach((item, index) => {
             message += `${index + 1}. ${item.name} (×${item.dp_qty})`;
-            if (item.selectedColor || item.selectedMaterial) {
-                message += ` [${[item.selectedColor, item.selectedMaterial].filter(Boolean).join(' - ')}]`;
-            }
             message += ` - ${(item.price * item.dp_qty).toLocaleString()} ر.س\n`;
+            message += `رابط الموديل: ${item.image}\n`;
         });
 
         message += `

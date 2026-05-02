@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useLoader } from '../context/LoaderContext';
 import { X, User, Mail, Phone, MapPin, Lock, Save } from 'lucide-react';
@@ -13,6 +13,7 @@ export default function AuthModal() {
     const [resendCountdown, setResendCountdown] = useState(0);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState('');
+    const googleTimeoutRef = useRef(null);
 
     const [formData, setFormData] = useState({
         name: '',
@@ -23,6 +24,9 @@ export default function AuthModal() {
         neighborhood: '',
         password: ''
     });
+
+    const googleLoginTimeout = useState(null)[0]; // We can use a simple ref-like variable if we don't need re-renders
+    // Using a ref is better
 
     useEffect(() => {
         let timer;
@@ -47,8 +51,21 @@ export default function AuthModal() {
             setOtpArray(['', '', '', '', '', '']);
             setResendCountdown(0);
             setError('');
+            if (googleTimeoutRef.current) {
+                clearTimeout(googleTimeoutRef.current);
+                googleTimeoutRef.current = null;
+            }
         }
     }, [isAuthModalOpen, currentUser]);
+
+    // Clear timeout if user logs in
+    useEffect(() => {
+        if (currentUser && googleTimeoutRef.current) {
+            clearTimeout(googleTimeoutRef.current);
+            googleTimeoutRef.current = null;
+            hideLoader();
+        }
+    }, [currentUser, hideLoader]);
 
     if (!isAuthModalOpen) return null;
 
@@ -464,9 +481,27 @@ export default function AuthModal() {
 
                             <button
                                 type="button"
-                                onClick={() => {
+                                onClick={async () => {
                                     showLoader('جاري توجيهك إلى Google...');
-                                    loginWithGoogle().catch(() => hideLoader());
+                                    try {
+                                        if (googleTimeoutRef.current) clearTimeout(googleTimeoutRef.current);
+                                        
+                                        googleTimeoutRef.current = setTimeout(() => {
+                                            if (!Capacitor.isNativePlatform() && !currentUser) {
+                                                hideLoader();
+                                                googleTimeoutRef.current = null;
+                                            }
+                                        }, 15000);
+
+                                        await loginWithGoogle();
+                                    } catch (err) {
+                                        if (googleTimeoutRef.current) {
+                                            clearTimeout(googleTimeoutRef.current);
+                                            googleTimeoutRef.current = null;
+                                        }
+                                        hideLoader();
+                                        setError('حدث خطأ أثناء الاتصال بـ Google');
+                                    }
                                 }}
                                 style={{
                                     width: '100%',

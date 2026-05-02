@@ -12,6 +12,13 @@ export default function Orders() {
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
     const [expandedOrder, setExpandedOrder] = useState(null);
+    const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
+    useEffect(() => {
+        const handleResize = () => setIsMobile(window.innerWidth < 768);
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
 
     useEffect(() => {
         if (!currentUser) {
@@ -56,20 +63,17 @@ export default function Orders() {
     };
 
     if (loading) {
-        return <div style={{ minHeight: '80vh' }}></div>;
-    }
-
-    return (
-        <div style={{ maxWidth: '800px', margin: '80px auto 40px', padding: '0 15px' }}>
+        return <div style={{ minHeight: '80vh' }}></d    return (
+        <div style={{ maxWidth: '800px', margin: isMobile ? '40px auto 40px' : '80px auto 40px', padding: isMobile ? '0 12px' : '0 15px' }}>
             <motion.div
                 initial={{ opacity: 0, y: 15 }}
                 animate={{ opacity: 1, y: 0 }}
-                style={{ textAlign: 'right', marginBottom: '30px' }}
+                style={{ textAlign: 'right', marginBottom: isMobile ? '20px' : '30px' }}
             >
-                <h1 style={{ fontSize: '1.8rem', fontWeight: '800', marginBottom: '5px' }}>
+                <h1 style={{ fontSize: isMobile ? '1.5rem' : '1.8rem', fontWeight: '800', marginBottom: '5px' }}>
                     <span style={{ color: 'var(--primary)' }}>سجل الطلبات</span>
                 </h1>
-                <p style={{ color: 'var(--text-dim)', fontSize: '0.9rem' }}>يمكنك متابعة حالة وتفاصيل مشترياتك السابقة</p>
+                <p style={{ color: 'var(--text-dim)', fontSize: isMobile ? '0.8rem' : '0.9rem' }}>يمكنك متابعة حالة وتفاصيل مشترياتك السابقة</p>
             </motion.div>
 
             {!currentUser ? (
@@ -78,18 +82,18 @@ export default function Orders() {
                     animate={{ opacity: 1 }}
                     style={{
                         textAlign: 'center',
-                        padding: '60px 20px',
+                        padding: isMobile ? '40px 15px' : '60px 20px',
                         background: 'var(--bg-card)',
                         borderRadius: '24px',
                         border: '1px solid var(--border-color)',
                         backdropFilter: 'blur(10px)'
                     }}
                 >
-                    <User size={48} style={{ color: 'var(--primary)', marginBottom: '15px', opacity: 0.4 }} />
-                    <h2 style={{ fontSize: '1.2rem', marginBottom: '10px' }}>تسجيل الدخول مطلوب</h2>
-                    <p style={{ color: 'var(--text-dim)', fontSize: '0.9rem', marginBottom: '20px' }}>يجب عليك تسجيل الدخول لتتمكن من رؤية سجل طلباتك</p>
+                    <User size={isMobile ? 36 : 48} style={{ color: 'var(--primary)', marginBottom: '15px', opacity: 0.4 }} />
+                    <h2 style={{ fontSize: isMobile ? '1.1rem' : '1.2rem', marginBottom: '10px' }}>تسجيل الدخول مطلوب</h2>
+                    <p style={{ color: 'var(--text-dim)', fontSize: '0.85rem', marginBottom: '20px' }}>يجب عليك تسجيل الدخول لتتمكن من رؤية سجل طلباتك</p>
                     <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
-                        <button className="btn-primary" onClick={openAuthModal} style={{ padding: '8px 24px' }}>تسجيل الدخول</button>
+                        <button className="btn-primary" onClick={openAuthModal} style={{ padding: isMobile ? '8px 20px' : '8px 24px', fontSize: '0.9rem' }}>تسجيل الدخول</button>
                     </div>
                 </motion.div>
             ) : orders.length === 0 ? (
@@ -98,20 +102,20 @@ export default function Orders() {
                     animate={{ opacity: 1 }}
                     style={{
                         textAlign: 'center',
-                        padding: '60px 20px',
+                        padding: isMobile ? '40px 15px' : '60px 20px',
                         background: 'var(--bg-card)',
                         borderRadius: '24px',
                         border: '1px solid var(--border-color)',
                         backdropFilter: 'blur(10px)'
                     }}
                 >
-                    <ShoppingBag size={48} style={{ color: 'var(--primary)', marginBottom: '15px', opacity: 0.4 }} />
-                    <h2 style={{ fontSize: '1.2rem', marginBottom: '10px' }}>لا توجد طلبات حالياً</h2>
-                    <p style={{ color: 'var(--text-dim)', fontSize: '0.9rem', marginBottom: '20px' }}>ابدأ رحلة تسوقك الآن واكتشف القطع الفريدة</p>
-                    <button className="btn-primary" onClick={() => navigate('/')} style={{ padding: '8px 24px' }}>تصفح المتجر</button>
+                    <ShoppingBag size={isMobile ? 36 : 48} style={{ color: 'var(--primary)', marginBottom: '15px', opacity: 0.4 }} />
+                    <h2 style={{ fontSize: isMobile ? '1.1rem' : '1.2rem', marginBottom: '10px' }}>لا توجد طلبات حالياً</h2>
+                    <p style={{ color: 'var(--text-dim)', fontSize: '0.85rem', marginBottom: '20px' }}>ابدأ رحلة تسوقك الآن واكتشف القطع الفريدة</p>
+                    <button className="btn-primary" onClick={() => navigate('/')} style={{ padding: isMobile ? '8px 20px' : '8px 24px', fontSize: '0.9rem' }}>تصفح المتجر</button>
                 </motion.div>
             ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                     {orders.map((order) => {
                         const style = getStatusStyle(order.status);
                         const isExpanded = expandedOrder === order.id;
@@ -132,7 +136,7 @@ export default function Orders() {
                                 {/* Compact Order Header */}
                                 <div
                                     style={{
-                                        padding: '16px 20px',
+                                        padding: isMobile ? '12px 14px' : '16px 20px',
                                         display: 'flex',
                                         justifyContent: 'space-between',
                                         alignItems: 'center',
@@ -140,35 +144,37 @@ export default function Orders() {
                                     }}
                                     onClick={() => toggleExpand(order.id)}
                                 >
-                                    <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                                    <div style={{ display: 'flex', gap: isMobile ? '10px' : '12px', alignItems: 'center' }}>
                                         <div style={{
-                                            width: '42px',
-                                            height: '42px',
-                                            borderRadius: '12px',
+                                            width: isMobile ? '36px' : '42px',
+                                            height: isMobile ? '36px' : '42px',
+                                            borderRadius: '10px',
                                             background: 'linear-gradient(135deg, rgba(212, 175, 55, 0.1), rgba(212, 175, 55, 0.05))',
                                             display: 'flex',
                                             alignItems: 'center',
                                             justifyContent: 'center',
                                             color: 'var(--primary)',
-                                            border: '1px solid rgba(212,175,55,0.2)'
+                                            border: '1px solid rgba(212,175,55,0.2)',
+                                            flexShrink: 0
                                         }}>
-                                            <Package size={20} />
+                                            <Package size={isMobile ? 18 : 20} />
                                         </div>
                                         <div>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '2px' }}>
-                                                <h3 style={{ fontSize: '0.95rem', fontWeight: 'bold', margin: 0 }}>ORD{order.order_number}</h3>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '2px' }}>
+                                                <h3 style={{ fontSize: isMobile ? '0.85rem' : '0.95rem', fontWeight: 'bold', margin: 0 }}>ORD{order.order_number}</h3>
                                                 <span style={{
-                                                    fontSize: '0.7rem',
-                                                    padding: '2px 8px',
+                                                    fontSize: '0.65rem',
+                                                    padding: '2px 6px',
                                                     borderRadius: '6px',
                                                     background: style.bg,
                                                     color: style.color,
-                                                    fontWeight: '700'
+                                                    fontWeight: '700',
+                                                    whiteSpace: 'nowrap'
                                                 }}>
                                                     {order.status === 'pending' ? 'قيد الانتظار' : order.status === 'completed' ? 'تم التوصيل' : order.status}
                                                 </span>
                                             </div>
-                                            <div style={{ display: 'flex', gap: '12px', fontSize: '0.75rem', color: 'var(--text-dim)', fontWeight: '500' }}>
+                                            <div style={{ display: 'flex', gap: '10px', fontSize: isMobile ? '0.65rem' : '0.75rem', color: 'var(--text-dim)', fontWeight: '500' }}>
                                                 <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                                                     <Calendar size={12} />
                                                     {new Date(order.created_at).toLocaleDateString('ar-SA')}
@@ -181,11 +187,13 @@ export default function Orders() {
                                         </div>
                                     </div>
 
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
-                                            <span style={{ fontSize: '0.8rem', color: 'var(--text-dim)' }}>{order.items?.length || 0} قطع</span>
-                                        </div>
-                                        {isExpanded ? <ChevronUp size={18} color="var(--text-dim)" /> : <ChevronDown size={18} color="var(--text-dim)" />}
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                        {!isMobile && (
+                                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+                                                <span style={{ fontSize: '0.8rem', color: 'var(--text-dim)' }}>{order.items?.length || 0} قطع</span>
+                                            </div>
+                                        )}
+                                        {isExpanded ? <ChevronUp size={16} color="var(--text-dim)" /> : <ChevronDown size={16} color="var(--text-dim)" />}
                                     </div>
                                 </div>
 
@@ -199,52 +207,53 @@ export default function Orders() {
                                             style={{ overflow: 'hidden' }}
                                         >
                                             <div style={{
-                                                padding: '0 20px 20px',
+                                                padding: isMobile ? '0 12px 15px' : '0 20px 20px',
                                                 marginTop: '5px',
                                                 borderTop: '1px dashed var(--border-color)'
                                             }}>
-                                                <div style={{ padding: '20px 0', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                                <div style={{ padding: isMobile ? '12px 0' : '20px 0', display: 'flex', flexDirection: 'column', gap: '10px' }}>
                                                     {order.items?.map((item, idx) => (
                                                         <div key={idx} style={{
                                                             display: 'flex',
                                                             justifyContent: 'space-between',
                                                             alignItems: 'center',
-                                                            gap: '12px',
+                                                            gap: '10px',
                                                             background: 'rgba(255,255,255,0.02)',
-                                                            padding: '10px',
+                                                            padding: '8px',
                                                             borderRadius: '12px',
                                                             border: '1px solid rgba(255,255,255,0.03)'
                                                         }}>
                                                             <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
                                                                 <div style={{ position: 'relative' }}>
-                                                                    <img src={item.image} alt={item.name} style={{ width: '45px', height: '45px', borderRadius: '10px', objectFit: 'cover' }} />
+                                                                    <img 
+                                                                        src={item.image || item.imageUrl || (item.images && item.images[0]) || (item.variants && item.variants[0]?.image)} 
+                                                                        alt={item.name} 
+                                                                        style={{ width: isMobile ? '40px' : '50px', height: isMobile ? '40px' : '50px', borderRadius: '10px', objectFit: 'cover' }} 
+                                                                    />
                                                                     <span style={{
                                                                         position: 'absolute',
                                                                         top: '-5px',
                                                                         right: '-5px',
                                                                         background: 'var(--primary)',
                                                                         color: '#000',
-                                                                        fontSize: '0.65rem',
+                                                                        fontSize: '0.6rem',
                                                                         fontWeight: 'bold',
-                                                                        width: '18px',
-                                                                        height: '18px',
+                                                                        width: '16px',
+                                                                        height: '16px',
                                                                         borderRadius: '50%',
                                                                         display: 'flex',
                                                                         alignItems: 'center',
                                                                         justifyContent: 'center',
-                                                                        border: '2px solid var(--bg-card)'
+                                                                        border: '1.5px solid var(--bg-card)',
+                                                                        pointerEvents: 'none'
                                                                     }}>{item.dp_qty}</span>
                                                                 </div>
                                                                 <div>
-                                                                    <p style={{ fontSize: '0.85rem', fontWeight: '600', marginBottom: '2px' }}>{item.name}</p>
-                                                                    {(item.selectedColor || item.selectedMaterial) && (
-                                                                        <p style={{ fontSize: '0.7rem', color: 'var(--text-dim)' }}>
-                                                                            {[item.selectedColor, item.selectedMaterial].filter(Boolean).join(' • ')}
-                                                                        </p>
-                                                                    )}
+                                                                    <p style={{ fontSize: isMobile ? '0.75rem' : '0.85rem', fontWeight: '600', marginBottom: '2px' }}>{item.name}</p>
+                                                                    <p style={{ fontSize: '0.65rem', color: 'var(--text-dim)' }}>{item.displayId ? `#${item.displayId}` : 'ساعة راقية'}</p>
                                                                 </div>
                                                             </div>
-                                                            <p style={{ fontSize: '0.9rem', fontWeight: '700', color: 'var(--text-main)' }}>
+                                                            <p style={{ fontSize: isMobile ? '0.8rem' : '0.9rem', fontWeight: '700', color: 'var(--text-main)' }}>
                                                                 {(item.price * item.dp_qty).toLocaleString()} ر.س
                                                             </p>
                                                         </div>
@@ -252,7 +261,7 @@ export default function Orders() {
                                                 </div>
 
                                                 <div style={{
-                                                    padding: '15px',
+                                                    padding: isMobile ? '12px' : '15px',
                                                     background: 'linear-gradient(to left, rgba(212,175,55,0.05), transparent)',
                                                     borderRadius: '14px',
                                                     display: 'flex',
@@ -261,12 +270,12 @@ export default function Orders() {
                                                     border: '1px solid rgba(212,175,55,0.1)'
                                                 }}>
                                                     <div>
-                                                        <p style={{ fontSize: '0.7rem', color: 'var(--text-dim)', marginBottom: '3px' }}>طريقة الدفع</p>
-                                                        <p style={{ fontSize: '0.85rem', fontWeight: 'bold' }}>{order.payment_method || 'غير محدد'}</p>
+                                                        <p style={{ fontSize: '0.65rem', color: 'var(--text-dim)', marginBottom: '3px' }}>طريقة الدفع</p>
+                                                        <p style={{ fontSize: isMobile ? '0.75rem' : '0.85rem', fontWeight: 'bold' }}>{order.payment_method === 'cash_on_delivery' ? 'عند الاستلام' : (order.payment_method || 'غير محدد')}</p>
                                                     </div>
                                                     <div style={{ textAlign: 'left' }}>
-                                                        <p style={{ fontSize: '0.7rem', color: 'var(--text-dim)', marginBottom: '3px' }}>الإجمالي النهائي</p>
-                                                        <p style={{ fontSize: '1.1rem', fontWeight: '900', color: 'var(--primary)' }}>{order.total_amount.toLocaleString()} ر.س</p>
+                                                        <p style={{ fontSize: '0.65rem', color: 'var(--text-dim)', marginBottom: '3px' }}>الإجمالي النهائي</p>
+                                                        <p style={{ fontSize: isMobile ? '1rem' : '1.1rem', fontWeight: '900', color: 'var(--primary)' }}>{order.total_amount.toLocaleString()} ر.س</p>
                                                     </div>
                                                 </div>
                                             </div>

@@ -11,7 +11,7 @@ export const FavoritesProvider = ({ children }) => {
     const [favorites, setFavorites] = useState([]);
     const [isFavoritesOpen, setIsFavoritesOpen] = useState(false);
     const [loading, setLoading] = useState(false);
-
+    
     // 1. Fetch Favorites from Supabase
     const fetchFavorites = useCallback(async (userId) => {
         if (!userId) return;
@@ -36,6 +36,49 @@ export const FavoritesProvider = ({ children }) => {
             setLoading(false);
         }
     }, []);
+
+    // Real-time listener for product/favorites deletions
+    useEffect(() => {
+        const favoritesChannel = supabase
+            .channel('favorites_sync_final')
+            // Listener 1: Watch products table (direct deletion)
+            .on(
+                'postgres_changes',
+                { event: 'DELETE', schema: 'public', table: 'products' },
+                (payload) => {
+                    const deletedId = payload.old?.id;
+                    if (!deletedId) return;
+
+                    // Update local state for everyone (Guests & Logged-in)
+                    setFavorites(prev => prev.filter(item => {
+                        const itemId = String(item.id || item.product_id || '').trim();
+                        const targetId = String(deletedId).trim();
+                        return itemId !== targetId;
+                    }));
+                }
+            )
+            // Listener 2: Watch favorites table (cascade deletion)
+            .on(
+                'postgres_changes',
+                { event: 'DELETE', schema: 'public', table: 'favorites' },
+                (payload) => {
+                    const deletedProductId = payload.old?.product_id;
+                    if (!deletedProductId) return;
+                    
+                    // Update local state for everyone
+                    setFavorites(prev => prev.filter(item => {
+                        const itemId = String(item.id || item.product_id || '').trim();
+                        const targetId = String(deletedProductId).trim();
+                        return itemId !== targetId;
+                    }));
+                }
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(favoritesChannel);
+        };
+    }, [currentUser]); // fetchFavorites removed from deps as it's no longer called here
 
     // 2. Merge Local Favorites to Database on Login
     const mergeLocalFavorites = async (userId) => {

@@ -1,6 +1,16 @@
 const CLOUD_NAME = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
 const UPLOAD_PRESET = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET;
 
+const base64ToBlob = (base64, mime) => {
+    const byteString = atob(base64.split(',')[1]);
+    const ab = new ArrayBuffer(byteString.length);
+    const ia = new Uint8Array(ab);
+    for (let i = 0; i < byteString.length; i++) {
+        ia[i] = byteString.charCodeAt(i);
+    }
+    return new Blob([ab], { type: mime });
+};
+
 export const uploadToCloudinary = (file, resourceType = 'image', onProgress, onAbort) => {
     return new Promise((resolve, reject) => {
         if (!CLOUD_NAME || !UPLOAD_PRESET) {
@@ -12,7 +22,14 @@ export const uploadToCloudinary = (file, resourceType = 'image', onProgress, onA
         const xhr = new XMLHttpRequest();
         const formData = new FormData();
 
-        formData.append('file', file);
+        // If file is a base64 string, convert it to a Blob for better mobile compatibility
+        let uploadFile = file;
+        if (typeof file === 'string' && file.startsWith('data:')) {
+            const mime = file.split(';')[0].split(':')[1];
+            uploadFile = base64ToBlob(file, mime);
+        }
+
+        formData.append('file', uploadFile);
         formData.append('upload_preset', UPLOAD_PRESET);
 
         // Organize into folders
