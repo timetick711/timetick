@@ -24,6 +24,7 @@ import SEOHelper from './components/SEOHelper';
 import ScrollToTop from './components/ScrollToTop';
 import BackButtonHandler from './components/BackButtonHandler';
 import PullToRefresh from './components/PullToRefresh';
+import AppDownloadBanner from './components/AppDownloadBanner';
 import { StatusBar } from '@capacitor/status-bar';
 import { App as CapApp } from '@capacitor/app';
 import { Capacitor } from '@capacitor/core';
@@ -160,6 +161,7 @@ function App() {
                         <AnimatedRoutes />
                       </PullToRefresh>
                       <Footer />
+                      <AppDownloadBanner />
                     </div>
                   </CartProvider>
                 </VideoProvider>
