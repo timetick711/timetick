@@ -9,6 +9,7 @@ import html2canvas from 'html2canvas';
 
 const Orders = () => {
     const [orders, setOrders] = useState([]);
+    const [selectedImage, setSelectedImage] = useState(null);
     const [loading, setLoading] = useState(true);
     const [loadingMore, setLoadingMore] = useState(false);
     const [page, setPage] = useState(0);
@@ -485,19 +486,90 @@ const Orders = () => {
                             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ textAlign: 'center', padding: '100px', opacity: 0.5 }}><ShoppingBag size={80} style={{ marginBottom: '20px', opacity: 0.2 }} /><p style={{ fontSize: '1.2rem' }}>لا توجد طلبات متوافقة مع هذا البحث</p></motion.div>
                         ) : (
                             orders.map((order, index) => (
-                                <OrderCard key={order.id} order={order} index={index} lastOrderRef={orders.length === index + 1 ? lastOrderRef : null} onUpdateStatus={handleUpdateStatus} onDelete={handleDeleteOrder} onInvoice={generateInvoice} />
+                                <OrderCard 
+                                    key={order.id} 
+                                    order={order} 
+                                    index={index} 
+                                    lastOrderRef={orders.length === index + 1 ? lastOrderRef : null} 
+                                    onUpdateStatus={handleUpdateStatus} 
+                                    onDelete={handleDeleteOrder} 
+                                    onInvoice={generateInvoice} 
+                                    onImageClick={setSelectedImage}
+                                />
                             ))
                         )}
                     </AnimatePresence>
                     {loadingMore && <div style={{ textAlign: 'center', padding: '20px' }}><Loader2 className="animate-spin" style={{ width: '40px', height: '40px', color: 'var(--primary)', margin: '0 auto' }} /></div>}
                 </div>
             )}
+            <ImagePreviewModal imageUrl={selectedImage} onClose={() => setSelectedImage(null)} />
             <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } } .animate-spin { animation: spin 1s linear infinite; }`}</style>
         </div>
     );
 };
 
-const OrderCard = ({ order, index, lastOrderRef, onUpdateStatus, onDelete, onInvoice }) => {
+const ImagePreviewModal = ({ imageUrl, onClose }) => {
+    if (!imageUrl) return null;
+    return (
+        <AnimatePresence>
+            <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={onClose}
+                style={{
+                    position: 'fixed',
+                    inset: 0,
+                    background: 'rgba(0,0,0,0.9)',
+                    backdropFilter: 'blur(10px)',
+                    zIndex: 9999,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: '20px',
+                    cursor: 'zoom-out'
+                }}
+            >
+                <motion.img
+                    initial={{ scale: 0.8, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    exit={{ scale: 0.8, opacity: 0 }}
+                    src={imageUrl}
+                    style={{
+                        maxWidth: '90%',
+                        maxHeight: '90%',
+                        borderRadius: '16px',
+                        boxShadow: '0 20px 50px rgba(0,0,0,0.5)',
+                        border: '2px solid rgba(212, 175, 55, 0.2)'
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                />
+                <button 
+                    onClick={onClose}
+                    style={{
+                        position: 'absolute',
+                        top: '30px',
+                        right: '30px',
+                        background: 'rgba(255,255,255,0.1)',
+                        border: 'none',
+                        color: '#fff',
+                        width: '40px',
+                        height: '40px',
+                        borderRadius: '50%',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                    }}
+                >
+                    <XCircle size={24} />
+                </button>
+            </motion.div>
+        </AnimatePresence>
+    );
+};
+
+const OrderCard = ({ order, index, lastOrderRef, onUpdateStatus, onDelete, onInvoice, onImageClick }) => {
     const [isExpanded, setIsExpanded] = useState(false);
     const isMobile = window.innerWidth < 768;
     const customerInfo = order.profiles || {};
@@ -553,9 +625,18 @@ const OrderCard = ({ order, index, lastOrderRef, onUpdateStatus, onDelete, onInv
                             {visibleItems.map((item, idx) => (
                                 <motion.div key={idx} initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} style={{ padding: '8px 10px', background: 'rgba(255,255,255,0.01)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.03)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', overflow: 'hidden' }}>
                                     <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                                        <img 
+                                        <motion.img 
                                             src={item.image || item.imageUrl || (item.images && item.images[0]) || (item.variants && item.variants[0]?.image)} 
-                                            style={{ width: isMobile ? '40px' : '50px', height: isMobile ? '40px' : '50px', borderRadius: '8px', objectFit: 'cover' }} 
+                                            onClick={() => onImageClick(item.image || item.imageUrl || (item.images && item.images[0]) || (item.variants && item.variants[0]?.image))}
+                                            style={{ 
+                                                width: isMobile ? '40px' : '50px', 
+                                                height: isMobile ? '40px' : '50px', 
+                                                borderRadius: '8px', 
+                                                objectFit: 'cover',
+                                                cursor: 'zoom-in'
+                                            }} 
+                                            whileHover={{ scale: 1.15, zIndex: 1 }}
+                                            transition={{ type: 'spring', stiffness: 300 }}
                                         />
                                         <div style={{ display: 'flex', flexDirection: 'column' }}>
                                             <span style={{ fontSize: isMobile ? '0.8rem' : '0.9rem', fontWeight: '700', color: '#fff' }}>{item.name || item.title}</span>

@@ -369,6 +369,7 @@ export const AuthProvider = ({ children }) => {
 
         if (profileError) {
             console.error("Error updating profiles table:", profileError);
+            throw new Error(`فشل تحديث بيانات الجدول: ${profileError.message}`);
         }
 
         const updatedUser = { ...currentUser, ...updatedData };

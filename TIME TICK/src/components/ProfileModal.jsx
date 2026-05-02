@@ -123,8 +123,8 @@ export default function ProfileModal() {
             setIsEditing(false);
             setToastMessage('تم حفظ التعديلات بنجاح! ✅');
         } catch (error) {
-            console.error(error);
-            alert('حدث خطأ أثناء الحفظ');
+            console.error('Save error:', error);
+            alert(`حدث خطأ أثناء حفظ التغييرات: ${error.message || 'خطأ غير معروف'}`);
         } finally {
             hideLoader();
         }

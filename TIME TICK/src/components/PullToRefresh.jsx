@@ -26,28 +26,23 @@ export default function PullToRefresh({ onRefresh, children }) {
             isPulling.current = false;
         }
     };
-
     const handleTouchMove = (e) => {
         if (!isNative || !isPulling.current || isRefreshing) return;
 
         const currentY = e.touches[0].pageY;
         const diff = currentY - startY.current;
 
-        // If pulling down at the top
-        if (diff > 0) {
-            // Apply a resistance curve for a natural feel
-            // Using a logarithmic-like resistance
-            const distance = Math.min(diff * 0.4, MAX_PULL);
+        // Apply a resistance curve for a natural feel
+        const distance = Math.max(0, Math.min(diff * 0.4, MAX_PULL));
+        
+        // If we have any pull distance, we MUST lock the scroll
+        if (distance > 0 || pullDistance > 0) {
             setPullDistance(distance);
             
-            // Crucial: Prevent default scrolling behavior while pulling
+            // Crucial: Prevent default scrolling behavior to stop the page from moving
             if (e.cancelable) {
                 e.preventDefault();
             }
-        } else if (diff < 0 && pullDistance > 0) {
-            // If user pulls up while the indicator is visible, retract it
-            setPullDistance(Math.max(0, pullDistance + diff * 0.5));
-            if (e.cancelable) e.preventDefault();
         }
     };
 
@@ -121,18 +116,19 @@ export default function PullToRefresh({ onRefresh, children }) {
                         alignItems: 'center',
                         justifyContent: 'center',
                         color: 'var(--primary)',
+                        marginTop: '20px',
                         border: '1px solid rgba(212, 175, 55, 0.3)',
                         boxShadow: '0 10px 25px rgba(0,0,0,0.5)',
-                        marginTop: '20px',
-                        y: pullDistance,
-                        opacity: pullDistance > 10 ? 1 : 0,
-                        scale: Math.min(1, pullDistance / THRESHOLD)
                     }}
                     animate={{ 
+                        y: pullDistance,
+                        opacity: pullDistance > 10 ? 1 : 0,
+                        scale: Math.min(1, pullDistance / THRESHOLD),
                         rotate: isRefreshing ? 360 : pullDistance * 3 
                     }}
                     transition={isRefreshing ? { 
-                        rotate: { repeat: Infinity, duration: 1, ease: "linear" } 
+                        rotate: { repeat: Infinity, duration: 1, ease: "linear" },
+                        y: { type: 'spring', damping: 25, stiffness: 300 }
                     } : { 
                         type: 'spring', 
                         damping: 25, 
