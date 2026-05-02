@@ -22,10 +22,12 @@ const Home = () => {
         revenue: 0
     });
     const [recentOrders, setRecentOrders] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const { startLoading, stopLoading } = useLoading();
+    const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
 
     useEffect(() => {
+        const handleResize = () => setIsMobile(window.innerWidth < 768);
+        window.addEventListener('resize', handleResize);
+        
         const fetchDashboardData = async () => {
             startLoading();
             setLoading(true);
@@ -66,6 +68,7 @@ const Home = () => {
         };
 
         fetchDashboardData();
+        return () => window.removeEventListener('resize', handleResize);
     }, []);
 
     const statCards = [
@@ -76,29 +79,51 @@ const Home = () => {
     ];
 
     return (
-        <div style={{ direction: 'rtl', padding: '10px' }}>
+        <div style={{ direction: 'rtl', padding: isMobile ? '10px' : '20px' }}>
             {/* Standard Header with Welcome Message */}
-            <div style={{ marginBottom: '3.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '20px' }}>
+            <div style={{ 
+                marginBottom: isMobile ? '2rem' : '3.5rem', 
+                display: 'flex', 
+                justifyContent: 'space-between', 
+                alignItems: isMobile ? 'flex-start' : 'flex-end', 
+                flexDirection: isMobile ? 'column' : 'row',
+                gap: '20px' 
+            }}>
                 <div>
-                    <h1 style={{ fontSize: '2.8rem', fontWeight: '900', color: '#fff', marginBottom: '8px', letterSpacing: '-1px' }}>
-                        نظرة عامة <span style={{ color: 'var(--primary)', fontSize: '1.2rem', verticalAlign: 'middle', opacity: 0.8 }}>| لوحة التحكم</span>
+                    <h1 style={{ 
+                        fontSize: isMobile ? '1.8rem' : '2.8rem', 
+                        fontWeight: '900', 
+                        color: '#fff', 
+                        marginBottom: '8px', 
+                        letterSpacing: '-1px' 
+                    }}>
+                        نظرة عامة <span style={{ color: 'var(--primary)', fontSize: isMobile ? '0.9rem' : '1.2rem', verticalAlign: 'middle', opacity: 0.8 }}>| لوحة التحكم</span>
                     </h1>
-                    <p style={{ color: 'var(--text-muted)', fontSize: '1.1rem', maxWidth: '600px' }}>
+                    <p style={{ color: 'var(--text-muted)', fontSize: isMobile ? '0.95rem' : '1.1rem', maxWidth: '600px' }}>
                         مرحباً بك مجدداً! إليك ملخص سريع لأداء متجر "تايم تك" لهذا اليوم.
                     </p>
                 </div>
-                <div style={{ padding: '8px 16px', background: 'rgba(255,255,255,0.05)', borderRadius: '12px', border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div style={{ 
+                    padding: '8px 16px', 
+                    background: 'rgba(255,255,255,0.05)', 
+                    borderRadius: '12px', 
+                    border: '1px solid var(--border-color)', 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: '10px',
+                    alignSelf: isMobile ? 'flex-start' : 'auto'
+                }}>
                     <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#10b981', boxShadow: '0 0 10px #10b981' }} />
-                    <span style={{ fontSize: '0.9rem', fontWeight: '700', color: '#fff' }}>النظام متصل</span>
+                    <span style={{ fontSize: '0.85rem', fontWeight: '700', color: '#fff' }}>النظام متصل</span>
                 </div>
             </div>
 
             {/* Stats Grid - Ultra Responsive */}
             <div style={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
-                gap: '24px',
-                marginBottom: '4rem'
+                gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fit, minmax(240px, 1fr))',
+                gap: isMobile ? '16px' : '24px',
+                marginBottom: isMobile ? '2.5rem' : '4rem'
             }}>
                 {statCards.map((card, index) => (
                     <motion.div
@@ -106,36 +131,38 @@ const Home = () => {
                         initial={{ opacity: 0, y: 30 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: index * 0.1, duration: 0.5 }}
-                        whileHover={{ y: -8, boxShadow: `0 15px 35px ${card.glow}` }}
+                        whileHover={isMobile ? {} : { y: -8, boxShadow: `0 15px 35px ${card.glow}` }}
                         style={{
-                            padding: '30px 24px',
+                            padding: isMobile ? '20px' : '30px 24px',
                             borderRadius: '24px',
                             background: 'linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.01) 100%)',
                             backdropFilter: 'blur(10px)',
                             border: '1px solid var(--border-color)',
                             display: 'flex',
-                            flexDirection: 'column',
+                            flexDirection: 'row',
+                            alignItems: 'center',
                             gap: '20px',
                             cursor: 'default',
                             transition: 'all 0.3s ease'
                         }}
                     >
                         <div style={{
-                            width: '56px',
-                            height: '56px',
+                            width: isMobile ? '48px' : '56px',
+                            height: isMobile ? '48px' : '56px',
                             borderRadius: '16px',
                             background: card.bg,
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
                             color: card.color,
-                            boxShadow: `inset 0 0 15px ${card.glow}`
+                            boxShadow: `inset 0 0 15px ${card.glow}`,
+                            flexShrink: 0
                         }}>
-                            <card.icon size={26} strokeWidth={2.5} />
+                            <card.icon size={isMobile ? 22 : 26} strokeWidth={2.5} />
                         </div>
                         <div>
-                            <p style={{ color: 'var(--text-muted)', fontSize: '1rem', fontWeight: '600', marginBottom: '8px' }}>{card.label}</p>
-                            <h3 style={{ fontSize: '1.8rem', fontWeight: '900', color: '#fff', letterSpacing: '-0.5px' }}>{card.value}</h3>
+                            <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', fontWeight: '600', marginBottom: '4px' }}>{card.label}</p>
+                            <h3 style={{ fontSize: isMobile ? '1.4rem' : '1.8rem', fontWeight: '900', color: '#fff', letterSpacing: '-0.5px' }}>{card.value}</h3>
                         </div>
                     </motion.div>
                 ))}
@@ -144,18 +171,25 @@ const Home = () => {
             {/* Content Body Section */}
             <div style={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+                gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fit, minmax(400px, 1fr))',
                 gap: '30px',
             }}>
                 {/* Recent Orders - Modern Feed Style */}
                 <div style={{
-                    padding: '30px',
+                    padding: isMobile ? '20px' : '30px',
                     borderRadius: '30px',
                     background: 'rgba(255,255,255,0.02)',
                     backdropFilter: 'blur(20px)',
                     border: '1px solid var(--border-color)',
                 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
+                    <div style={{ 
+                        display: 'flex', 
+                        justifyContent: 'space-between', 
+                        alignItems: isMobile ? 'flex-start' : 'center', 
+                        marginBottom: '30px',
+                        flexDirection: isMobile ? 'column' : 'row',
+                        gap: '15px'
+                    }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
                             <div style={{ 
                                 width: '40px', height: '40px', borderRadius: '12px', 
@@ -164,11 +198,11 @@ const Home = () => {
                             }}>
                                 <Clock size={20} />
                             </div>
-                            <h2 style={{ fontSize: '1.5rem', fontWeight: '800', color: '#fff' }}>آخر التحديثات</h2>
+                            <h2 style={{ fontSize: isMobile ? '1.2rem' : '1.5rem', fontWeight: '800', color: '#fff' }}>آخر التحديثات</h2>
                         </div>
                         <Link to="/orders" style={{
                             color: 'var(--primary)',
-                            fontSize: '0.9rem',
+                            fontSize: '0.85rem',
                             textDecoration: 'none',
                             display: 'flex',
                             alignItems: 'center',
@@ -177,9 +211,11 @@ const Home = () => {
                             padding: '8px 16px',
                             borderRadius: '10px',
                             background: 'rgba(212, 175, 55, 0.05)',
-                            transition: '0.3s'
+                            transition: '0.3s',
+                            width: isMobile ? '100%' : 'auto',
+                            justifyContent: 'center'
                         }}>
-                            عرض سجل المبيعات <ChevronLeft size={18} />
+                            عرض الكل <ChevronLeft size={18} />
                         </Link>
                     </div>
 
@@ -194,50 +230,53 @@ const Home = () => {
                                     display: 'flex',
                                     justifyContent: 'space-between',
                                     alignItems: 'center',
-                                    padding: '18px 20px',
+                                    padding: isMobile ? '12px 15px' : '18px 20px',
                                     background: 'rgba(255,255,255,0.01)',
                                     borderRadius: '18px',
                                     border: '1px solid rgba(255,255,255,0.04)',
                                     transition: '0.3s'
                                 }}
-                                whileHover={{ background: 'rgba(255,255,255,0.03)', borderColor: 'rgba(212, 175, 55, 0.1)' }}
                             >
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1 }}>
                                     <div style={{
-                                        width: '48px', height: '48px', borderRadius: '12px',
+                                        width: '40px', height: '40px', borderRadius: '10px',
                                         background: 'var(--bg-card)', border: '1px solid var(--border-color)',
                                         display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                        color: 'var(--primary)', fontWeight: 'bold', fontSize: '0.75rem'
+                                        color: 'var(--primary)', fontWeight: 'bold', fontSize: '0.65rem',
+                                        flexShrink: 0
                                     }}>
                                         INV
                                     </div>
-                                    <div>
-                                        <p style={{ color: '#fff', fontSize: '1.05rem', fontWeight: '700', marginBottom: '4px' }}>
+                                    <div style={{ overflow: 'hidden' }}>
+                                        <p style={{ 
+                                            color: '#fff', fontSize: '0.95rem', fontWeight: '700', marginBottom: '2px',
+                                            whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'
+                                        }}>
                                             {order.profiles?.full_name || 'زائر المتجر'}
                                         </p>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
                                             <span style={{ 
-                                                fontSize: '0.7rem', fontWeight: '800', textTransform: 'uppercase',
+                                                fontSize: '0.65rem', fontWeight: '800',
                                                 color: order.status === 'completed' ? '#10b981' : order.status === 'cancelled' ? '#ef4444' : '#f59e0b',
                                                 background: order.status === 'completed' ? 'rgba(16, 185, 129, 0.1)' : order.status === 'cancelled' ? 'rgba(239, 68, 68, 0.1)' : 'rgba(245, 158, 11, 0.1)',
-                                                padding: '2px 8px', borderRadius: '4px'
+                                                padding: '1px 6px', borderRadius: '4px'
                                             }}>
                                                 {order.status === 'completed' ? 'مكتمل' : order.status === 'cancelled' ? 'ملغي' : 'قيد المتابعة'}
                                             </span>
-                                            <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>• {new Date(order.created_at).toLocaleDateString('ar-EG')}</span>
+                                            <span style={{ color: 'var(--text-muted)', fontSize: '0.7rem' }}>{new Date(order.created_at).toLocaleDateString('ar-EG', { month: 'short', day: 'numeric' })}</span>
                                         </div>
                                     </div>
                                 </div>
-                                <div style={{ textAlign: 'left' }}>
-                                    <p style={{ color: 'var(--primary)', fontWeight: '900', fontSize: '1.2rem' }}>
-                                        {Number(order.total_amount).toLocaleString()} <span style={{ fontSize: '0.8rem', fontWeight: '400' }}>ر.س</span>
+                                <div style={{ textAlign: 'left', marginLeft: '10px' }}>
+                                    <p style={{ color: 'var(--primary)', fontWeight: '900', fontSize: isMobile ? '1rem' : '1.2rem' }}>
+                                        {Number(order.total_amount).toLocaleString()}
                                     </p>
                                 </div>
                             </motion.div>
                         )) : (
                             <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>
                                 <ShoppingBag size={40} style={{ opacity: 0.2, marginBottom: '15px' }} />
-                                <p>لم يتم تسجيل أي طلبات حتى الآن</p>
+                                <p>لا توجد طلبات</p>
                             </div>
                         )}
                     </div>
@@ -247,71 +286,84 @@ const Home = () => {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '30px' }}>
                     {/* Quick Management Panel */}
                     <div style={{
-                        padding: '30px',
+                        padding: isMobile ? '20px' : '30px',
                         borderRadius: '30px',
                         background: 'rgba(255,255,255,0.02)',
                         border: '1px solid var(--border-color)',
                     }}>
-                        <h2 style={{ fontSize: '1.4rem', fontWeight: '800', color: '#fff', marginBottom: '25px' }}>إدارة سريعة</h2>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
+                        <h2 style={{ fontSize: isMobile ? '1.2rem' : '1.4rem', fontWeight: '800', color: '#fff', marginBottom: '25px' }}>إدارة سريعة</h2>
+                        <div style={{ 
+                            display: 'grid', 
+                            gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', 
+                            gap: '15px' 
+                        }}>
                             <Link to="/products/add" style={{
                                 background: 'linear-gradient(135deg, var(--primary) 0%, #b4932a 100%)',
                                 color: '#000',
-                                padding: '24px 15px',
+                                padding: isMobile ? '15px' : '24px 15px',
                                 borderRadius: '20px',
                                 textDecoration: 'none',
                                 textAlign: 'center',
                                 display: 'flex',
-                                flexDirection: 'column',
+                                flexDirection: isMobile ? 'row' : 'column',
                                 alignItems: 'center',
+                                justifyContent: 'center',
                                 gap: '12px',
                                 transition: '0.3s',
                                 boxShadow: '0 10px 20px rgba(212, 175, 55, 0.2)'
                             }}>
-                                <Plus size={28} strokeWidth={3} />
-                                <span style={{ fontSize: '1rem', fontWeight: '900' }}>منتج جديد</span>
+                                <Plus size={isMobile ? 22 : 28} strokeWidth={3} />
+                                <span style={{ fontSize: isMobile ? '0.9rem' : '1rem', fontWeight: '900' }}>إضافة منتج</span>
                             </Link>
                             <Link to="/orders" style={{
                                 background: 'rgba(255,255,255,0.03)',
                                 border: '1px solid var(--border-color)',
                                 color: '#fff',
-                                padding: '24px 15px',
+                                padding: isMobile ? '15px' : '24px 15px',
                                 borderRadius: '20px',
                                 textDecoration: 'none',
                                 textAlign: 'center',
                                 display: 'flex',
-                                flexDirection: 'column',
+                                flexDirection: isMobile ? 'row' : 'column',
                                 alignItems: 'center',
+                                justifyContent: 'center',
                                 gap: '12px',
                                 transition: '0.3s'
                             }}>
-                                <ShoppingCart size={28} />
-                                <span style={{ fontSize: '1rem', fontWeight: '800' }}>إدارة الطلبات</span>
+                                <ShoppingCart size={isMobile ? 22 : 28} />
+                                <span style={{ fontSize: isMobile ? '0.9rem' : '1rem', fontWeight: '800' }}>إدارة الطلبات</span>
                             </Link>
                         </div>
                     </div>
 
                     {/* Announcement or Help Panel */}
                     <div style={{
-                        padding: '30px',
+                        padding: isMobile ? '20px' : '30px',
                         borderRadius: '30px',
                         background: 'rgba(212, 175, 55, 0.05)',
                         border: '1px solid rgba(212, 175, 55, 0.1)',
                         flex: 1,
                         display: 'flex',
-                        flexDirection: 'column',
+                        flexDirection: isMobile ? 'row' : 'column',
                         justifyContent: 'center',
                         alignItems: 'center',
-                        textAlign: 'center',
+                        textAlign: isMobile ? 'right' : 'center',
                         gap: '15px'
                     }}>
-                        <div style={{ width: '50px', height: '50px', borderRadius: '50%', background: 'var(--primary)', color: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <div style={{ 
+                            width: '50px', height: '50px', borderRadius: '50%', 
+                            background: 'var(--primary)', color: '#000', 
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            flexShrink: 0
+                        }}>
                             <TrendingUp size={24} />
                         </div>
-                        <h3 style={{ color: 'var(--primary)', fontWeight: '800' }}>جاهز للتوسع؟</h3>
-                        <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', lineHeight: '1.6' }}>
-                            نظام تايم تك يوفر لك تقارير مفصلة لمساعدتك في اتخاذ قرارات دقيقة لنمو متجرك.
-                        </p>
+                        <div>
+                            <h3 style={{ color: 'var(--primary)', fontWeight: '800', fontSize: isMobile ? '1rem' : '1.1rem', marginBottom: '4px' }}>جاهز للتوسع؟</h3>
+                            <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', lineHeight: '1.6' }}>
+                                نظام تايم تك يوفر لك تقارير مفصلة لمساعدتك في اتخاذ قرارات دقيقة لنمو متجرك.
+                            </p>
+                        </div>
                     </div>
                 </div>
             </div>

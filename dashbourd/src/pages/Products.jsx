@@ -22,6 +22,13 @@ const Products = () => {
     const [totalStats, setTotalStats] = useState({ total: 0, men: 0, women: 0, kids: 0 });
     const { startLoading, stopLoading } = useLoading();
     const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'list'
+    const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
+    useEffect(() => {
+        const handleResize = () => setIsMobile(window.innerWidth < 768);
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
 
     // Filter States
     const [filterType, setFilterType] = useState('all');
@@ -399,27 +406,41 @@ const Products = () => {
     return (
         <div style={{ direction: 'rtl', padding: '10px' }}>
             {/* Header Section */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '3rem', flexWrap: 'wrap', gap: '24px' }}>
+            <div style={{ 
+                display: 'flex', 
+                justifyContent: 'space-between', 
+                alignItems: isMobile ? 'flex-start' : 'flex-end', 
+                marginBottom: isMobile ? '2rem' : '3rem', 
+                flexWrap: 'wrap', 
+                flexDirection: isMobile ? 'column' : 'row',
+                gap: '24px' 
+            }}>
                 <div>
-                    <h1 style={{ fontSize: '2.8rem', fontWeight: '900', color: '#fff', marginBottom: '8px', letterSpacing: '-1.5px' }}>
-                        إدارة المخزون <span style={{ color: 'var(--primary)', fontSize: '1.2rem', verticalAlign: 'middle', opacity: 0.8 }}>| مركز المنتجات</span>
+                    <h1 style={{ 
+                        fontSize: isMobile ? '1.8rem' : '2.8rem', 
+                        fontWeight: '900', 
+                        color: '#fff', 
+                        marginBottom: '8px', 
+                        letterSpacing: '-1.5px' 
+                    }}>
+                        إدارة المخزون <span style={{ color: 'var(--primary)', fontSize: isMobile ? '0.9rem' : '1.2rem', verticalAlign: 'middle', opacity: 0.8 }}>| مركز المنتجات</span>
                     </h1>
-                    <p style={{ color: 'var(--text-muted)', fontSize: '1.1rem' }}>التحكم الكامل في تشكيلة الساعات الراقية لمجر تايم تك.</p>
+                    <p style={{ color: 'var(--text-muted)', fontSize: isMobile ? '0.95rem' : '1.1rem' }}>التحكم الكامل في تشكيلة الساعات الراقية لمجر تايم تك.</p>
                 </div>
-                <div style={{ display: 'flex', gap: '12px' }}>
+                <div style={{ display: 'flex', gap: '12px', width: isMobile ? '100%' : 'auto' }}>
                     {selectedProducts.size > 0 ? (
-                        <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} style={{ display: 'flex', gap: '12px' }}>
-                            <button onClick={toggleAll} style={{ padding: '12px 24px', borderRadius: '14px', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-color)', color: '#fff', fontWeight: '700', cursor: 'pointer' }}>
-                                {selectedProducts.size === totalMatchingCount ? 'إلغاء الكل' : 'تحديد الكل'}
+                        <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} style={{ display: 'flex', gap: '12px', width: '100%' }}>
+                            <button onClick={toggleAll} style={{ flex: 1, padding: '12px 10px', borderRadius: '14px', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-color)', color: '#fff', fontWeight: '700', cursor: 'pointer', fontSize: '0.85rem' }}>
+                                {selectedProducts.size === totalMatchingCount ? 'إلغاء' : 'تحديد الكل'}
                             </button>
-                            <button onClick={handleBulkDelete} style={{ padding: '12px 24px', borderRadius: '14px', background: '#ef4444', border: 'none', color: '#fff', fontWeight: '800', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                <Trash2 size={18} /> حذف ({selectedProducts.size})
+                            <button onClick={handleBulkDelete} style={{ flex: 1.5, padding: '12px 10px', borderRadius: '14px', background: '#ef4444', border: 'none', color: '#fff', fontWeight: '800', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', fontSize: '0.85rem' }}>
+                                <Trash2 size={16} /> حذف ({selectedProducts.size})
                             </button>
                         </motion.div>
                     ) : (
-                        <Link to="/products/add" style={{ textDecoration: 'none' }}>
-                            <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} style={{ padding: '14px 28px', borderRadius: '16px', background: 'var(--primary)', color: '#000', border: 'none', fontWeight: '800', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '10px', boxShadow: '0 10px 25px rgba(212, 175, 55, 0.2)' }}>
-                                <Plus size={22} /> إضافة ساعة جديدة
+                        <Link to="/products/add" style={{ textDecoration: 'none', width: '100%' }}>
+                            <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} style={{ width: '100%', padding: '14px 20px', borderRadius: '16px', background: 'var(--primary)', color: '#000', border: 'none', fontWeight: '800', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', boxShadow: '0 10px 25px rgba(212, 175, 55, 0.2)', fontSize: '0.9rem' }}>
+                                <Plus size={20} /> إضافة ساعة جديدة
                             </motion.button>
                         </Link>
                     )}
@@ -427,16 +448,31 @@ const Products = () => {
             </div>
 
             {/* Stats Section */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '20px', marginBottom: '3rem' }}>
+            <div style={{ 
+                display: 'grid', 
+                gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(auto-fit, minmax(240px, 1fr))', 
+                gap: isMobile ? '12px' : '20px', 
+                marginBottom: isMobile ? '2rem' : '3rem' 
+            }}>
                 {summaryStats.map((stat, idx) => (
                     <motion.div key={idx} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.1 }}
-                        style={{ padding: '24px', borderRadius: '24px', background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', gap: '20px' }}>
-                        <div style={{ width: '56px', height: '56px', borderRadius: '16px', background: stat.bg, color: stat.color, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            {stat.icon}
+                        style={{ 
+                            padding: isMobile ? '15px' : '24px', 
+                            borderRadius: '20px', 
+                            background: 'rgba(255,255,255,0.02)', 
+                            border: '1px solid var(--border-color)', 
+                            display: 'flex', 
+                            flexDirection: isMobile ? 'column' : 'row',
+                            alignItems: isMobile ? 'center' : 'center', 
+                            textAlign: isMobile ? 'center' : 'right',
+                            gap: isMobile ? '10px' : '20px' 
+                        }}>
+                        <div style={{ width: isMobile ? '40px' : '56px', height: isMobile ? '40px' : '56px', borderRadius: '12px', background: stat.bg, color: stat.color, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                            {React.cloneElement(stat.icon, { size: isMobile ? 18 : 22 })}
                         </div>
                         <div>
-                            <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '4px', fontWeight: '600' }}>{stat.label}</p>
-                            <h4 style={{ fontSize: '1.8rem', fontWeight: '900', color: '#fff' }}>{stat.value}</h4>
+                            <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '2px', fontWeight: '600' }}>{stat.label}</p>
+                            <h4 style={{ fontSize: isMobile ? '1.3rem' : '1.8rem', fontWeight: '900', color: '#fff' }}>{stat.value}</h4>
                         </div>
                     </motion.div>
                 ))}
@@ -457,7 +493,12 @@ const Products = () => {
                     <p style={{ fontWeight: '800', fontSize: '1.1rem', letterSpacing: '1px' }}>جاري استحضار المجموعة الملكية...</p>
                 </div>
             ) : (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: '30px', paddingBottom: '60px' }}>
+                <div style={{ 
+                    display: 'grid', 
+                    gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(340px, 1fr))', 
+                    gap: isMobile ? '20px' : '30px', 
+                    paddingBottom: '60px' 
+                }}>
                     <AnimatePresence mode="popLayout">
                         {products.length === 0 ? (
                             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ gridColumn: '1/-1', textAlign: 'center', padding: '100px 0', opacity: 0.3 }}>
@@ -510,6 +551,7 @@ const Products = () => {
 };
 
 const ProductCard = ({ product, index, isSelected, onToggle, onDelete, onToggleLatest, onToggleBestSeller, lastProductRef }) => {
+    const isMobile = window.innerWidth < 768;
     return (
         <motion.div
             ref={lastProductRef}
@@ -526,7 +568,7 @@ const ProductCard = ({ product, index, isSelected, onToggle, onDelete, onToggleL
             }}
         >
             {/* Visual Header */}
-            <div style={{ position: 'relative', height: '280px', overflow: 'hidden' }}>
+            <div style={{ position: 'relative', height: isMobile ? '220px' : '280px', overflow: 'hidden' }}>
                 <img
                     src={product.imageUrl || (product.images && product.images[0]) || 'https://placehold.co/600x600/1a1a1a/ffffff?text=Premium+Watch'}
                     alt={product.name}

@@ -63,7 +63,10 @@ export default function Orders() {
     };
 
     if (loading) {
-        return <div style={{ minHeight: '80vh' }}></d    return (
+        return <div style={{ minHeight: '80vh' }}></div>;
+    }
+
+    return (
         <div style={{ maxWidth: '800px', margin: isMobile ? '40px auto 40px' : '80px auto 40px', padding: isMobile ? '0 12px' : '0 15px' }}>
             <motion.div
                 initial={{ opacity: 0, y: 15 }}

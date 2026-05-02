@@ -18,6 +18,13 @@ const Users = () => {
     const [totalCount, setTotalCount] = useState(0);
     const { startLoading, stopLoading } = useLoading();
     const [searchQuery, setSearchQuery] = useState('');
+    const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
+    useEffect(() => {
+        const handleResize = () => setIsMobile(window.innerWidth < 768);
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
 
     const observer = useRef();
     const lastUserRef = useCallback(node => {
@@ -144,14 +151,27 @@ const Users = () => {
     };
 
     return (
-        <div style={{ direction: 'rtl', padding: '10px' }}>
+        <div style={{ direction: 'rtl', padding: isMobile ? '5px' : '10px' }}>
             {/* Header Section */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '3rem', flexWrap: 'wrap', gap: '24px' }}>
+            <div style={{ 
+                display: 'flex', 
+                justifyContent: 'space-between', 
+                alignItems: isMobile ? 'flex-start' : 'flex-end', 
+                marginBottom: isMobile ? '2rem' : '3rem', 
+                flexDirection: isMobile ? 'column' : 'row',
+                gap: isMobile ? '20px' : '24px' 
+            }}>
                 <div>
-                    <h1 style={{ fontSize: '2.8rem', fontWeight: '900', color: '#fff', marginBottom: '8px', letterSpacing: '-1.5px' }}>
-                        قاعدة العملاء <span style={{ color: 'var(--primary)', fontSize: '1.2rem', verticalAlign: 'middle', opacity: 0.8 }}>| إدارة المسجلين</span>
+                    <h1 style={{ 
+                        fontSize: isMobile ? '1.8rem' : '2.8rem', 
+                        fontWeight: '900', 
+                        color: '#fff', 
+                        marginBottom: '8px', 
+                        letterSpacing: isMobile ? '-0.5px' : '-1.5px' 
+                    }}>
+                        قاعدة العملاء <span style={{ color: 'var(--primary)', fontSize: isMobile ? '0.8rem' : '1.2rem', verticalAlign: 'middle', opacity: 0.8 }}>| إدارة المسجلين</span>
                     </h1>
-                    <p style={{ color: 'var(--text-muted)', fontSize: '1.1rem' }}>عرض وإدارة بيانات المسجلين وهيكل العضوية في متجر تايم تك.</p>
+                    <p style={{ color: 'var(--text-muted)', fontSize: isMobile ? '0.9rem' : '1.1rem' }}>عرض وإدارة بيانات المسجلين وهيكل العضوية.</p>
                 </div>
                 
                 {/* Premium Summary Card */}
@@ -161,20 +181,31 @@ const Users = () => {
                     style={{
                         background: 'rgba(212, 175, 55, 0.05)',
                         border: '1px solid rgba(212, 175, 55, 0.15)',
-                        padding: '16px 32px',
-                        borderRadius: '24px',
+                        padding: isMobile ? '12px 20px' : '16px 32px',
+                        borderRadius: '20px',
                         display: 'flex',
                         alignItems: 'center',
-                        gap: '20px',
-                        backdropFilter: 'blur(10px)'
+                        gap: isMobile ? '15px' : '20px',
+                        backdropFilter: 'blur(10px)',
+                        width: isMobile ? '100%' : 'auto'
                     }}
                 >
-                    <div style={{ width: '52px', height: '52px', background: 'var(--primary)', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#000', boxShadow: '0 8px 20px rgba(212, 175, 55, 0.3)' }}>
-                        <UsersIcon size={24} />
+                    <div style={{ 
+                        width: isMobile ? '40px' : '52px', 
+                        height: isMobile ? '40px' : '52px', 
+                        background: 'var(--primary)', 
+                        borderRadius: '12px', 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        justifyContent: 'center', 
+                        color: '#000', 
+                        boxShadow: '0 8px 20px rgba(212, 175, 55, 0.3)' 
+                    }}>
+                        <UsersIcon size={isMobile ? 18 : 24} />
                     </div>
                     <div>
-                        <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: '700', marginBottom: '2px' }}>إجمالي العملاء</p>
-                        <h4 style={{ fontSize: '1.8rem', fontWeight: '950', color: '#fff', lineHeight: 1 }}>{totalCount}</h4>
+                        <p style={{ fontSize: isMobile ? '0.7rem' : '0.85rem', color: 'var(--text-muted)', fontWeight: '700', marginBottom: '2px' }}>إجمالي العملاء</p>
+                        <h4 style={{ fontSize: isMobile ? '1.4rem' : '1.8rem', fontWeight: '950', color: '#fff', lineHeight: 1 }}>{totalCount}</h4>
                     </div>
                 </motion.div>
             </div>
@@ -182,46 +213,49 @@ const Users = () => {
             {/* Control Bar */}
             <div style={{
                 background: 'rgba(255,255,255,0.03)',
-                padding: '24px',
-                borderRadius: '24px',
-                marginBottom: '40px',
+                padding: isMobile ? '16px' : '24px',
+                borderRadius: '20px',
+                marginBottom: isMobile ? '20px' : '40px',
                 border: '1px solid var(--border-color)',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '24px',
+                gap: '15px',
                 backdropFilter: 'blur(10px)'
             }}>
-                <div style={{ position: 'relative', flex: 1, minWidth: '300px' }}>
-                    <Search size={20} style={{ position: 'absolute', right: '16px', top: '50%', transform: 'translateY(-50%)', color: 'var(--primary)', opacity: 0.7 }} />
+                <div style={{ position: 'relative', flex: 1, minWidth: isMobile ? '100%' : '300px' }}>
+                    <Search size={18} style={{ position: 'absolute', right: '16px', top: '50%', transform: 'translateY(-50%)', color: 'var(--primary)', opacity: 0.7 }} />
                     <input
                         type="text"
-                        placeholder="ابحث عن عميل: الاسم، البريد، أو الواتساب..."
+                        placeholder="ابحث عن عميل..."
                         value={searchQuery}
                         onChange={e => setSearchQuery(e.target.value)}
                         style={{
                             width: '100%',
-                            padding: '14px 52px 14px 20px',
+                            padding: '12px 48px 12px 16px',
                             background: 'rgba(0,0,0,0.3)',
                             border: '1px solid var(--border-color)',
-                            borderRadius: '16px',
+                            borderRadius: '12px',
                             color: '#fff',
-                            fontSize: '1rem',
+                            fontSize: '0.95rem',
                             outline: 'none',
                             transition: '0.3s'
                         }}
-                        onFocus={(e) => e.target.style.borderColor = 'var(--primary)'}
-                        onBlur={(e) => e.target.style.borderColor = 'var(--border-color)'}
                     />
                 </div>
             </div>
 
             {loading ? (
-                <div style={{ textAlign: 'center', padding: '120px 0', color: 'var(--primary)' }}>
+                <div style={{ textAlign: 'center', padding: isMobile ? '60px 0' : '120px 0', color: 'var(--primary)' }}>
                     <Loader2 className="animate-spin" style={{ margin: '0 auto 24px', width: '56px', height: '56px' }} />
-                    <p style={{ fontWeight: '800', fontSize: '1.1rem' }}>جاري استرجاع سجلات العملاء...</p>
+                    <p style={{ fontWeight: '800', fontSize: '1.1rem' }}>جاري استرجاع السجلات...</p>
                 </div>
             ) : (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))', gap: '30px', paddingBottom: '60px' }}>
+                <div style={{ 
+                    display: 'grid', 
+                    gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(360px, 1fr))', 
+                    gap: isMobile ? '15px' : '30px', 
+                    paddingBottom: '60px' 
+                }}>
                     <AnimatePresence mode="popLayout">
                         {users.length === 0 ? (
                             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ gridColumn: '1/-1', textAlign: 'center', padding: '100px 0', opacity: 0.3 }}>
@@ -258,6 +292,7 @@ const Users = () => {
 };
 
 const UserCard = ({ user, index, onDelete, lastUserRef }) => {
+    const isMobile = window.innerWidth < 768;
     return (
         <motion.div
             ref={lastUserRef}
@@ -266,40 +301,42 @@ const UserCard = ({ user, index, onDelete, lastUserRef }) => {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9 }}
             transition={{ duration: 0.4, delay: (index % 6) * 0.05 }}
-            whileHover={{ y: -5 }}
             style={{
                 background: 'rgba(255,255,255,0.02)',
                 border: '1px solid var(--border-color)',
-                borderRadius: '28px',
-                padding: '28px',
+                borderRadius: '24px',
+                padding: isMobile ? '20px' : '28px',
                 display: 'flex',
                 flexDirection: 'column',
-                gap: '24px',
+                gap: isMobile ? '16px' : '24px',
                 backdropFilter: 'blur(10px)',
                 position: 'relative'
             }}
         >
             {/* User Profile Header */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '12px' : '20px' }}>
                 <div style={{ 
-                    width: '72px', height: '72px', borderRadius: '22px', 
-                    background: 'rgba(212, 175, 55, 0.1)', border: '2px solid var(--primary)',
+                    width: isMobile ? '56px' : '72px', 
+                    height: isMobile ? '56px' : '72px', 
+                    borderRadius: '16px', 
+                    background: 'rgba(212, 175, 55, 0.1)', border: '1.5px solid var(--primary)',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    overflow: 'hidden', boxShadow: '0 8px 25px rgba(0,0,0,0.2)'
+                    overflow: 'hidden', boxShadow: '0 8px 25px rgba(0,0,0,0.2)',
+                    flexShrink: 0
                 }}>
                     {user.image ? (
                         <img src={user.image} alt={user.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                     ) : (
-                        <UsersIcon size={32} color="var(--primary)" />
+                        <UsersIcon size={isMobile ? 24 : 32} color="var(--primary)" />
                     )}
                 </div>
                 <div style={{ flex: 1 }}>
-                    <h3 style={{ fontSize: '1.3rem', fontWeight: '800', color: '#fff', marginBottom: '4px' }}>
+                    <h3 style={{ fontSize: isMobile ? '1rem' : '1.3rem', fontWeight: '800', color: '#fff', marginBottom: '4px' }}>
                         {user.full_name || user.name || 'مستخدم مجهول'}
                     </h3>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <Shield size={14} color="var(--primary)" />
-                        <span style={{ fontSize: '0.8rem', color: 'var(--primary)', fontWeight: '900', letterSpacing: '1px' }}>
+                        <Shield size={12} color="var(--primary)" />
+                        <span style={{ fontSize: '0.7rem', color: 'var(--primary)', fontWeight: '900' }}>
                             #{user.id.substring(0, 8).toUpperCase()}
                         </span>
                     </div>
@@ -307,18 +344,18 @@ const UserCard = ({ user, index, onDelete, lastUserRef }) => {
             </div>
 
             {/* User Info Grid */}
-            <div style={{ display: 'grid', gap: '14px', background: 'rgba(0,0,0,0.2)', padding: '20px', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.05)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', color: '#fff', fontSize: '0.95rem' }}>
-                    <div style={{ color: 'var(--primary)', opacity: 0.7 }}><Mail size={18} /></div>
+            <div style={{ display: 'grid', gap: '10px', background: 'rgba(0,0,0,0.2)', padding: isMobile ? '12px' : '20px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#fff', fontSize: isMobile ? '0.8rem' : '0.95rem' }}>
+                    <div style={{ color: 'var(--primary)', opacity: 0.7 }}><Mail size={isMobile ? 16 : 18} /></div>
                     <span style={{ opacity: 0.9, wordBreak: 'break-all' }}>{user.email}</span>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', color: '#fff', fontSize: '0.95rem' }}>
-                    <div style={{ color: 'var(--primary)', opacity: 0.7 }}><Smartphone size={18} /></div>
-                    <span style={{ opacity: 0.9 }}>{user.whatsapp || 'غير مسجل'}</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#fff', fontSize: isMobile ? '0.8rem' : '0.95rem' }}>
+                    <div style={{ color: 'var(--primary)', opacity: 0.7 }}><Smartphone size={isMobile ? 16 : 18} /></div>
+                    <span style={{ opacity: 0.9 }}>{user.whatsapp || '---'}</span>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', color: '#fff', fontSize: '0.95rem' }}>
-                    <div style={{ color: 'var(--primary)', opacity: 0.7 }}><MapPin size={18} /></div>
-                    <span style={{ opacity: 0.9 }}>{user.governorate ? `${user.governorate}, ${user.district || ''}` : 'العنوان غير محدد'}</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#fff', fontSize: isMobile ? '0.8rem' : '0.95rem' }}>
+                    <div style={{ color: 'var(--primary)', opacity: 0.7 }}><MapPin size={isMobile ? 16 : 18} /></div>
+                    <span style={{ opacity: 0.9 }}>{user.governorate ? `${user.governorate}, ${user.district || ''}` : 'غير محدد'}</span>
                 </div>
             </div>
 
@@ -338,18 +375,18 @@ const UserCard = ({ user, index, onDelete, lastUserRef }) => {
             {/* Action Area */}
             <div style={{ display: 'flex', gap: '12px', paddingTop: '10px', borderTop: '1px solid var(--border-color)' }}>
                 <motion.button 
-                    whileHover={{ scale: 1.02, background: 'rgba(239, 68, 68, 0.15)' }}
+                    whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                     onClick={onDelete}
                     style={{ 
-                        flex: 1, height: '52px', borderRadius: '16px', border: '1px solid rgba(239, 68, 68, 0.2)', 
+                        flex: 1, height: isMobile ? '44px' : '52px', borderRadius: '12px', border: '1px solid rgba(239, 68, 68, 0.2)', 
                         background: 'rgba(239, 68, 68, 0.05)', color: '#ef4444', 
                         fontWeight: '800', cursor: 'pointer', display: 'flex', 
-                        alignItems: 'center', justifyContent: 'center', gap: '10px',
-                        transition: '0.3s'
+                        alignItems: 'center', justifyContent: 'center', gap: '8px',
+                        fontSize: isMobile ? '0.8rem' : '0.9rem'
                     }}
                 >
-                    <Trash2 size={20} /> حذف العميل نهائياً
+                    <Trash2 size={isMobile ? 16 : 20} /> حذف العميل
                 </motion.button>
             </div>
         </motion.div>

@@ -30,6 +30,7 @@ import Swal from 'sweetalert2';
 
 // Sub-component for a sortable slide item
 const SortableSlide = ({ slide, index, isExpanded, onToggle, onRemove, onImageUpload, onFieldChange }) => {
+    const isMobile = window.innerWidth < 768;
     const {
         attributes,
         listeners,
@@ -60,7 +61,7 @@ const SortableSlide = ({ slide, index, isExpanded, onToggle, onRemove, onImageUp
             <div 
                 onClick={() => onToggle(slide.id)}
                 style={{ 
-                    padding: '20px 28px', 
+                    padding: isMobile ? '12px 16px' : '20px 28px', 
                     display: 'flex', 
                     justifyContent: 'space-between', 
                     alignItems: 'center',
@@ -70,7 +71,7 @@ const SortableSlide = ({ slide, index, isExpanded, onToggle, onRemove, onImageUp
                     transition: '0.3s'
                 }}
             >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '12px' : '20px' }}>
                     {/* Drag Handle */}
                     <div 
                         {...attributes} 
@@ -78,26 +79,28 @@ const SortableSlide = ({ slide, index, isExpanded, onToggle, onRemove, onImageUp
                         style={{ cursor: 'grab', padding: '8px', color: 'var(--primary)', touchAction: 'none', background: 'rgba(212, 175, 55, 0.1)', borderRadius: '10px' }}
                         onClick={(e) => e.stopPropagation()} 
                     >
-                        <GripVertical size={20} />
+                        <GripVertical size={isMobile ? 18 : 20} />
                     </div>
-                    <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'var(--primary)', color: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '900', fontSize: '1.2rem', boxShadow: '0 4px 10px rgba(212, 175, 55, 0.3)' }}>
-                        {index + 1}
-                    </div>
+                    {!isMobile && (
+                        <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'var(--primary)', color: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '900', fontSize: '1.2rem', boxShadow: '0 4px 10px rgba(212, 175, 55, 0.3)' }}>
+                            {index + 1}
+                        </div>
+                    )}
                     <div>
-                        <h4 style={{ color: '#fff', fontSize: '1.1rem', fontWeight: '800', marginBottom: '2px' }}>{slide.title || 'شريحة بدون عنوان'}</h4>
-                        <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>{slide.subtitle || 'لا يوجد عنوان فرعي'}</p>
+                        <h4 style={{ color: '#fff', fontSize: isMobile ? '0.9rem' : '1.1rem', fontWeight: '800', marginBottom: '2px' }}>{slide.title || 'بدون عنوان'}</h4>
+                        <p style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>{slide.subtitle || '---'}</p>
                     </div>
                 </div>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '8px' : '16px' }}>
                     <button 
                         onClick={(e) => { e.stopPropagation(); onRemove(slide.id); }} 
-                        style={{ background: 'rgba(239, 68, 68, 0.1)', border: 'none', color: '#ef4444', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: '10px', borderRadius: '12px', transition: '0.3s' }}
+                        style={{ background: 'rgba(239, 68, 68, 0.1)', border: 'none', color: '#ef4444', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: '8px', borderRadius: '10px', transition: '0.3s' }}
                     >
-                        <Trash2 size={18} />
+                        <Trash2 size={16} />
                     </button>
                     <motion.div animate={{ rotate: isExpanded ? 180 : 0 }} style={{ color: 'var(--primary)' }}>
-                        <ChevronDown size={22} />
+                        <ChevronDown size={isMobile ? 18 : 22} />
                     </motion.div>
                 </div>
             </div>
@@ -111,8 +114,8 @@ const SortableSlide = ({ slide, index, isExpanded, onToggle, onRemove, onImageUp
                         exit={{ height: 0, opacity: 0 }}
                         style={{ overflow: 'hidden' }}
                     >
-                        <div style={{ padding: '28px', borderTop: '1px solid var(--border-color)', background: 'rgba(0,0,0,0.1)' }}>
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '28px' }}>
+                        <div style={{ padding: isMobile ? '16px' : '28px', borderTop: '1px solid var(--border-color)', background: 'rgba(0,0,0,0.1)' }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fit, minmax(280px, 1fr))', gap: isMobile ? '16px' : '28px' }}>
                                 {/* Image Preview & Upload */}
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                                     <label style={{ fontSize: '0.9rem', color: 'var(--text-muted)', fontWeight: '700' }}>صورة الواجهة الرئيسية</label>
@@ -127,7 +130,7 @@ const SortableSlide = ({ slide, index, isExpanded, onToggle, onRemove, onImageUp
                                             <>
                                                 <img src={slide.image_url || slide.image} alt="Hero" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                                 <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0, transition: '0.3s', cursor: 'pointer' }} onMouseEnter={(e) => e.target.style.opacity = 1} onMouseLeave={(e) => e.target.style.opacity = 0}>
-                                                    <span style={{ color: '#fff', fontWeight: '800', background: 'var(--primary)', color: '#000', padding: '8px 16px', borderRadius: '10px' }}>تغيير الصورة</span>
+                                                    <span style={{ fontWeight: '800', background: 'var(--primary)', color: '#000', padding: '8px 16px', borderRadius: '10px' }}>تغيير الصورة</span>
                                                 </div>
                                             </>
                                         ) : (
@@ -194,6 +197,13 @@ const Settings = () => {
     const [heroSlides, setHeroSlides] = useState([]);
     const [loading, setLoading] = useState(true);
     const [expandedSlides, setExpandedSlides] = useState({});
+    const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
+    useEffect(() => {
+        const handleResize = () => setIsMobile(window.innerWidth < 768);
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
 
     const sensors = useSensors(
         useSensor(PointerSensor),
@@ -489,24 +499,31 @@ const Settings = () => {
     if (loading) return null;
 
     return (
-        <div style={{ direction: 'rtl', padding: '10px' }}>
+        <div style={{ direction: 'rtl', padding: isMobile ? '5px' : '10px' }}>
             {/* Header Section */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '3.5rem', flexWrap: 'wrap', gap: '24px' }}>
+            <div style={{ 
+                display: 'flex', 
+                justifyContent: 'space-between', 
+                alignItems: isMobile ? 'flex-start' : 'flex-end', 
+                marginBottom: isMobile ? '2rem' : '3.5rem', 
+                flexDirection: isMobile ? 'column' : 'row',
+                gap: isMobile ? '16px' : '24px' 
+            }}>
                 <div>
-                    <h1 style={{ fontSize: '2.8rem', fontWeight: '900', color: '#fff', marginBottom: '8px', letterSpacing: '-1.5px' }}>
-                        إعدادات الواجهة <span style={{ color: 'var(--primary)', fontSize: '1.2rem', verticalAlign: 'middle', opacity: 0.8 }}>| إدارة الأقسام</span>
+                    <h1 style={{ fontSize: isMobile ? '1.8rem' : '2.8rem', fontWeight: '900', color: '#fff', marginBottom: '8px', letterSpacing: isMobile ? '-0.5px' : '-1.5px' }}>
+                        إعدادات الواجهة <span style={{ color: 'var(--primary)', fontSize: isMobile ? '0.8rem' : '1.2rem', verticalAlign: 'middle', opacity: 0.8 }}>| إدارة الأقسام</span>
                     </h1>
-                    <p style={{ color: 'var(--text-muted)', fontSize: '1.1rem' }}>تخصيص محتوى وترتيب الأقسام المميزة في واجهة متجر تايم تك.</p>
+                    <p style={{ color: 'var(--text-muted)', fontSize: isMobile ? '0.9rem' : '1.1rem' }}>تخصيص محتوى وترتيب الأقسام المميزة.</p>
                 </div>
-                <div>
+                <div style={{ width: isMobile ? '100%' : 'auto' }}>
                     <motion.button 
                         whileHover={{ scale: 1.05 }} 
                         whileTap={{ scale: 0.95 }}
                         className="btn-primary" 
                         onClick={saveSettings} 
-                        style={{ padding: '14px 28px', borderRadius: '16px', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '10px', background: 'var(--primary)', color: '#000', border: 'none', cursor: 'pointer', boxShadow: '0 10px 25px rgba(212, 175, 55, 0.2)' }}
+                        style={{ width: isMobile ? '100%' : 'auto', padding: isMobile ? '12px 20px' : '14px 28px', borderRadius: '16px', fontWeight: '800', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', background: 'var(--primary)', color: '#000', border: 'none', cursor: 'pointer', boxShadow: '0 10px 25px rgba(212, 175, 55, 0.2)', fontSize: isMobile ? '0.9rem' : '1rem' }}
                     >
-                        حفظ تغييرات الهيرو <Save size={20} />
+                        حفظ التغييرات <Save size={isMobile ? 18 : 20} />
                     </motion.button>
                 </div>
             </div>
@@ -514,18 +531,18 @@ const Settings = () => {
             {/* HERO SECTION MANAGEMENT */}
             <div style={{ 
                 background: 'rgba(255,255,255,0.02)', 
-                borderRadius: '32px', 
-                padding: '40px', 
+                borderRadius: isMobile ? '24px' : '32px', 
+                padding: isMobile ? '20px' : '40px', 
                 border: '1px solid var(--border-color)',
                 backdropFilter: 'blur(10px)',
                 marginBottom: '40px'
             }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                        <div style={{ width: '48px', height: '48px', borderRadius: '14px', background: 'rgba(212, 175, 55, 0.1)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <Layout size={24} />
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: isMobile ? '20px' : '32px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '12px' : '16px' }}>
+                        <div style={{ width: isMobile ? '40px' : '48px', height: isMobile ? '40px' : '48px', borderRadius: '12px', background: 'rgba(212, 175, 55, 0.1)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <Layout size={isMobile ? 20 : 24} />
                         </div>
-                        <h2 style={{ fontSize: '1.6rem', fontWeight: '800', color: '#fff' }}>تخصيص شرائح الهيرو (Slides)</h2>
+                        <h2 style={{ fontSize: isMobile ? '1.2rem' : '1.6rem', fontWeight: '800', color: '#fff' }}>شرائح الهيرو (Slides)</h2>
                     </div>
                 </div>
 
@@ -583,44 +600,42 @@ const Settings = () => {
             {/* MANAGEMENT HUB SECTION */}
             <div style={{ 
                 background: 'rgba(255,255,255,0.01)', 
-                borderRadius: '32px', 
+                borderRadius: isMobile ? '24px' : '32px', 
                 border: '1px solid var(--border-color)',
                 backdropFilter: 'blur(30px)',
                 overflow: 'hidden',
                 boxShadow: '0 30px 60px rgba(0,0,0,0.5)',
                 marginTop: '40px'
             }}>
-                <div style={{ padding: '32px', borderBottom: '1px solid var(--border-color)', background: 'linear-gradient(to right, rgba(212,175,55,0.05), transparent)' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                        <div style={{ width: '48px', height: '48px', borderRadius: '14px', background: 'var(--primary)', color: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <Rocket size={24} />
+                <div style={{ padding: isMobile ? '20px' : '32px', borderBottom: '1px solid var(--border-color)', background: 'linear-gradient(to right, rgba(212,175,55,0.05), transparent)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '12px' : '16px' }}>
+                        <div style={{ width: isMobile ? '40px' : '48px', height: isMobile ? '40px' : '48px', borderRadius: '12px', background: 'var(--primary)', color: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <Rocket size={isMobile ? 20 : 24} />
                         </div>
                         <div>
-                            <h2 style={{ fontSize: '1.6rem', fontWeight: '900', color: '#fff' }}>مركز إدارة المجموعات الحصري</h2>
-                            <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>تحكم كامل في المنتجات المعروضة مباشرة في الصفحة الرئيسية</p>
+                            <h2 style={{ fontSize: isMobile ? '1.2rem' : '1.6rem', fontWeight: '900', color: '#fff' }}>إدارة المجموعات</h2>
+                            {!isMobile && <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>تحكم كامل في المنتجات المعروضة في الصفحة الرئيسية</p>}
                         </div>
                     </div>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '380px 1fr', minHeight: '650px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '380px 1fr', minHeight: isMobile ? 'auto' : '650px' }}>
                     {/* Sidebar: Master Control */}
-                    <div style={{ borderLeft: '1px solid var(--border-color)', padding: '32px', background: 'rgba(0,0,0,0.2)' }}>
-                        <h3 style={{ color: '#fff', fontSize: '1.1rem', fontWeight: '800', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <Search size={18} color="var(--primary)" /> التحكم السريع
+                    <div style={{ borderLeft: isMobile ? 'none' : '1px solid var(--border-color)', borderBottom: isMobile ? '1px solid var(--border-color)' : 'none', padding: isMobile ? '20px' : '32px', background: 'rgba(0,0,0,0.2)' }}>
+                        <h3 style={{ color: '#fff', fontSize: isMobile ? '1rem' : '1.1rem', fontWeight: '800', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <Search size={isMobile ? 16 : 18} color="var(--primary)" /> التحكم السريع
                         </h3>
                         
-                        <div style={{ position: 'relative', marginBottom: '28px' }}>
+                        <div style={{ position: 'relative', marginBottom: isMobile ? '20px' : '28px' }}>
                             <input 
                                 type="text"
-                                placeholder="ابحث باسم الساعة أو الرقم..."
+                                placeholder="ابحث باسم الساعة..."
                                 value={hubSearch}
                                 onChange={(e) => handleHubSearch(e.target.value)}
-                                style={{ width: '100%', padding: '16px 20px', paddingRight: '48px', background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border-color)', borderRadius: '18px', color: '#fff', outline: 'none', fontSize: '0.95rem', transition: '0.3s' }}
-                                onFocus={(e) => e.target.style.borderColor = 'var(--primary)'}
-                                onBlur={(e) => e.target.style.borderColor = 'var(--border-color)'}
+                                style={{ width: '100%', padding: '12px 16px', paddingRight: '40px', background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border-color)', borderRadius: '14px', color: '#fff', outline: 'none', fontSize: '0.9rem', transition: '0.3s' }}
                             />
-                            <div style={{ position: 'absolute', right: '18px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }}>
-                                <Search size={20} />
+                            <div style={{ position: 'absolute', right: '14px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }}>
+                                <Search size={18} />
                             </div>
                         </div>
 
@@ -652,7 +667,7 @@ const Settings = () => {
                                                 <button 
                                                     onClick={() => toggleCurationStatus(product, 'latest', !latestProducts.some(p => p.id === product.id))}
                                                     style={{ 
-                                                        padding: '8px', borderRadius: '10px', fontSize: '0.7rem', fontWeight: '800', border: 'none', cursor: 'pointer', transition: '0.3s',
+                                                        padding: '8px', borderRadius: '10px', fontSize: '0.7rem', fontWeight: '800', cursor: 'pointer', transition: '0.3s',
                                                         background: latestProducts.some(p => p.id === product.id) ? 'rgba(59, 130, 246, 0.2)' : 'rgba(255,255,255,0.05)',
                                                         color: latestProducts.some(p => p.id === product.id) ? '#60a5fa' : 'var(--text-muted)',
                                                         border: latestProducts.some(p => p.id === product.id) ? '1px solid rgba(59, 130, 246, 0.3)' : '1px solid rgba(255,255,255,0.05)'
@@ -663,7 +678,7 @@ const Settings = () => {
                                                 <button 
                                                     onClick={() => toggleCurationStatus(product, 'best', !bestSellers.some(p => p.id === product.id))}
                                                     style={{ 
-                                                        padding: '8px', borderRadius: '10px', fontSize: '0.7rem', fontWeight: '800', border: 'none', cursor: 'pointer', transition: '0.3s',
+                                                        padding: '8px', borderRadius: '10px', fontSize: '0.7rem', fontWeight: '800', cursor: 'pointer', transition: '0.3s',
                                                         background: bestSellers.some(p => p.id === product.id) ? 'rgba(249, 115, 22, 0.2)' : 'rgba(255,255,255,0.05)',
                                                         color: bestSellers.some(p => p.id === product.id) ? '#fb923c' : 'var(--text-muted)',
                                                         border: bestSellers.some(p => p.id === product.id) ? '1px solid rgba(249, 115, 22, 0.3)' : '1px solid rgba(255,255,255,0.05)'
@@ -687,40 +702,42 @@ const Settings = () => {
                     </div>
 
                     {/* Main Area: Active Lists */}
-                    <div style={{ padding: '32px', display: 'flex', flexDirection: 'column' }}>
+                    <div style={{ padding: isMobile ? '20px' : '32px', display: 'flex', flexDirection: 'column' }}>
                         {/* Tab Switcher */}
-                        <div style={{ display: 'flex', gap: '8px', background: 'rgba(0,0,0,0.3)', padding: '6px', borderRadius: '16px', marginBottom: '32px', width: 'fit-content' }}>
+                        <div style={{ display: 'flex', gap: '8px', background: 'rgba(0,0,0,0.3)', padding: '6px', borderRadius: '16px', marginBottom: isMobile ? '20px' : '32px', width: isMobile ? '100%' : 'fit-content' }}>
                             <button 
                                 onClick={() => setHubActiveTab('latest')}
                                 style={{ 
-                                    padding: '10px 24px', borderRadius: '12px', border: 'none', cursor: 'pointer', fontWeight: '800', fontSize: '0.9rem', transition: '0.3s',
+                                    flex: isMobile ? 1 : 'none',
+                                    padding: isMobile ? '10px 12px' : '10px 24px', borderRadius: '12px', border: 'none', cursor: 'pointer', fontWeight: '800', fontSize: isMobile ? '0.8rem' : '0.9rem', transition: '0.3s',
                                     background: hubActiveTab === 'latest' ? 'var(--primary)' : 'transparent',
                                     color: hubActiveTab === 'latest' ? '#000' : 'var(--text-muted)'
                                 }}
                             >
-                                وصل حديثاً ({latestProducts.length})
+                                حديث ({latestProducts.length})
                             </button>
                             <button 
                                 onClick={() => setHubActiveTab('best')}
                                 style={{ 
-                                    padding: '10px 24px', borderRadius: '12px', border: 'none', cursor: 'pointer', fontWeight: '800', fontSize: '0.9rem', transition: '0.3s',
+                                    flex: isMobile ? 1 : 'none',
+                                    padding: isMobile ? '10px 12px' : '10px 24px', borderRadius: '12px', border: 'none', cursor: 'pointer', fontWeight: '800', fontSize: isMobile ? '0.8rem' : '0.9rem', transition: '0.3s',
                                     background: hubActiveTab === 'best' ? 'var(--primary)' : 'transparent',
                                     color: hubActiveTab === 'best' ? '#000' : 'var(--text-muted)'
                                 }}
                             >
-                                الأكثر طلباً ({bestSellers.length})
+                                طلب ({bestSellers.length})
                             </button>
                         </div>
 
                         {/* Current List Content */}
-                        <div style={{ flex: 1, maxHeight: '600px', overflowY: 'auto' }} className="hide-scrollbar">
+                        <div style={{ flex: 1, maxHeight: isMobile ? 'none' : '600px', overflowY: 'auto' }} className="hide-scrollbar">
                             <AnimatePresence mode="wait">
                                 <motion.div
                                     key={hubActiveTab}
                                     initial={{ opacity: 0, y: 10 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     exit={{ opacity: 0, y: -10 }}
-                                    style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '16px' }}
+                                    style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(300px, 1fr))', gap: '16px' }}
                                 >
                                     {(hubActiveTab === 'latest' ? latestProducts : bestSellers).length > 0 ? (
                                         (hubActiveTab === 'latest' ? latestProducts : bestSellers).map((product) => (

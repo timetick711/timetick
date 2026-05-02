@@ -7,6 +7,14 @@ import { useNavigate } from 'react-router-dom';
 
 const ProductForm = ({ initialData, onSubmit, title, subTitle }) => {
     const navigate = useNavigate();
+    const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
+    useEffect(() => {
+        const handleResize = () => setIsMobile(window.innerWidth < 768);
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
+
     const [formData, setFormData] = useState({
         displayId: '',
         name: '',
@@ -18,13 +26,26 @@ const ProductForm = ({ initialData, onSubmit, title, subTitle }) => {
         video: '',
         imageUrl: '',
         images: [],
-        colors: [],
-        materials: [],
-        variants: []
+        variants: [] // Array of { image, price }
     });
+
+    const [bulkPrice, setBulkPrice] = useState('');
+    const [selectedImagesForBulk, setSelectedImagesForBulk] = useState([]);
 
     useEffect(() => {
         if (initialData) {
+            const images = initialData.images || (initialData.imageUrl ? [initialData.imageUrl] : []);
+            const baseVariants = initialData.variants || [];
+            
+            // Auto-populate variants if empty but multiple images exist (Migration Support)
+            let migratedVariants = baseVariants;
+            if (baseVariants.length === 0 && images.length > 1) {
+                migratedVariants = images.map(img => ({
+                    image: img,
+                    price: Number(initialData.price) || 0
+                }));
+            }
+
             setFormData({
                 displayId: initialData.displayId || '',
                 name: initialData.name || '',
@@ -35,10 +56,8 @@ const ProductForm = ({ initialData, onSubmit, title, subTitle }) => {
                 description: initialData.description || '',
                 video: initialData.video || '',
                 imageUrl: initialData.imageUrl || '',
-                images: initialData.images || (initialData.imageUrl ? [initialData.imageUrl] : []),
-                colors: initialData.colors || [],
-                materials: initialData.materials || [],
-                variants: initialData.variants || []
+                images: images,
+                variants: migratedVariants
             });
         }
     }, [initialData]);
@@ -149,13 +168,26 @@ const ProductForm = ({ initialData, onSubmit, title, subTitle }) => {
                 } : prev);
             }
 
-            // Update State
+            // Update State and automatically add as variants
             setFormData(prev => {
                 const updatedImages = [...(prev.images || []), ...newImages];
+                
+                // Add new images as variants
+                const existingVariantImages = new Set(prev.variants?.map(v => v.image) || []);
+                const newVariants = newImages
+                    .filter(img => !existingVariantImages.has(img))
+                    .map(img => ({
+                        color: '',
+                        material: '',
+                        price: Number(prev.price) || 0,
+                        image: img
+                    }));
+
                 return {
                     ...prev,
                     images: updatedImages,
-                    imageUrl: updatedImages.length > 0 ? updatedImages[0] : ''
+                    imageUrl: updatedImages.length > 0 ? updatedImages[0] : '',
+                    variants: [...(prev.variants || []), ...newVariants]
                 };
             });
 
@@ -224,10 +256,12 @@ const ProductForm = ({ initialData, onSubmit, title, subTitle }) => {
 
         setFormData(prev => {
             const updatedImages = prev.images.filter((_, index) => index !== indexToRemove);
+            const updatedVariants = (prev.variants || []).filter(v => v.image !== imageToDelete);
             return {
                 ...prev,
                 images: updatedImages,
-                imageUrl: updatedImages.length > 0 ? updatedImages[0] : ''
+                imageUrl: updatedImages.length > 0 ? updatedImages[0] : '',
+                variants: updatedVariants
             };
         });
 
@@ -434,67 +468,50 @@ const ProductForm = ({ initialData, onSubmit, title, subTitle }) => {
         );
     };
 
-    const [colorInput, setColorInput] = useState('');
+    const updateVariantPrice = (image, newPrice) => {
+        setFormData(prev => ({
+            ...prev,
+            variants: prev.variants.map(v => v.image === image ? { ...v, price: Number(newPrice) } : v)
+        }));
+    };
 
-    const addColor = (e) => {
-        if (e.key === 'Enter' || e.type === 'click') {
-            e.preventDefault();
-            const val = colorInput.trim();
-            if (val && !formData.colors.includes(val)) {
-                setFormData(prev => ({ ...prev, colors: [...prev.colors, val] }));
-                setColorInput('');
-            }
+    const toggleImageSelection = (image) => {
+        setSelectedImagesForBulk(prev => 
+            prev.includes(image) ? prev.filter(i => i !== image) : [...prev, image]
+        );
+    };
+
+    const applyBulkPriceAction = () => {
+        if (!bulkPrice || selectedImagesForBulk.length === 0) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'تنبيه',
+                text: 'يرجى إدخال السعر وتحديد صورة واحدة على الأقل لتطبيق السعر المخصص.',
+                background: '#141414',
+                color: '#fff'
+            });
+            return;
         }
-    };
-
-    const removeColor = (colorToRemove) => {
-        setFormData(prev => ({
-            ...prev,
-            colors: prev.colors.filter(c => c !== colorToRemove)
-        }));
-    };
-
-    const [materialInput, setMaterialInput] = useState('');
-
-    const addMaterial = (e) => {
-        if (e.key === 'Enter' || e.type === 'click') {
-            e.preventDefault();
-            const val = materialInput.trim();
-            if (val && !formData.materials.includes(val)) {
-                setFormData(prev => ({ ...prev, materials: [...prev.materials, val] }));
-                setMaterialInput('');
-            }
-        }
-    };
-
-    const removeMaterial = (materialToRemove) => {
-        setFormData(prev => ({
-            ...prev,
-            materials: prev.materials.filter(m => m !== materialToRemove)
-        }));
-    };
-    const [variantInput, setVariantInput] = useState({ color: '', material: '', price: '' });
-
-    const addVariant = () => {
-        const { color, material, price } = variantInput;
-        if (!price) return;
-
-        // Check combination
-        const exists = formData.variants.find(v => v.color === color && v.material === material);
-        if (exists) return;
 
         setFormData(prev => ({
             ...prev,
-            variants: [...prev.variants, { color, material, price: Number(price) }]
+            variants: prev.variants.map(v => 
+                selectedImagesForBulk.includes(v.image) ? { ...v, price: Number(bulkPrice) } : v
+            )
         }));
-        setVariantInput({ color: '', material: '', price: '' });
-    };
 
-    const removeVariant = (indexToRemove) => {
-        setFormData(prev => ({
-            ...prev,
-            variants: prev.variants.filter((_, i) => i !== indexToRemove)
-        }));
+        setSelectedImagesForBulk([]);
+        setBulkPrice('');
+        Swal.fire({
+            icon: 'success',
+            title: 'تم التحديث بنجاح',
+            toast: true,
+            position: 'top-end',
+            timer: 2000,
+            showConfirmButton: false,
+            background: '#141414',
+            color: '#fff'
+        });
     };
 
     const handleSubmit = async (e) => {
@@ -503,8 +520,8 @@ const ProductForm = ({ initialData, onSubmit, title, subTitle }) => {
     };
 
     return (
-        <div style={{ padding: '20px', maxWidth: '800px', margin: '0 auto', direction: 'rtl' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '2rem' }}>
+        <div style={{ padding: isMobile ? '5px' : '0', direction: 'rtl' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '12px' : '20px', marginBottom: isMobile ? '1.5rem' : '2.5rem' }}>
                 <button
                     onClick={() => {
                         if (uploading) {
@@ -522,17 +539,17 @@ const ProductForm = ({ initialData, onSubmit, title, subTitle }) => {
                         navigate('/products');
                     }}
                     className="btn-icon"
-                    style={{ background: 'rgba(255,255,255,0.05)', color: '#fff' }}
+                    style={{ background: 'rgba(255,255,255,0.05)', color: '#fff', width: isMobile ? '40px' : '48px', height: isMobile ? '40px' : '48px' }}
                 >
-                    <ArrowRight size={20} />
+                    <ArrowRight size={isMobile ? 18 : 22} />
                 </button>
                 <div>
-                    <h1 style={{ fontSize: '2rem', marginBottom: '8px', color: '#fff' }}>{title}</h1>
-                    {subTitle && <p style={{ color: 'var(--text-muted)' }}>{subTitle}</p>}
+                    <h1 style={{ fontSize: isMobile ? '1.4rem' : '2.2rem', fontWeight: '900', color: '#fff', marginBottom: '4px', letterSpacing: isMobile ? '-0.5px' : '-1px' }}>{title}</h1>
+                    {subTitle && <p style={{ color: 'var(--text-muted)', fontSize: isMobile ? '0.8rem' : '1rem' }}>{subTitle}</p>}
                 </div>
             </div>
 
-            <div className="glass-panel" style={{ padding: '3rem', borderRadius: 'var(--radius-lg)' }}>
+            <div className="glass-panel" style={{ padding: isMobile ? '1.5rem' : '3rem', borderRadius: isMobile ? '24px' : 'var(--radius-lg)' }}>
                 <form onSubmit={handleSubmit}>
                     <div style={formGroup}>
                         <label style={labelStyle}>رقم المنتج (ID)</label>
@@ -562,87 +579,63 @@ const ProductForm = ({ initialData, onSubmit, title, subTitle }) => {
                         </div>
                     </div>
 
-                    {/* Price Variants Section */}
-                    {(formData.colors.length > 0 || formData.materials.length > 0) && (
-                        <div style={{ ...formGroup, background: 'rgba(212, 175, 55, 0.05)', padding: '20px', borderRadius: '16px', border: '1px solid rgba(212, 175, 55, 0.2)', marginBottom: '30px' }}>
-                            <label style={{ ...labelStyle, color: 'var(--primary)' }}>أسعار مخصصة لمواصفات معينة</label>
-                            <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '15px' }}>سيتم استخدام السعر الأساسي إذا لم يتطابق اختيار العميل مع أي سعر مخصص أدناه.</p>
-
-                            <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', flexWrap: 'wrap', alignItems: 'flex-end' }}>
-                                <div style={{ flex: '0 0 120px' }}>
-                                    <label style={{ color: '#fff', fontSize: '0.75rem', marginBottom: '5px', display: 'block' }}>السعر:</label>
-                                    <input
-                                        type="number"
-                                        placeholder="السعر"
-                                        value={variantInput.price}
-                                        onChange={e => setVariantInput({ ...variantInput, price: e.target.value })}
-                                        style={inputStyle}
-                                    />
+                    {/* Pricing Models Section */}
+                    {formData.images.length > 1 && (
+                        <div style={{ background: 'rgba(212, 175, 55, 0.03)', padding: isMobile ? '20px' : '30px', borderRadius: '24px', border: '1px solid rgba(212, 175, 55, 0.1)', marginBottom: '30px' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '25px', flexWrap: 'wrap', gap: '20px' }}>
+                                <div>
+                                    <h3 style={{ color: 'var(--primary)', margin: '0 0 5px 0', fontSize: isMobile ? '1.1rem' : '1.3rem', fontWeight: '900' }}>أسعار الموديلات</h3>
+                                    <p style={{ fontSize: isMobile ? '0.75rem' : '0.9rem', color: 'var(--text-muted)' }}>حدد صوراً معينة لتغيير سعرها دفعة واحدة.</p>
                                 </div>
-
-                                {formData.colors.length > 0 && (
-                                    <div style={{ flex: 1, minWidth: '140px' }}>
-                                        <label style={{ color: '#fff', fontSize: '0.75rem', marginBottom: '5px', display: 'block' }}>اللون:</label>
-                                        <select
-                                            value={variantInput.color}
-                                            onChange={e => setVariantInput({ ...variantInput, color: e.target.value })}
-                                            style={{ ...inputStyle, backgroundColor: '#1a1a1a' }}
-                                        >
-                                            <option value="">اختر اللون</option>
-                                            {formData.colors.map(c => <option key={c} value={c}>{c}</option>)}
-                                        </select>
-                                    </div>
-                                )}
-
-                                {formData.materials.length > 0 && (
-                                    <div style={{ flex: 1, minWidth: '140px' }}>
-                                        <label style={{ color: '#fff', fontSize: '0.75rem', marginBottom: '5px', display: 'block' }}>الخامة:</label>
-                                        <select
-                                            value={variantInput.material}
-                                            onChange={e => setVariantInput({ ...variantInput, material: e.target.value })}
-                                            style={{ ...inputStyle, backgroundColor: '#1a1a1a' }}
-                                        >
-                                            <option value="">اختر الخامة</option>
-                                            {formData.materials.map(m => <option key={m} value={m}>{m}</option>)}
-                                        </select>
-                                    </div>
-                                )}
-
-                                <button
-                                    type="button"
-                                    onClick={addVariant}
-                                    className="btn-icon"
-                                    style={{ background: 'var(--primary)', color: '#000', height: '48px', padding: '0 15px', borderRadius: '14px', marginBottom: '2px' }}
-                                >
-                                    <Plus size={18} /> إضافة
-                                </button>
+                                <div style={{ display: 'flex', gap: '10px', background: 'rgba(0,0,0,0.2)', padding: '10px', borderRadius: '16px', border: '1px solid var(--glass-border)', alignItems: 'center', width: isMobile ? '100%' : 'auto' }}>
+                                    <input 
+                                        type="number" 
+                                        placeholder="السعر" 
+                                        value={bulkPrice} 
+                                        onChange={e => setBulkPrice(e.target.value)} 
+                                        style={{ ...inputStyle, width: isMobile ? '100px' : '140px', padding: '10px' }} 
+                                    />
+                                    <button 
+                                        type="button" 
+                                        onClick={applyBulkPriceAction} 
+                                        className="btn-primary" 
+                                        style={{ padding: '0 20px', fontSize: '0.85rem', height: '40px', flex: 1 }}
+                                    >
+                                        تطبيق على ({selectedImagesForBulk.length})
+                                    </button>
+                                </div>
                             </div>
 
-                            {formData.variants.length > 0 && (
-                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginTop: '10px', paddingTop: '15px', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
-                                    {formData.variants.map((v, i) => (
-                                        <div key={i} style={{
-                                            display: 'flex', alignItems: 'center', gap: '10px',
-                                            background: 'rgba(255,255,255,0.05)', padding: '8px 15px',
-                                            borderRadius: '10px', border: '1px solid rgba(255,255,255,0.1)'
-                                        }}>
-                                            <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                                <span style={{ color: 'var(--primary)', fontWeight: 'bold', fontSize: '0.9rem' }}>
-                                                    {v.color && v.material ? `${v.color} + ${v.material}` : (v.color || v.material || 'افتراضي')}
-                                                </span>
-                                                <span style={{ color: '#fff', fontSize: '0.85rem' }}>{v.price} ر.س</span>
-                                            </div>
-                                            <button
-                                                type="button"
-                                                onClick={() => removeVariant(i)}
-                                                style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: 0 }}
-                                            >
-                                                <X size={14} />
-                                            </button>
+                            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(auto-fill, minmax(140px, 1fr))' : 'repeat(auto-fill, minmax(180px, 1fr))', gap: isMobile ? '12px' : '20px' }}>
+                                {formData.variants.map((v, idx) => (
+                                    <div 
+                                        key={idx} 
+                                        onClick={() => toggleImageSelection(v.image)}
+                                        style={{ 
+                                            background: selectedImagesForBulk.includes(v.image) ? 'rgba(212,175,55,0.1)' : 'rgba(255,255,255,0.02)',
+                                            padding: '15px', borderRadius: '20px', border: selectedImagesForBulk.includes(v.image) ? '2px solid var(--primary)' : '1px solid var(--glass-border)',
+                                            cursor: 'pointer', transition: '0.3s', position: 'relative'
+                                        }}
+                                    >
+                                        <div style={{ width: '100%', aspectRatio: '1', borderRadius: '12px', overflow: 'hidden', marginBottom: '12px', position: 'relative' }}>
+                                            <img src={v.image} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                            {selectedImagesForBulk.includes(v.image) && (
+                                                <div style={{ position: 'absolute', top: '8px', right: '8px', background: 'var(--primary)', borderRadius: '50%', padding: '4px', display: 'flex' }}>
+                                                    <Plus size={16} color="#000" strokeWidth={3} />
+                                                </div>
+                                            )}
                                         </div>
-                                    ))}
-                                </div>
-                            )}
+                                        <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'block', marginBottom: '8px' }}>سعر هذا الموديل:</label>
+                                        <input 
+                                            type="number" 
+                                            value={v.price} 
+                                            onClick={e => e.stopPropagation()} 
+                                            onChange={e => updateVariantPrice(v.image, e.target.value)} 
+                                            style={{ ...inputStyle, padding: '10px', fontSize: '1.1rem', textAlign: 'center', fontWeight: 'bold', color: 'var(--primary)' }} 
+                                        />
+                                    </div>
+                                ))}
+                            </div>
                         </div>
                     )}
 
@@ -669,42 +662,47 @@ const ProductForm = ({ initialData, onSubmit, title, subTitle }) => {
                     </div>
 
                     <div style={formGroup}>
-                        <label style={labelStyle}>خامة الساعة (المادة المصنوعة منها - اكتب النوع ثم اضغط Enter)</label>
+                        <label style={labelStyle}>صور الساعة (كل صورة تمثل موديلاً مستقلاً)</label>
                         <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
-                            <input
-                                type="text"
-                                placeholder="مثلاً: ستيل، جلد طبيعي، مطاط، سيراميك"
-                                value={materialInput}
-                                onChange={e => setMaterialInput(e.target.value)}
-                                onKeyDown={addMaterial}
-                                style={{ ...inputStyle, flex: 1 }}
-                            />
-                            <button
-                                type="button"
-                                onClick={addMaterial}
-                                className="btn-icon"
-                                style={{ background: 'var(--primary)', color: '#000', padding: '0 20px', borderRadius: '14px' }}
-                            >
-                                <Plus size={18} /> إضافة
-                            </button>
+                            <label className="btn-icon" style={{ cursor: 'pointer', background: 'var(--primary)', color: '#000', width: '100%', padding: '15px', borderRadius: '14px', justifyContent: 'center' }}>
+                                <Plus size={20} /> إضافة صور (اختر عدة صور)
+                                <input type="file" hidden accept="image/*" multiple onChange={handleImagesSelect} />
+                            </label>
                         </div>
-                        {formData.materials && formData.materials.length > 0 && (
-                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', padding: '12px', background: 'rgba(0,0,0,0.2)', borderRadius: '12px', border: '1px solid var(--glass-border)' }}>
-                                {formData.materials.map((material, index) => (
-                                    <div key={index} style={{
-                                        display: 'flex', alignItems: 'center', gap: '8px',
-                                        background: 'rgba(255,255,255,0.05)', padding: '6px 12px',
-                                        borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)',
-                                        color: '#fff', fontSize: '0.9rem'
-                                    }}>
-                                        {material}
+
+                        {/* Images Grid */}
+                        {formData.images && formData.images.length > 0 && (
+                            <div style={{
+                                display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))', gap: '10px',
+                                background: 'rgba(0,0,0,0.2)', padding: '15px', borderRadius: '16px', border: '1px solid var(--glass-border)'
+                            }}>
+                                {formData.images.map((img, index) => (
+                                    <div
+                                        key={index}
+                                        onClick={() => setMainImage(index)}
+                                        style={{
+                                            position: 'relative', height: '100px', borderRadius: '10px', overflow: 'hidden',
+                                            border: index === 0 ? '2px solid var(--primary)' : '1px solid var(--glass-border)',
+                                            cursor: 'pointer',
+                                            transition: 'transform 0.2s'
+                                        }}
+                                        title={index === 0 ? "الصورة الرئيسية" : "اضغط لتعيينها كصورة رئيسية"}
+                                    >
+                                        <img src={img} alt={`Img ${index}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                         <button
                                             type="button"
-                                            onClick={() => removeMaterial(material)}
-                                            style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', display: 'flex', padding: 0 }}
+                                            onClick={(e) => removeImage(index, e)}
+                                            style={{
+                                                position: 'absolute', top: '5px', right: '5px',
+                                                background: 'rgba(239, 68, 68, 0.9)', border: 'none', color: '#fff',
+                                                borderRadius: '50%', width: '24px', height: '24px',
+                                                cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                zIndex: 10
+                                            }}
                                         >
                                             <X size={14} />
                                         </button>
+                                        {index === 0 && <span style={{ position: 'absolute', bottom: '0', right: '0', background: 'var(--primary)', color: '#000', fontSize: '0.6rem', padding: '2px 6px', borderTopLeftRadius: '6px', fontWeight: 'bold' }}>الرئيسية</span>}
                                     </div>
                                 ))}
                             </div>
@@ -780,99 +778,6 @@ const ProductForm = ({ initialData, onSubmit, title, subTitle }) => {
                         />
                     </div>
 
-                    <div style={formGroup}>
-                        <label style={labelStyle}>ألوان الساعة المتاحة (اكتب اللون ثم اضغط Enter)</label>
-                        <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
-                            <input
-                                type="text"
-                                placeholder="مثلاً: ذهبي، فضي، أسود رويال"
-                                value={colorInput}
-                                onChange={e => setColorInput(e.target.value)}
-                                onKeyDown={addColor}
-                                style={{ ...inputStyle, flex: 1 }}
-                            />
-                            <button
-                                type="button"
-                                onClick={addColor}
-                                className="btn-icon"
-                                style={{ background: 'var(--primary)', color: '#000', padding: '0 20px', borderRadius: '14px' }}
-                            >
-                                <Plus size={18} /> إضافة
-                            </button>
-                        </div>
-                        {formData.colors && formData.colors.length > 0 && (
-                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', padding: '12px', background: 'rgba(0,0,0,0.2)', borderRadius: '12px', border: '1px solid var(--glass-border)' }}>
-                                {formData.colors.map((color, index) => (
-                                    <div key={index} style={{
-                                        display: 'flex', alignItems: 'center', gap: '8px',
-                                        background: 'rgba(255,255,255,0.05)', padding: '6px 12px',
-                                        borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)',
-                                        color: '#fff', fontSize: '0.9rem'
-                                    }}>
-                                        {color}
-                                        <button
-                                            type="button"
-                                            onClick={() => removeColor(color)}
-                                            style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', display: 'flex', padding: 0 }}
-                                        >
-                                            <X size={14} />
-                                        </button>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </div>
-
-                    <div style={formGroup}>
-                        <label style={labelStyle}>صور المنتج (الرئيسية والمعرض)</label>
-                        <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
-                            <label className="btn-icon" style={{ cursor: 'pointer', background: 'var(--primary)', color: '#000', width: '100%', padding: '15px', borderRadius: '14px', justifyContent: 'center' }}>
-                                <Plus size={20} /> إضافة صور (اختر عدة صور)
-                                <input type="file" hidden accept="image/*" multiple onChange={handleImagesSelect} />
-                            </label>
-                        </div>
-
-                        {/* Images Grid */}
-                        {formData.images && formData.images.length > 0 && (
-                            <div style={{
-                                display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))', gap: '10px',
-                                background: 'rgba(0,0,0,0.2)', padding: '15px', borderRadius: '16px', border: '1px solid var(--glass-border)'
-                            }}>
-                                {formData.images.map((img, index) => (
-                                    <div
-                                        key={index}
-                                        onClick={() => setMainImage(index)}
-                                        style={{
-                                            position: 'relative', height: '100px', borderRadius: '10px', overflow: 'hidden',
-                                            border: index === 0 ? '2px solid var(--primary)' : '1px solid var(--glass-border)',
-                                            cursor: 'pointer',
-                                            transition: 'transform 0.2s'
-                                        }}
-                                        title={index === 0 ? "الصورة الرئيسية" : "اضغط لتعيينها كصورة رئيسية"}
-                                        onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.02)'}
-                                        onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
-                                    >
-                                        <img src={img} alt={`Img ${index}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                                        <button
-                                            type="button"
-                                            onClick={(e) => removeImage(index, e)}
-                                            style={{
-                                                position: 'absolute', top: '5px', right: '5px',
-                                                background: 'rgba(239, 68, 68, 0.9)', border: 'none', color: '#fff',
-                                                borderRadius: '50%', width: '24px', height: '24px',
-                                                cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                                zIndex: 10
-                                            }}
-                                        >
-                                            <X size={14} />
-                                        </button>
-                                        {index === 0 && <span style={{ position: 'absolute', bottom: '0', right: '0', background: 'var(--primary)', color: '#000', fontSize: '0.6rem', padding: '2px 6px', borderTopLeftRadius: '6px', fontWeight: 'bold' }}>الرئيسية</span>}
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </div>
-
                     <button
                         type="submit"
                         className="btn-primary"
@@ -897,21 +802,22 @@ const ProductForm = ({ initialData, onSubmit, title, subTitle }) => {
                 uploading && (
                     <div style={{
                         position: 'fixed',
-                        bottom: '20px',
-                        right: '20px',
-                        width: '320px',
-                        maxHeight: '400px',
+                        bottom: isMobile ? '0' : '20px',
+                        right: isMobile ? '0' : '20px',
+                        width: isMobile ? '100%' : '320px',
+                        maxHeight: isMobile ? '50vh' : '400px',
                         overflowY: 'auto',
                         background: '#1a1a1a',
-                        border: '1px solid var(--glass-border)',
-                        borderRadius: '16px',
-                        padding: '10px',
-                        boxShadow: '0 10px 30px rgba(0,0,0,0.5)',
+                        border: isMobile ? 'none' : '1px solid var(--glass-border)',
+                        borderTop: isMobile ? '2px solid var(--primary)' : 'none',
+                        borderRadius: isMobile ? '20px 20px 0 0' : '16px',
+                        padding: '15px',
+                        boxShadow: '0 -10px 30px rgba(0,0,0,0.5)',
                         zIndex: 9999,
                         display: 'flex',
                         flexDirection: 'column',
                         gap: '10px',
-                        animation: 'slideInRight 0.3s ease'
+                        animation: isMobile ? 'slideInUp 0.3s ease' : 'slideInRight 0.3s ease'
                     }}>
                         <div style={{ padding: '5px 10px', borderBottom: '1px solid rgba(255,255,255,0.05)', marginBottom: '5px', display: 'flex', justifyContent: 'space-between' }}>
                             <span style={{ fontSize: '0.85rem', color: 'var(--primary)', fontWeight: 'bold' }}>عمليات الرفع النشطة ({Object.keys(activeUploads).length})</span>
@@ -966,6 +872,10 @@ const ProductForm = ({ initialData, onSubmit, title, subTitle }) => {
                 @keyframes slideInRight {
                     from { transform: translateX(100%); opacity: 0; }
                     to { transform: translateX(0); opacity: 1; }
+                }
+                @keyframes slideInUp {
+                    from { transform: translateY(100%); opacity: 0; }
+                    to { transform: translateY(0); opacity: 1; }
                 }
             `}</style>
         </div >
