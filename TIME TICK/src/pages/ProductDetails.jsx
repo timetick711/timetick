@@ -303,7 +303,7 @@ const ProductDetails = () => {
                                 <RotateCcw size={20} color="var(--primary)" />
                                 <div>
                                     <h6>استرجاع مرن</h6>
-                                    <p>خلال 7 أيام من الاستلام</p>
+                                    <p>خلال 7 أيام من الاستلام للساعات الغير المضمونه في حال حدوث عطل</p>
                                 </div>
                             </div>
                         </div>

@@ -44,12 +44,20 @@ const Home = () => (
   </motion.div>
 );
 
+const RedirectToApp = () => {
+  useEffect(() => {
+    window.location.href = '/app/index.html';
+  }, []);
+  return null;
+};
+
 const AnimatedRoutes = () => {
   const location = useLocation();
   return (
     <AnimatePresence mode="wait">
       <Routes location={location} key={location.pathname}>
         <Route path="/" element={<Home />} />
+        <Route path="/app" element={<RedirectToApp />} />
         <Route path="/product/:id" element={
           <motion.div
             initial={{ opacity: 0, y: 20 }}
