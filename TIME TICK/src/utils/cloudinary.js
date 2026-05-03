@@ -1,5 +1,5 @@
-const CLOUD_NAME = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
-const UPLOAD_PRESET = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET;
+const CLOUD_NAME = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || 'dhqatpc8w';
+const UPLOAD_PRESET = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET || 'timetick';
 
 export const uploadToCloudinary = (file, resourceType = 'image', onProgress, onAbort) => {
     return new Promise((resolve, reject) => {
