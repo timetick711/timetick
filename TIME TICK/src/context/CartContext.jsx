@@ -24,24 +24,98 @@ export const CartProvider = ({ children }) => {
     const [isCartOpen, setIsCartOpen] = useState(false);
     const [isOptionsModalOpen, setIsOptionsModalOpen] = useState(false);
     
-    // Real-time listener for product deletions
+    // Real-time listener for product deletions and updates + On-load Hydration
     useEffect(() => {
         const cartChannel = supabase
-            .channel('realtime_cart_deletion')
+            .channel('realtime_cart_sync')
             .on(
                 'postgres_changes',
                 { event: 'DELETE', schema: 'public', table: 'products' },
                 (payload) => {
                     const deletedId = payload.old?.id;
                     if (!deletedId) return;
-                    
-                    setCart(prev => {
-                        const newCart = prev.filter(item => String(item.id) !== String(deletedId));
-                        return newCart;
-                    });
+                    setCart(prev => prev.filter(item => String(item.id) !== String(deletedId)));
+                }
+            )
+            .on(
+                'postgres_changes',
+                { event: 'UPDATE', schema: 'public', table: 'products' },
+                (payload) => {
+                    const updatedProduct = payload.new;
+                    if (!updatedProduct) return;
+                    setCart(prev => prev.map(item => {
+                        if (String(item.id) === String(updatedProduct.id)) {
+                            let updatedPrice = updatedProduct.price;
+                            if (item.selectedMaterial || item.selectedColor) {
+                                const variants = updatedProduct.variants || [];
+                                const matchedVariant = variants.find(v => 
+                                    (!item.selectedMaterial || v.material === item.selectedMaterial) && 
+                                    (!item.selectedColor || v.color === item.selectedColor)
+                                );
+                                if (matchedVariant && matchedVariant.price) {
+                                    updatedPrice = matchedVariant.price;
+                                }
+                            }
+                            return {
+                                ...item,
+                                name: updatedProduct.name || item.name,
+                                price: updatedPrice || item.price,
+                                image: item.variantImage || updatedProduct.imageUrl || (updatedProduct.images && updatedProduct.images[0]) || item.image
+                            };
+                        }
+                        return item;
+                    }));
                 }
             )
             .subscribe();
+
+        // Hydrate cart items on load to ensure single source of truth
+        const hydrateCart = async () => {
+            const saved = localStorage.getItem('time-tick-cart');
+            const initialCart = saved ? JSON.parse(saved) : [];
+            if (initialCart.length === 0) return;
+            
+            const productIds = [...new Set(initialCart.map(item => item?.id).filter(Boolean))];
+            
+            try {
+                const { data, error } = await supabase
+                    .from('products')
+                    .select('id, name, price, imageUrl, images, variants')
+                    .in('id', productIds);
+                    
+                if (!error && data) {
+                    setCart(prev => {
+                        return prev.map(item => {
+                            const latest = data.find(p => String(p.id) === String(item.id));
+                            if (!latest) return null; // Remove if deleted while offline
+                            
+                            let updatedPrice = latest.price;
+                            if (item.selectedMaterial || item.selectedColor) {
+                                const variants = latest.variants || [];
+                                const matchedVariant = variants.find(v => 
+                                    (!item.selectedMaterial || v.material === item.selectedMaterial) && 
+                                    (!item.selectedColor || v.color === item.selectedColor)
+                                );
+                                if (matchedVariant && matchedVariant.price) {
+                                    updatedPrice = matchedVariant.price;
+                                }
+                            }
+                            
+                            return {
+                                ...item,
+                                name: latest.name || item.name,
+                                price: updatedPrice || item.price,
+                                image: item.variantImage || latest.imageUrl || (latest.images && latest.images[0]) || item.image
+                            };
+                        }).filter(Boolean); // Remove nulls
+                    });
+                }
+            } catch (err) {
+                console.error("Failed to hydrate cart:", err);
+            }
+        };
+        
+        hydrateCart();
 
         return () => {
             supabase.removeChannel(cartChannel);

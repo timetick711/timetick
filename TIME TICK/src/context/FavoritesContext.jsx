@@ -29,6 +29,30 @@ export const FavoritesProvider = ({ children }) => {
                 ...item.product_data,
                 id: item.product_id // Ensure ID consistency
             }));
+            
+            if (favProducts.length > 0) {
+                const productIds = favProducts.map(p => p.id);
+                const { data: latestProducts, error: latestError } = await supabase
+                    .from('products')
+                    .select('id, name, price, imageUrl, images')
+                    .in('id', productIds);
+                    
+                if (!latestError && latestProducts) {
+                    const hydratedFavs = favProducts.map(item => {
+                        const latest = latestProducts.find(p => String(p.id) === String(item.id));
+                        if (!latest) return null;
+                        return {
+                            ...item,
+                            name: latest.name || item.name,
+                            price: latest.price || item.price,
+                            image: latest.imageUrl || (latest.images && latest.images[0]) || item.image
+                        };
+                    }).filter(Boolean);
+                    setFavorites(hydratedFavs);
+                    return;
+                }
+            }
+            
             setFavorites(favProducts);
         } catch (err) {
             console.error("Error fetching favorites:", err);
@@ -54,6 +78,27 @@ export const FavoritesProvider = ({ children }) => {
                         const itemId = String(item.id || item.product_id || '').trim();
                         const targetId = String(deletedId).trim();
                         return itemId !== targetId;
+                    }));
+                }
+            )
+            .on(
+                'postgres_changes',
+                { event: 'UPDATE', schema: 'public', table: 'products' },
+                (payload) => {
+                    const updatedProduct = payload.new;
+                    if (!updatedProduct) return;
+                    setFavorites(prev => prev.map(item => {
+                        const itemId = String(item.id || item.product_id || '').trim();
+                        const updatedId = String(updatedProduct.id).trim();
+                        if (itemId === updatedId) {
+                            return {
+                                ...item,
+                                name: updatedProduct.name || item.name,
+                                price: updatedProduct.price || item.price,
+                                image: updatedProduct.imageUrl || (updatedProduct.images && updatedProduct.images[0]) || item.image
+                            };
+                        }
+                        return item;
                     }));
                 }
             )
@@ -120,7 +165,39 @@ export const FavoritesProvider = ({ children }) => {
             // Load from local storage for guests
             const saved = localStorage.getItem('time-tick-favorites');
             if (saved) {
-                setFavorites(JSON.parse(saved));
+                const parsedFavs = JSON.parse(saved);
+                if (parsedFavs.length > 0) {
+                    const hydrateGuestFavorites = async () => {
+                        const productIds = parsedFavs.map(p => p?.id).filter(Boolean);
+                        try {
+                            const { data, error } = await supabase
+                                .from('products')
+                                .select('id, name, price, imageUrl, images')
+                                .in('id', productIds);
+                                
+                            if (!error && data) {
+                                const hydrated = parsedFavs.map(item => {
+                                    const latest = data.find(p => String(p.id) === String(item.id));
+                                    if (!latest) return null; // Remove if deleted
+                                    return {
+                                        ...item,
+                                        name: latest.name || item.name,
+                                        price: latest.price || item.price,
+                                        image: latest.imageUrl || (latest.images && latest.images[0]) || item.image
+                                    };
+                                }).filter(Boolean);
+                                setFavorites(hydrated);
+                                return;
+                            }
+                        } catch (e) {
+                            console.error("Hydration error:", e);
+                        }
+                        setFavorites(parsedFavs);
+                    };
+                    hydrateGuestFavorites();
+                } else {
+                    setFavorites([]);
+                }
             } else {
                 setFavorites([]);
             }

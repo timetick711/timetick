@@ -60,7 +60,7 @@ export const AuthProvider = ({ children }) => {
         }
 
         // Listen for Supabase Auth changes
-        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
             if ((event === 'SIGNED_IN' || event === 'USER_UPDATED' || event === 'INITIAL_SESSION') && session?.user) {
                 // Determine if it was an OAuth login to show the loader
                 const isOAuth = session.user.app_metadata?.provider === 'google';
@@ -69,12 +69,11 @@ export const AuthProvider = ({ children }) => {
                      showLoader('جاري تسجيل الدخول وحفظ البيانات...');
                 }
 
-                // Map Supabase user to our app user format
-                const user = {
+                const baseUser = {
                     uid: session.user.id,
                     name: session.user.user_metadata.full_name || session.user.user_metadata.name || session.user.email.split('@')[0],
                     email: session.user.email,
-                    image: session.user.user_metadata.avatar_url || session.user.user_metadata.image || '',
+                    image: session.user.user_metadata.image || session.user.user_metadata.avatar_url || '',
                     createdAt: session.user.created_at,
                     provider: session.user.app_metadata?.provider || 'email',
                     // Fields from manual registration or profile completion
@@ -84,12 +83,40 @@ export const AuthProvider = ({ children }) => {
                     neighborhood: session.user.user_metadata.neighborhood || ''
                 };
 
-                // Update local storage and state
-                localStorage.setItem('time-tick-user', JSON.stringify(user));
-                setCurrentUser(user);
+                // Set initial state immediately to avoid white screen
+                setCurrentUser(baseUser);
+                localStorage.setItem('time-tick-user', JSON.stringify(baseUser));
+
+                // Hydrate with latest database profile in background
+                const hydrateProfile = async () => {
+                    try {
+                        const { data: profileData, error } = await supabase
+                            .from('profiles')
+                            .select('full_name, name, image, whatsapp, governorate, district, neighborhood')
+                            .eq('id', session.user.id)
+                            .maybeSingle();
+                            
+                        if (!error && profileData) {
+                            const hydratedUser = {
+                                ...baseUser,
+                                name: profileData.full_name || profileData.name || baseUser.name,
+                                image: profileData.image || baseUser.image,
+                                whatsapp: profileData.whatsapp || baseUser.whatsapp,
+                                governorate: profileData.governorate || baseUser.governorate,
+                                district: profileData.district || baseUser.district,
+                                neighborhood: profileData.neighborhood || baseUser.neighborhood
+                            };
+                            localStorage.setItem('time-tick-user', JSON.stringify(hydratedUser));
+                            setCurrentUser(hydratedUser);
+                        }
+                    } catch (e) {
+                        console.error("Profile sync error:", e);
+                    }
+                };
+                hydrateProfile();
 
                 // Check if profile completion is needed
-                if (!user.whatsapp || !user.governorate) {
+                if (!baseUser.whatsapp || !baseUser.governorate) {
                     setIsAuthModalOpen(true);
                 } else {
                     setIsAuthModalOpen(false);
@@ -127,6 +154,29 @@ export const AuthProvider = ({ children }) => {
                             localStorage.removeItem('time-tick-user');
                             window.location.href = '/';
                         });
+                    }
+                }
+            )
+            .on(
+                'postgres_changes',
+                { event: 'UPDATE', schema: 'public', table: 'profiles' },
+                (payload) => {
+                    const updatedUserId = payload.new.id;
+                    const savedUser = localStorage.getItem('time-tick-user');
+                    const parsedUser = savedUser ? JSON.parse(savedUser) : null;
+                    
+                    if (parsedUser && parsedUser.uid === updatedUserId) {
+                        const updatedUser = {
+                            ...parsedUser,
+                            name: payload.new.full_name || payload.new.name || parsedUser.name,
+                            image: payload.new.image || parsedUser.image,
+                            whatsapp: payload.new.whatsapp !== undefined ? payload.new.whatsapp : parsedUser.whatsapp,
+                            governorate: payload.new.governorate !== undefined ? payload.new.governorate : parsedUser.governorate,
+                            district: payload.new.district !== undefined ? payload.new.district : parsedUser.district,
+                            neighborhood: payload.new.neighborhood !== undefined ? payload.new.neighborhood : parsedUser.neighborhood
+                        };
+                        localStorage.setItem('time-tick-user', JSON.stringify(updatedUser));
+                        setCurrentUser(updatedUser);
                     }
                 }
             )
@@ -338,6 +388,11 @@ export const AuthProvider = ({ children }) => {
         const payloadData = { ...updatedData };
         if (payloadData.name) {
             payloadData.full_name = payloadData.name;
+        }
+        
+        // Explicitly update avatar_url as well to overwrite any old Google profile picture
+        if (payloadData.image) {
+            payloadData.avatar_url = payloadData.image;
         }
         
         // Ensure email isn't updated via metadata
