@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { useLoading } from '../context/LoadingContext';
 import { supabase } from '../supabase/client';
 import Swal from 'sweetalert2';
@@ -509,63 +510,72 @@ const Orders = () => {
 };
 
 const ImagePreviewModal = ({ imageUrl, onClose }) => {
-    if (!imageUrl) return null;
-    return (
+    if (typeof window === 'undefined') return null;
+    
+    return createPortal(
         <AnimatePresence>
-            <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                onClick={onClose}
-                style={{
-                    position: 'fixed',
-                    inset: 0,
-                    background: 'rgba(0,0,0,0.9)',
-                    backdropFilter: 'blur(10px)',
-                    zIndex: 9999,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    padding: '20px',
-                    cursor: 'zoom-out'
-                }}
-            >
-                <motion.img
-                    initial={{ scale: 0.8, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    exit={{ scale: 0.8, opacity: 0 }}
-                    src={imageUrl}
-                    style={{
-                        maxWidth: '90%',
-                        maxHeight: '90%',
-                        borderRadius: '16px',
-                        boxShadow: '0 20px 50px rgba(0,0,0,0.5)',
-                        border: '2px solid rgba(212, 175, 55, 0.2)'
-                    }}
-                    onClick={(e) => e.stopPropagation()}
-                />
-                <button 
+            {imageUrl && (
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
                     onClick={onClose}
                     style={{
-                        position: 'absolute',
-                        top: '30px',
-                        right: '30px',
-                        background: 'rgba(255,255,255,0.1)',
-                        border: 'none',
-                        color: '#fff',
-                        width: '40px',
-                        height: '40px',
-                        borderRadius: '50%',
-                        cursor: 'pointer',
+                        position: 'fixed',
+                        inset: 0,
+                        background: 'rgba(0,0,0,0.85)',
+                        backdropFilter: 'blur(8px)',
+                        zIndex: 99999,
                         display: 'flex',
                         alignItems: 'center',
-                        justifyContent: 'center'
+                        justifyContent: 'center',
+                        padding: '20px',
+                        cursor: 'zoom-out'
                     }}
                 >
-                    <XCircle size={24} />
-                </button>
-            </motion.div>
-        </AnimatePresence>
+                    <motion.img
+                        initial={{ scale: 0.8, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        exit={{ scale: 0.8, opacity: 0 }}
+                        transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+                        src={imageUrl}
+                        style={{
+                            maxWidth: '100%',
+                            width: 'auto',
+                            maxHeight: '75vh',
+                            objectFit: 'contain',
+                            borderRadius: '16px',
+                            boxShadow: '0 20px 50px rgba(0,0,0,0.5)',
+                            border: '2px solid rgba(212, 175, 55, 0.3)',
+                            background: '#0a0a0a'
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                    />
+                    <button 
+                        onClick={onClose}
+                        style={{
+                            position: 'absolute',
+                            top: '25px',
+                            right: '25px',
+                            background: 'rgba(20,20,20,0.8)',
+                            border: '1px solid rgba(255,255,255,0.2)',
+                            color: '#fff',
+                            width: '45px',
+                            height: '45px',
+                            borderRadius: '50%',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            transition: 'all 0.3s'
+                        }}
+                    >
+                        <XCircle size={28} />
+                    </button>
+                </motion.div>
+            )}
+        </AnimatePresence>,
+        document.body
     );
 };
 
@@ -684,17 +694,51 @@ const OrderCard = ({ order, index, lastOrderRef, onUpdateStatus, onDelete, onInv
                         <p style={{ fontSize: isMobile ? '1.1rem' : '1.6rem', fontWeight: '900', color: 'var(--primary)' }}>{Number(order.total_amount).toLocaleString()} <span style={{ fontSize: '0.75rem' }}>ر.س</span></p>
                     </div>
                 </div>
-                <div style={{ display: 'flex', gap: '8px', flexDirection: 'row', flexWrap: 'nowrap' }}>
-                    <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={() => onInvoice(order)} style={{ flex: 1, height: '40px', borderRadius: '10px', background: 'rgba(255,255,255,0.05)', color: '#fff', border: '1px solid var(--border-color)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', fontSize: '0.8rem', fontWeight: '700' }}><Download size={14} /> فاتورة</motion.button>
+                <div style={{ display: 'flex', gap: isMobile ? '6px' : '10px', flexDirection: 'row', width: isMobile ? '100%' : 'auto', flexWrap: 'nowrap' }}>
+                    <motion.button 
+                        whileHover={{ scale: 1.02 }} 
+                        whileTap={{ scale: 0.98 }} 
+                        onClick={() => onInvoice(order)} 
+                        style={{ flex: 1, padding: isMobile ? '0 6px' : '0 15px', height: isMobile ? '38px' : '44px', borderRadius: '12px', background: 'rgba(255,255,255,0.05)', color: '#fff', border: '1px solid var(--border-color)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: isMobile ? '4px' : '8px', fontSize: isMobile ? '0.7rem' : '0.85rem', fontWeight: '700', whiteSpace: 'nowrap' }}>
+                        <Download size={isMobile ? 14 : 16} /> فاتورة
+                    </motion.button>
+                    
                     {order.status === 'pending' ? (
                         <>
-                            <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={() => onUpdateStatus(order.id, 'completed')} style={{ flex: 1.5, height: '40px', borderRadius: '10px', background: 'var(--primary)', color: '#000', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', fontSize: '0.8rem', fontWeight: '800' }}><CheckCircle size={16} /> إتمام</motion.button>
-                            <motion.button whileHover={{ scale: 1.05, background: '#ef4444', color: '#fff' }} whileTap={{ scale: 0.95 }} onClick={() => onUpdateStatus(order.id, 'cancelled')} style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.2)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><XCircle size={16} /></motion.button>
+                            <motion.button 
+                                whileHover={{ scale: 1.02 }} 
+                                whileTap={{ scale: 0.98 }} 
+                                onClick={() => onUpdateStatus(order.id, 'completed')} 
+                                style={{ flex: 1, padding: isMobile ? '0 6px' : '0 15px', height: isMobile ? '38px' : '44px', borderRadius: '12px', background: 'var(--primary)', color: '#000', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: isMobile ? '4px' : '8px', fontSize: isMobile ? '0.75rem' : '0.85rem', fontWeight: '800', whiteSpace: 'nowrap', boxShadow: '0 4px 15px rgba(212, 175, 55, 0.2)' }}>
+                                <CheckCircle size={isMobile ? 14 : 18} /> إتمام
+                            </motion.button>
+                            <motion.button 
+                                whileHover={{ scale: 1.05, background: '#ef4444', color: '#fff' }} 
+                                whileTap={{ scale: 0.95 }} 
+                                onClick={() => onUpdateStatus(order.id, 'cancelled')} 
+                                title="إلغاء الطلب"
+                                style={{ width: isMobile ? '38px' : '44px', height: isMobile ? '38px' : '44px', borderRadius: '12px', background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.2)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                <XCircle size={isMobile ? 14 : 18} />
+                            </motion.button>
                         </>
                     ) : (
-                        <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={() => onUpdateStatus(order.id, 'pending')} style={{ flex: 2, height: '40px', borderRadius: '10px', background: 'rgba(234, 179, 8, 0.1)', color: '#eab308', border: '1px solid rgba(234, 179, 8, 0.2)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', fontSize: '0.8rem', fontWeight: '700' }}><RotateCcw size={14} /> تراجع</motion.button>
+                        <motion.button 
+                            whileHover={{ scale: 1.02 }} 
+                            whileTap={{ scale: 0.98 }} 
+                            onClick={() => onUpdateStatus(order.id, 'pending')} 
+                            style={{ flex: 1, padding: isMobile ? '0 6px' : '0 15px', height: isMobile ? '38px' : '44px', borderRadius: '12px', background: 'rgba(234, 179, 8, 0.1)', color: '#eab308', border: '1px solid rgba(234, 179, 8, 0.2)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: isMobile ? '4px' : '8px', fontSize: isMobile ? '0.7rem' : '0.85rem', fontWeight: '700', whiteSpace: 'nowrap' }}>
+                            <RotateCcw size={isMobile ? 14 : 16} /> تراجع
+                        </motion.button>
                     )}
-                    <motion.button whileHover={{ scale: 1.05, background: '#ef4444', color: '#fff' }} whileTap={{ scale: 0.95 }} onClick={() => onDelete(order.id)} style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'rgba(255,255,255,0.02)', color: 'var(--text-dim)', border: '1px solid var(--border-color)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><Trash2 size={14} /></motion.button>
+                    
+                    <motion.button 
+                        whileHover={{ scale: 1.05, background: '#ef4444', color: '#fff' }} 
+                        whileTap={{ scale: 0.95 }} 
+                        onClick={() => onDelete(order.id)} 
+                        title="حذف نهائي"
+                        style={{ width: isMobile ? '38px' : '44px', height: isMobile ? '38px' : '44px', borderRadius: '12px', background: 'rgba(255,255,255,0.02)', color: 'var(--text-dim)', border: '1px solid var(--border-color)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                        <Trash2 size={isMobile ? 14 : 16} />
+                    </motion.button>
                 </div>
             </div>
         </motion.div>
