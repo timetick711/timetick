@@ -10,7 +10,7 @@ import {
     ShoppingCart, PlayCircle, Image as ImageIcon, 
     Check, ShieldCheck, Truck, RotateCcw, 
     Share2, ChevronRight, Tag, Info, Award, 
-    Gem, Clock, Sparkles
+    Gem, Clock, Sparkles, Copy
 } from 'lucide-react';
 import { subscribeToProducts, subscribeToProduct } from '../services/productService';
 import ProductCard from '../components/ProductCard';
@@ -28,6 +28,7 @@ const ProductDetails = () => {
     const [activeImage, setActiveImage] = useState('');
     const [showModal, setShowModal] = useState(false);
     const [copied, setCopied] = useState(false);
+    const [codeCopied, setCodeCopied] = useState(false);
     const { activeVideoId, setActiveVideoId } = useVideo();
     
     // Hardcoded production URL for sharing
@@ -247,7 +248,59 @@ const ProductDetails = () => {
                                 {product.category === 'men' ? 'ساعات رجالية' : product.category === 'women' ? 'ساعات نسائية' : 'ساعات أطفال'}
                             </div>
                             <h1 style={{ fontSize: '2.4rem', fontWeight: '900', color: 'var(--text-main)', marginBottom: '4px', lineHeight: '1.2' }}>{product.name}</h1>
-                            <div style={{ color: 'var(--text-dim)', fontSize: '0.9rem', fontWeight: '600' }}>كود المنتج: #{product.displayId || '---'}</div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                <div style={{ 
+                                    display: 'flex', 
+                                    alignItems: 'center', 
+                                    gap: '8px',
+                                    background: 'var(--bg-card)',
+                                    border: '1px solid var(--border-color)',
+                                    padding: '6px 14px',
+                                    borderRadius: '10px',
+                                    boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.1)'
+                                }}>
+                                    <span style={{ color: 'var(--text-dim)', fontSize: '0.8rem', fontWeight: 'bold' }}>CODE:</span>
+                                    <span style={{ color: 'var(--text-main)', fontSize: '0.9rem', fontWeight: '800', letterSpacing: '1px' }}>{product.displayId || '---'}</span>
+                                    
+                                    {product.displayId && (
+                                        <motion.button 
+                                            whileTap={{ scale: 0.9 }}
+                                            onClick={() => {
+                                                navigator.clipboard.writeText(product.displayId);
+                                                setCodeCopied(true);
+                                                setTimeout(() => setCodeCopied(false), 2000);
+                                            }}
+                                            style={{ 
+                                                background: codeCopied ? '#10B981' : 'var(--bg-card)', 
+                                                border: `1.5px solid ${codeCopied ? '#10B981' : 'var(--primary)'}`, 
+                                                borderRadius: '6px', 
+                                                width: '26px',
+                                                height: '26px',
+                                                display: 'flex', 
+                                                alignItems: 'center', 
+                                                justifyContent: 'center',
+                                                cursor: 'pointer',
+                                                color: codeCopied ? '#fff' : 'var(--primary)',
+                                                transition: 'all 0.2s ease',
+                                                marginRight: '4px'
+                                            }}
+                                            title="نسخ الكود"
+                                        >
+                                            {codeCopied ? <Check size={14} strokeWidth={3} /> : <Copy size={14} strokeWidth={2.5} />}
+                                        </motion.button>
+                                    )}
+                                </div>
+                                
+                                {codeCopied && (
+                                    <motion.span 
+                                        initial={{ opacity: 0, x: -10 }}
+                                        animate={{ opacity: 1, x: 0 }}
+                                        style={{ fontSize: '0.75rem', color: 'var(--primary)', fontWeight: 'bold' }}
+                                    >
+                                        تم النسخ!
+                                    </motion.span>
+                                )}
+                            </div>
                         </div>
 
                         <div style={{ display: 'flex', alignItems: 'flex-start', gap: '16px', padding: '20px', background: 'rgba(212,175,55,0.05)', borderRadius: '16px', border: '1px solid rgba(212,175,55,0.1)' }}>
@@ -322,11 +375,30 @@ const ProductDetails = () => {
                                 <ShoppingCart size={22} /> أضف إلى السلة
                             </motion.button>
                             <motion.button 
-                                whileHover={{ background: 'var(--border-color)' }}
-                                onClick={() => { navigator.clipboard.writeText(shareUrl); setCopied(true); setTimeout(() => setCopied(false), 2000); }}
-                                style={{ width: '52px', height: '52px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '14px', border: `1.5px solid ${copied ? '#10B981' : 'var(--border-color)'}`, color: copied ? '#10B981' : 'var(--text-main)', background: 'transparent', cursor: 'pointer', transition: '0.3s' }}
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                                onClick={() => { 
+                                    navigator.clipboard.writeText(shareUrl); 
+                                    setCopied(true); 
+                                    setTimeout(() => setCopied(false), 2000); 
+                                }}
+                                style={{ 
+                                    width: '52px', 
+                                    height: '52px', 
+                                    display: 'flex', 
+                                    alignItems: 'center', 
+                                    justifyContent: 'center', 
+                                    borderRadius: '14px', 
+                                    border: `2px solid ${copied ? '#10B981' : 'var(--primary)'}`, 
+                                    color: copied ? '#10B981' : 'var(--primary)', 
+                                    background: 'var(--bg-card)', 
+                                    cursor: 'pointer', 
+                                    transition: 'all 0.2s ease',
+                                    boxShadow: '0 4px 12px rgba(0,0,0,0.2)'
+                                }}
+                                title="نسخ رابط المنتج"
                             >
-                                {copied ? <Check size={22} /> : <Share2 size={22} />}
+                                {copied ? <Check size={24} strokeWidth={3} /> : <Copy size={24} strokeWidth={2.5} />}
                             </motion.button>
                         </div>
                     </div>

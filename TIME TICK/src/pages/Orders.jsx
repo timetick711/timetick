@@ -67,7 +67,7 @@ export default function Orders() {
     }
 
     return (
-        <div style={{ maxWidth: '800px', margin: isMobile ? '40px auto 40px' : '80px auto 40px', padding: isMobile ? '0 12px' : '0 15px' }}>
+        <div style={{ maxWidth: '800px', margin: isMobile ? '90px auto 40px' : '100px auto 40px', padding: isMobile ? '0 12px' : '0 15px' }}>
             <motion.div
                 initial={{ opacity: 0, y: 15 }}
                 animate={{ opacity: 1, y: 0 }}
