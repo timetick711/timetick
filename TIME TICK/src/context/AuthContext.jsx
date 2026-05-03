@@ -135,28 +135,9 @@ export const AuthProvider = ({ children }) => {
             setLoading(false);
         });
 
-        // FORCE LOGOUT LISTENER: Listen for profile deletion
-        const channel = supabase
-            .channel('public:profiles')
-            .on(
-                'postgres_changes',
-                { event: 'DELETE', schema: 'public', table: 'profiles' },
-                (payload) => {
-                    const deletedUserId = payload.old.id;
-                    const savedUser = localStorage.getItem('time-tick-user');
-                    const parsedUser = savedUser ? JSON.parse(savedUser) : null;
-
-                    if (parsedUser && parsedUser.uid === deletedUserId) {
-                        // User match found, trigger logout
-                        alert('تم حذف حسابك بواسطة الإدارة.');
-                        supabase.auth.signOut().then(() => {
-                            setCurrentUser(null);
-                            localStorage.removeItem('time-tick-user');
-                            window.location.href = '/';
-                        });
-                    }
-                }
-            )
+        // 1. REAL-TIME PROFILE LISTENER: Sync changes across devices (Image, Name, etc.)
+        const profileChannel = supabase
+            .channel('public:profiles_updates')
             .on(
                 'postgres_changes',
                 { event: 'UPDATE', schema: 'public', table: 'profiles' },
@@ -166,6 +147,7 @@ export const AuthProvider = ({ children }) => {
                     const parsedUser = savedUser ? JSON.parse(savedUser) : null;
                     
                     if (parsedUser && parsedUser.uid === updatedUserId) {
+                        console.log("Real-time profile sync:", payload.new);
                         const updatedUser = {
                             ...parsedUser,
                             name: payload.new.full_name || payload.new.name || parsedUser.name,
@@ -177,6 +159,24 @@ export const AuthProvider = ({ children }) => {
                         };
                         localStorage.setItem('time-tick-user', JSON.stringify(updatedUser));
                         setCurrentUser(updatedUser);
+                    }
+                }
+            )
+            .on(
+                'postgres_changes',
+                { event: 'DELETE', schema: 'public', table: 'profiles' },
+                (payload) => {
+                    const deletedUserId = payload.old.id;
+                    const savedUser = localStorage.getItem('time-tick-user');
+                    const parsedUser = savedUser ? JSON.parse(savedUser) : null;
+
+                    if (parsedUser && parsedUser.uid === deletedUserId) {
+                        alert('تم حذف حسابك بواسطة الإدارة.');
+                        supabase.auth.signOut().then(() => {
+                            setCurrentUser(null);
+                            localStorage.removeItem('time-tick-user');
+                            window.location.href = '/';
+                        });
                     }
                 }
             )
@@ -228,7 +228,7 @@ export const AuthProvider = ({ children }) => {
 
         return () => {
             subscription.unsubscribe();
-            supabase.removeChannel(channel);
+            supabase.removeChannel(profileChannel);
             deepLinkListener?.remove();
             stateListener?.remove();
         };
