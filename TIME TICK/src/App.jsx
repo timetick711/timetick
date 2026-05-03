@@ -90,11 +90,10 @@ const DeepLinkHandler = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // 1. Handle links when the app is already open (Resume/Foreground)
     if (!Capacitor.isNativePlatform()) return;
 
-    const urlListener = CapApp.addListener('appUrlOpen', (event) => {
-      const url = event.url;
+    const handleUrl = (url) => {
+      if (!url) return;
       
       // Extract path (e.g., from https://timetick.vercel.app/product/123 or com.timetick.store://product/123)
       let path = '';
@@ -107,12 +106,22 @@ const DeepLinkHandler = () => {
       }
 
       if (path) {
-        // Remove hash/fragment/query for clean navigation if needed, 
-        // but React Router handles them well.
         // We only navigate if it's a valid path like /product/ or /orders
         if (path.startsWith('/product/') || path.startsWith('/orders')) {
           navigate(path);
         }
+      }
+    };
+
+    // 1. Handle links when the app is already open (Resume/Foreground)
+    const urlListener = CapApp.addListener('appUrlOpen', (event) => {
+      handleUrl(event.url);
+    });
+
+    // 2. Handle links when the app was CLOSED (Cold Start)
+    CapApp.getLaunchUrl().then((launchUrl) => {
+      if (launchUrl && launchUrl.url) {
+        handleUrl(launchUrl.url);
       }
     });
 
