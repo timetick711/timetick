@@ -69,8 +69,6 @@ body {
 
 body.no-scroll {
   overflow: hidden !important;
-  height: 100vh !important;
-  touch-action: none !important;
 }
 
 input, textarea, [contenteditable="true"] {

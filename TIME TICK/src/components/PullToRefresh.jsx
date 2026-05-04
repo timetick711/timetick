@@ -26,6 +26,7 @@ export default function PullToRefresh({ onRefresh, children }) {
     const startY = useRef(0);
     const isPulling = useRef(false);
     const startedAtTop = useRef(false);
+    const hasScrolledDown = useRef(false);
     const containerRef = useRef(null);
 
     // Configuration
@@ -50,20 +51,29 @@ export default function PullToRefresh({ onRefresh, children }) {
     // Added: Lock body scroll when PTR is active for a premium feel
     useEffect(() => {
         const isActive = isPulling.current || state === PTR_STATES.REFRESHING || state === PTR_STATES.READY;
+        const isModalOpen = document.body.classList.contains('no-scroll');
+
         if (isActive) {
-            document.body.style.overflow = 'hidden';
-            // Optional: prevent elastic bounce on iOS if needed
-            document.body.style.position = 'fixed';
-            document.body.style.width = '100%';
+            // Only apply if not already locked by a modal
+            if (!isModalOpen) {
+                document.body.style.overflow = 'hidden';
+                document.body.style.position = 'fixed';
+                document.body.style.width = '100%';
+            }
         } else {
-            document.body.style.overflow = '';
-            document.body.style.position = '';
-            document.body.style.width = '';
+            // IMPORTANT: Only clear styles if they weren't set by a modal (ScrollLockManager)
+            if (!isModalOpen) {
+                document.body.style.overflow = '';
+                document.body.style.position = '';
+                document.body.style.width = '';
+            }
         }
         return () => {
-            document.body.style.overflow = '';
-            document.body.style.position = '';
-            document.body.style.width = '';
+            if (!document.body.classList.contains('no-scroll')) {
+                document.body.style.overflow = '';
+                document.body.style.position = '';
+                document.body.style.width = '';
+            }
         };
     }, [state, pullY]);
 
@@ -71,7 +81,26 @@ export default function PullToRefresh({ onRefresh, children }) {
         // Record starting position and state - Using clientY for more stable gesture tracking
         startY.current = e.touches[0].clientY;
         isPulling.current = false;
-        startedAtTop.current = window.scrollY <= 0;
+        hasScrolledDown.current = false;
+        
+        // Check if we are at the top of the window
+        let atTop = window.scrollY <= 0;
+
+        // If we are on a platform where the body is fixed (modals open), 
+        // we need to check if the scrollable element being touched is at its top.
+        if (atTop) {
+            let node = e.target;
+            while (node && node !== containerRef.current && node !== document.body) {
+                // If we find a scrollable element that is not at its top, we are NOT at the top
+                if (node.scrollTop > 0) {
+                    atTop = false;
+                    break;
+                }
+                node = node.parentNode;
+            }
+        }
+
+        startedAtTop.current = atTop;
     };
 
     const handleTouchMove = (e) => {
@@ -79,13 +108,17 @@ export default function PullToRefresh({ onRefresh, children }) {
         const diff = currentY - startY.current;
 
         // 1. Initial Logic: Decide if we should take control of this gesture
-        // IMPORTANT: Only allow PTR if the gesture STARTED at the top
-        if (!isPulling.current && startedAtTop.current && window.scrollY <= 0 && diff > 5 && (state === PTR_STATES.IDLE || state === PTR_STATES.SUCCESS)) {
+        // IMPORTANT: Only allow PTR if the gesture STARTED at the top AND hasn't scrolled down yet
+        if (diff < -10) {
+            hasScrolledDown.current = true;
+        }
+
+        if (!isPulling.current && startedAtTop.current && !hasScrolledDown.current && window.scrollY <= 0 && diff > 5 && (state === PTR_STATES.IDLE || state === PTR_STATES.SUCCESS)) {
             isPulling.current = true;
         }
 
         // 2. Handle Spring Effect (Rubber Banding) when not pulling PTR
-        if (!isPulling.current && !startedAtTop.current && window.scrollY <= 0 && diff > 0) {
+        if (!isPulling.current && startedAtTop.current && window.scrollY <= 0 && diff > 0) {
             // High resistance for the spring effect
             const springValue = Math.pow(diff, 0.65) * 2.5;
             setOverscrollY(Math.min(40, springValue));
@@ -95,6 +128,14 @@ export default function PullToRefresh({ onRefresh, children }) {
 
         // 3. If we have control, we handle EVERYTHING and block native behavior
         if (isPulling.current) {
+            // If the user swipes back up beyond the starting point, release control
+            if (diff <= 0) {
+                isPulling.current = false;
+                setPullY(0);
+                setState(PTR_STATES.IDLE);
+                return;
+            }
+
             // We handle movement even if diff < 0 (finger above start point) to allow "returning" the circle
             let finalPull = 0;
             if (diff > 0) {
@@ -175,7 +216,7 @@ export default function PullToRefresh({ onRefresh, children }) {
                 minHeight: '100vh',
                 // Important: prevent scrolling while pulling
                 touchAction: (pullY > 0 || overscrollY > 0) ? 'none' : 'auto',
-                overflow: 'hidden'
+                overflow: (pullY > 0 || overscrollY > 0) ? 'hidden' : 'visible'
             }}
         >
             {/* 1. Pull Indicator (The Spinner/Icon) */}

@@ -143,13 +143,41 @@ const ScrollLockManager = () => {
     const isAnyOpen = isAuthModalOpen || isLogoutConfirmOpen || isProfileModalOpen || isMenuOpen || isCartOpen || isOptionsModalOpen || isFavoritesOpen;
     
     if (isAnyOpen) {
+      // Save current scroll position
+      const scrollY = window.scrollY;
+      document.body.style.top = `-${scrollY}px`;
+      document.body.style.position = 'fixed';
+      document.body.style.width = '100%';
       document.body.classList.add('no-scroll');
+      document.body.dataset.scrollY = scrollY.toString();
     } else {
+      // Restore scroll position
+      const scrollY = document.body.dataset.scrollY;
+      
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.width = '';
       document.body.classList.remove('no-scroll');
+      
+      if (scrollY) {
+        // Disable smooth scroll temporarily for instant restoration
+        const originalScrollBehavior = document.documentElement.style.scrollBehavior;
+        document.documentElement.style.scrollBehavior = 'auto';
+        
+        window.scrollTo(0, parseInt(scrollY));
+        
+        // Restore original scroll behavior
+        document.documentElement.style.scrollBehavior = originalScrollBehavior;
+        delete document.body.dataset.scrollY;
+      }
     }
     
-    // Cleanup on unmount
-    return () => document.body.classList.remove('no-scroll');
+    return () => {
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.width = '';
+      document.body.classList.remove('no-scroll');
+    };
   }, [isAuthModalOpen, isLogoutConfirmOpen, isProfileModalOpen, isMenuOpen, isCartOpen, isOptionsModalOpen, isFavoritesOpen]);
 
   return null;
