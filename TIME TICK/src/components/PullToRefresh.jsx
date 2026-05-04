@@ -207,9 +207,9 @@ export default function PullToRefresh({ onRefresh, children }) {
     return (
         <div 
             ref={containerRef}
-            onTouchStart={handleTouchStart}
-            onTouchMove={handleTouchMove}
-            onTouchEnd={handleTouchEnd}
+            onTouchStart={isNative ? handleTouchStart : undefined}
+            onTouchMove={isNative ? handleTouchMove : undefined}
+            onTouchEnd={isNative ? handleTouchEnd : undefined}
             className={`ptr-wrapper state-${state}`}
             style={{ 
                 position: 'relative', 
@@ -220,95 +220,97 @@ export default function PullToRefresh({ onRefresh, children }) {
             }}
         >
             {/* 1. Pull Indicator (The Spinner/Icon) */}
-            <div className="ptr-indicator-layer" style={{
-                position: 'fixed',
-                top: 0,
-                left: 0,
-                width: '100%',
-                display: 'flex',
-                justifyContent: 'center',
-                zIndex: 999999,
-                pointerEvents: 'none',
-                height: 0
-            }}>
-                <motion.div
-                    className="ptr-circle"
-                    style={{
-                        width: 50,
-                        height: 50,
-                        borderRadius: '50%',
-                        background: state === PTR_STATES.READY ? 'var(--primary)' : 'rgba(20, 20, 20, 0.95)',
-                        border: '1px solid rgba(212, 175, 55, 0.3)',
-                        boxShadow: state === PTR_STATES.READY 
-                            ? '0 0 25px rgba(212, 175, 55, 0.5)' 
-                            : '0 10px 25px rgba(0,0,0,0.6)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        color: state === PTR_STATES.READY ? '#000' : 'var(--primary)',
-                        marginTop: 40,
-                        backdropFilter: 'blur(10px)',
-                    }}
-                    animate={{ 
-                        y: pullY, 
-                        scale: state === PTR_STATES.IDLE ? 0.5 : 1,
-                        opacity: pullY > 5 ? 1 : 0,
-                    }}
-                    transition={{
-                        type: 'spring',
-                        damping: 25,
-                        stiffness: 300
-                    }}
-                >
-                    {state === PTR_STATES.REFRESHING && (
-                        <motion.div
-                            animate={{ rotate: 360 }}
-                            transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
-                        >
-                            <RefreshCw size={24} strokeWidth={2.5} />
-                        </motion.div>
-                    )}
-                    
-                    {state === PTR_STATES.SUCCESS && (
-                        <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }}>
-                            <Check size={24} strokeWidth={3} />
-                        </motion.div>
-                    )}
+            {isNative && (
+                <div className="ptr-indicator-layer" style={{
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    width: '100%',
+                    display: 'flex',
+                    justifyContent: 'center',
+                    zIndex: 999999,
+                    pointerEvents: 'none',
+                    height: 0
+                }}>
+                    <motion.div
+                        className="ptr-circle"
+                        style={{
+                            width: 50,
+                            height: 50,
+                            borderRadius: '50%',
+                            background: state === PTR_STATES.READY ? 'var(--primary)' : 'rgba(20, 20, 20, 0.95)',
+                            border: '1px solid rgba(212, 175, 55, 0.3)',
+                            boxShadow: state === PTR_STATES.READY 
+                                ? '0 0 25px rgba(212, 175, 55, 0.5)' 
+                                : '0 10px 25px rgba(0,0,0,0.6)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            color: state === PTR_STATES.READY ? '#000' : 'var(--primary)',
+                            marginTop: 40,
+                            backdropFilter: 'blur(10px)',
+                        }}
+                        animate={{ 
+                            y: pullY, 
+                            scale: state === PTR_STATES.IDLE ? 0.5 : 1,
+                            opacity: pullY > 5 ? 1 : 0,
+                        }}
+                        transition={{
+                            type: 'spring',
+                            damping: 25,
+                            stiffness: 300
+                        }}
+                    >
+                        {state === PTR_STATES.REFRESHING && (
+                            <motion.div
+                                animate={{ rotate: 360 }}
+                                transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
+                            >
+                                <RefreshCw size={24} strokeWidth={2.5} />
+                            </motion.div>
+                        )}
+                        
+                        {state === PTR_STATES.SUCCESS && (
+                            <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }}>
+                                <Check size={24} strokeWidth={3} />
+                            </motion.div>
+                        )}
 
-                    {(state === PTR_STATES.PULLING || state === PTR_STATES.READY) && (
-                        <motion.div
-                            style={{ rotate: rotation }}
-                            animate={{ 
-                                scale: state === PTR_STATES.READY ? 1.2 : 1,
-                                rotate: state === PTR_STATES.READY ? 180 : rotation
-                            }}
-                        >
-                            <ArrowDown size={24} strokeWidth={2.5} />
-                        </motion.div>
-                    )}
-                </motion.div>
-                
-                {/* Visual Feedback Text (Optional but premium) */}
-                <motion.span
-                    style={{
-                        position: 'absolute',
-                        top: 100,
-                        color: 'var(--primary)',
-                        fontSize: '0.8rem',
-                        fontWeight: 'bold',
-                        letterSpacing: '1px',
-                        textTransform: 'uppercase',
-                        textShadow: '0 2px 4px rgba(0,0,0,0.5)'
-                    }}
-                    animate={{ 
-                        y: pullY,
-                        opacity: pullY > THRESHOLD * 0.7 ? 1 : 0,
-                        scale: state === PTR_STATES.READY ? 1.1 : 1
-                    }}
-                >
-                    {state === PTR_STATES.READY ? 'اترك للتحديث' : state === PTR_STATES.REFRESHING ? 'جاري التحديث...' : state === PTR_STATES.SUCCESS ? 'تم بنجاح' : 'اسحب للتحديث'}
-                </motion.span>
-            </div>
+                        {(state === PTR_STATES.PULLING || state === PTR_STATES.READY) && (
+                            <motion.div
+                                style={{ rotate: rotation }}
+                                animate={{ 
+                                    scale: state === PTR_STATES.READY ? 1.2 : 1,
+                                    rotate: state === PTR_STATES.READY ? 180 : rotation
+                                }}
+                            >
+                                <ArrowDown size={24} strokeWidth={2.5} />
+                            </motion.div>
+                        )}
+                    </motion.div>
+                    
+                    {/* Visual Feedback Text (Optional but premium) */}
+                    <motion.span
+                        style={{
+                            position: 'absolute',
+                            top: 100,
+                            color: 'var(--primary)',
+                            fontSize: '0.8rem',
+                            fontWeight: 'bold',
+                            letterSpacing: '1px',
+                            textTransform: 'uppercase',
+                            textShadow: '0 2px 4px rgba(0,0,0,0.5)'
+                        }}
+                        animate={{ 
+                            y: pullY,
+                            opacity: pullY > THRESHOLD * 0.7 ? 1 : 0,
+                            scale: state === PTR_STATES.READY ? 1.1 : 1
+                        }}
+                    >
+                        {state === PTR_STATES.READY ? 'اترك للتحديث' : state === PTR_STATES.REFRESHING ? 'جاري التحديث...' : state === PTR_STATES.SUCCESS ? 'تم بنجاح' : 'اسحب للتحديث'}
+                    </motion.span>
+                </div>
+            )}
 
             {/* 2. Content Layer (The actual app) */}
             <motion.div
