@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Package, Calendar, CreditCard, ChevronDown, ChevronUp, ShoppingBag, Clock, CheckCircle2, XCircle, User } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useLoader } from '../context/LoaderContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 
 export default function Orders() {
     const { currentUser, openAuthModal } = useAuth();
@@ -115,7 +115,7 @@ export default function Orders() {
                     <ShoppingBag size={isMobile ? 36 : 48} style={{ color: 'var(--primary)', marginBottom: '15px', opacity: 0.4 }} />
                     <h2 style={{ fontSize: isMobile ? '1.1rem' : '1.2rem', marginBottom: '10px' }}>لا توجد طلبات حالياً</h2>
                     <p style={{ color: 'var(--text-dim)', fontSize: '0.85rem', marginBottom: '20px' }}>ابدأ رحلة تسوقك الآن واكتشف القطع الفريدة</p>
-                    <button className="btn-primary" onClick={() => navigate('/')} style={{ padding: isMobile ? '8px 20px' : '8px 24px', fontSize: '0.9rem' }}>تصفح المتجر</button>
+                    <Link to="/" className="btn-primary" style={{ padding: isMobile ? '8px 20px' : '8px 24px', fontSize: '0.9rem', textDecoration: 'none' }}>تصفح المتجر</Link>
                 </motion.div>
             ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>

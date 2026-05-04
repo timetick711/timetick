@@ -1,9 +1,9 @@
 import { BrowserRouter as Router, Routes, Route, useLocation, useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { CartProvider } from './context/CartContext';
+import { CartProvider, useCart } from './context/CartContext';
 import { ThemeProvider } from './context/ThemeContext';
-import { AuthProvider } from './context/AuthContext';
-import { FavoritesProvider } from './context/FavoritesContext';
+import { AuthProvider, useAuth } from './context/AuthContext';
+import { FavoritesProvider, useFavorites } from './context/FavoritesContext';
 import { VideoProvider } from './context/VideoContext';
 import { LoaderProvider } from './context/LoaderContext';
 import Navbar from './components/Navbar';
@@ -133,6 +133,28 @@ const DeepLinkHandler = () => {
   return null;
 };
 
+// Global Scroll Lock Manager
+const ScrollLockManager = () => {
+  const { isAuthModalOpen, isLogoutConfirmOpen, isProfileModalOpen, isMenuOpen } = useAuth();
+  const { isCartOpen, isOptionsModalOpen } = useCart();
+  const { isFavoritesOpen } = useFavorites();
+
+  useEffect(() => {
+    const isAnyOpen = isAuthModalOpen || isLogoutConfirmOpen || isProfileModalOpen || isMenuOpen || isCartOpen || isOptionsModalOpen || isFavoritesOpen;
+    
+    if (isAnyOpen) {
+      document.body.classList.add('no-scroll');
+    } else {
+      document.body.classList.remove('no-scroll');
+    }
+    
+    // Cleanup on unmount
+    return () => document.body.classList.remove('no-scroll');
+  }, [isAuthModalOpen, isLogoutConfirmOpen, isProfileModalOpen, isMenuOpen, isCartOpen, isOptionsModalOpen, isFavoritesOpen]);
+
+  return null;
+};
+
 function App() {
   useEffect(() => {
     // Force Immersive Full Screen on Mobile
@@ -155,6 +177,7 @@ function App() {
                   <CartProvider>
                     <DeepLinkHandler />
                     <BackButtonHandler />
+                    <ScrollLockManager />
                     <SEOHelper />
                     <div className="app-container">
                       <Navbar />

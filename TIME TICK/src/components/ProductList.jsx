@@ -147,7 +147,7 @@ export default function ProductList() {
                 style={{ textAlign: 'center', marginBottom: '50px' }}
             >
                 <h2 style={{
-                    fontSize: window.innerWidth < 480 ? '2rem' : '3rem',
+                    fontSize: window.innerWidth < 480 ? '1.7rem' : '2.4rem',
                     color: 'var(--text-main)',
                     marginBottom: '10px'
                 }}>
@@ -176,7 +176,7 @@ export default function ProductList() {
                 }}
             >
                 {/* Search Bar - Priority 1 */}
-                <div style={{ position: 'relative', flex: '1', minWidth: '300px', maxWidth: '450px' }}>
+                <div className="search-container" style={{ position: 'relative', flex: '1', minWidth: '300px', maxWidth: '450px' }}>
                     <div style={{ position: 'absolute', right: '15px', top: '50%', transform: 'translateY(-50%)', color: 'var(--primary)', pointerEvents: 'none' }}>
                         <Filter size={18} />
                     </div>
@@ -211,10 +211,10 @@ export default function ProductList() {
                 </div>
 
                 {/* Type Filter */}
-                <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                <div className="category-filter-container" style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
                     <Filter size={20} color="var(--primary)" />
                     <span style={{ fontWeight: 'bold' }}>الفئة:</span>
-                    <div style={{ display: 'flex', gap: '5px', }}>
+                    <div className="category-buttons" style={{ display: 'flex', gap: '5px' }}>
                         {[
                             { label: 'الكل', value: 'all' },
                             { label: 'رجالي', value: 'men' },
@@ -224,6 +224,7 @@ export default function ProductList() {
                             <button
                                 key={type.value}
                                 onClick={() => setFilterType(type.value)}
+                                className={`category-btn ${filterType === type.value ? 'active' : ''}`}
                                 style={{
                                     padding: '8px 16px',
                                     borderRadius: '20px',
@@ -232,7 +233,8 @@ export default function ProductList() {
                                     color: filterType === type.value ? '#000' : 'var(--text-main)',
                                     cursor: 'pointer',
                                     transition: 'all 0.3s',
-                                    fontFamily: 'cairo'
+                                    fontFamily: 'cairo',
+                                    whiteSpace: 'nowrap'
                                 }}
                             >
                                 {type.label}

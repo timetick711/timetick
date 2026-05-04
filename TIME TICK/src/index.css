@@ -67,6 +67,12 @@ body {
   user-select: none;
 }
 
+body.no-scroll {
+  overflow: hidden !important;
+  height: 100vh !important;
+  touch-action: none !important;
+}
+
 input, textarea, [contenteditable="true"] {
   -webkit-user-select: text;
   user-select: text;
@@ -700,6 +706,69 @@ input, textarea, [contenteditable="true"] {
   .media-toggle-btn {
     padding: 4px 8px;
     font-size: 0.6rem;
+  }
+}
+
+/* Category Filter Responsive Optimization */
+@media (max-width: 480px) {
+  .category-filter-container {
+    gap: 8px !important;
+  }
+  .category-filter-container span {
+    font-size: 0.9rem !important;
+  }
+  .category-filter-container svg {
+    width: 18px !important;
+    height: 18px !important;
+  }
+  .category-buttons {
+    gap: 4px !important;
+  }
+  .category-btn {
+    padding: 7px 14px !important;
+    font-size: 0.85rem !important;
+  }
+}
+
+/* Specific fix for screens less than 380px as requested */
+@media (max-width: 380px) {
+  .category-filter-container {
+    width: 100%;
+    justify-content: flex-start !important;
+    flex-wrap: nowrap !important;
+    overflow: hidden;
+  }
+  
+  .category-buttons {
+    flex: 1;
+    overflow-x: auto !important;
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    padding: 4px 0;
+    gap: 6px !important;
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE/Edge */
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .category-buttons::-webkit-scrollbar {
+    display: none; /* Chrome/Safari/Webkit */
+  }
+
+  .category-btn {
+    padding: 6px 12px !important;
+    font-size: 0.8rem !important;
+    flex-shrink: 0 !important; /* Prevent buttons from shrinking/deforming */
+    border-radius: 12px !important;
+  }
+
+  .filter-bar {
+    padding: 12px 8px !important;
+    gap: 15px !important;
+  }
+
+  .search-container {
+    min-width: 100% !important;
   }
 }
 

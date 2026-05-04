@@ -20,11 +20,12 @@ const PTR_STATES = {
 export default function PullToRefresh({ onRefresh, children }) {
     const [state, setState] = useState(PTR_STATES.IDLE);
     const [pullY, setPullY] = useState(0);
+    const [overscrollY, setOverscrollY] = useState(0);
     
     // Refs for gesture tracking
     const startY = useRef(0);
-    const lastY = useRef(0);
     const isPulling = useRef(false);
+    const startedAtTop = useRef(false);
     const containerRef = useRef(null);
 
     // Configuration
@@ -36,78 +37,88 @@ export default function PullToRefresh({ onRefresh, children }) {
     useEffect(() => {
         const preventDefault = (e) => {
             // If we are at the top and pulling down, we take control
-            if (window.scrollY === 0 && isPulling.current) {
+            if (window.scrollY === 0 && (isPulling.current || overscrollY > 0)) {
                 if (e.cancelable) e.preventDefault();
             }
         };
 
         document.addEventListener('touchmove', preventDefault, { passive: false });
         return () => document.removeEventListener('touchmove', preventDefault);
-    }, []);
+    }, [overscrollY]);
 
     const handleTouchStart = (e) => {
-        // Only allow pull if at the very top of the scroll
-        if (window.scrollY <= 0 && (state === PTR_STATES.IDLE || state === PTR_STATES.SUCCESS)) {
-            startY.current = e.touches[0].pageY;
-            lastY.current = e.touches[0].pageY;
-            isPulling.current = true;
-            // No setState here to keep it snappy
-        }
+        // Record starting position and state
+        startY.current = e.touches[0].pageY;
+        isPulling.current = false;
+        startedAtTop.current = window.scrollY <= 0;
     };
 
     const handleTouchMove = (e) => {
-        if (!isPulling.current || state === PTR_STATES.REFRESHING) return;
-
         const currentY = e.touches[0].pageY;
         const diff = currentY - startY.current;
 
-        // If pulling up, don't trigger PTR logic
-        if (diff <= 0) {
-            if (pullY !== 0) {
-                setPullY(0);
-                setState(PTR_STATES.IDLE);
-            }
-            return;
-        }
-
-        // Apply a "Resistance" formula
-        // Every pixel of actual movement results in less visual movement as we pull further
-        const resistance = 0.45;
-        const exponentialDiff = Math.pow(diff, 0.85) * resistance * 2;
-        const finalPull = Math.min(MAX_PULL, exponentialDiff);
-        
-        setPullY(finalPull);
-
-        // Update state based on threshold
-        if (finalPull >= THRESHOLD) {
-            if (state !== PTR_STATES.READY) setState(PTR_STATES.READY);
-        } else {
-            if (state !== PTR_STATES.PULLING) setState(PTR_STATES.PULLING);
-        }
-
-        // Lock scroll while we have an active pull
-        if (finalPull > 5) {
+        // 1. Initial Logic: Decide if we should take control of this gesture
+        // IMPORTANT: Only allow PTR if the gesture STARTED at the top
+        if (!isPulling.current && startedAtTop.current && window.scrollY <= 0 && diff > 5 && (state === PTR_STATES.IDLE || state === PTR_STATES.SUCCESS)) {
             isPulling.current = true;
+        }
+
+        // 2. Handle Spring Effect (Rubber Banding) when not pulling PTR
+        if (!isPulling.current && !startedAtTop.current && window.scrollY <= 0 && diff > 0) {
+            // High resistance for the spring effect
+            const springValue = Math.pow(diff, 0.65) * 2.5;
+            setOverscrollY(Math.min(40, springValue));
+        } else {
+            if (overscrollY !== 0) setOverscrollY(0);
+        }
+
+        // 3. If we have control, we handle EVERYTHING and block native behavior
+        if (isPulling.current) {
+            // We only care about diff >= 0 for the visual movement, but we keep control even if diff < 0
+            // Apply 1:1 movement with slight resistance as it gets very deep
+            let finalPull = 0;
+            if (diff > 0) {
+                // 1:1 movement initially, then some resistance after threshold
+                if (diff < THRESHOLD) {
+                    finalPull = diff;
+                } else {
+                    const extra = diff - THRESHOLD;
+                    finalPull = THRESHOLD + (extra * 0.4); // Resistance after threshold
+                }
+            }
+            
+            const clampedPull = Math.min(MAX_PULL, finalPull);
+            setPullY(clampedPull);
+
+            // Update state based on threshold for visual feedback
+            if (clampedPull >= THRESHOLD) {
+                if (state !== PTR_STATES.READY) setState(PTR_STATES.READY);
+            } else {
+                if (state !== PTR_STATES.PULLING) setState(PTR_STATES.PULLING);
+            }
+            
+            // Note: preventDefault is handled by the useEffect listener which checks isPulling.current
         }
     };
 
     const handleTouchEnd = async () => {
+        setOverscrollY(0);
         if (!isPulling.current) return;
-        isPulling.current = false;
-
+        // Keep isPulling true if we are refreshing, otherwise reset on end
+        
         if (state === PTR_STATES.READY) {
             setState(PTR_STATES.REFRESHING);
             setPullY(THRESHOLD); // Snap to threshold position
+            // Keep isPulling = true during refresh to block scroll? 
+            // The user says "طالما الدائرة ظاهرة -> الاسكرول معزول"
+            // Usually while refreshing, you can still scroll down, but the user wants isolation.
 
             try {
                 if (onRefresh) {
                     await onRefresh();
                 } else {
-                    // Default fallback
                     await new Promise(resolve => setTimeout(resolve, 1500));
-                    window.location.reload();
                 }
-                
                 setState(PTR_STATES.SUCCESS);
             } catch (error) {
                 console.error("PTR Error:", error);
@@ -117,19 +128,24 @@ export default function PullToRefresh({ onRefresh, children }) {
                 setTimeout(() => {
                     setState(PTR_STATES.RESETTING);
                     setPullY(0);
-                    setTimeout(() => setState(PTR_STATES.IDLE), 400);
-                }, 1000);
+                    setTimeout(() => {
+                        setState(PTR_STATES.IDLE);
+                        isPulling.current = false;
+                    }, 400);
+                }, 800);
             }
         } else {
-            // Cancel pull
+            // Cancel pull: animate back
             setState(PTR_STATES.RESETTING);
             setPullY(0);
-            setTimeout(() => setState(PTR_STATES.IDLE), 400);
+            setTimeout(() => {
+                setState(PTR_STATES.IDLE);
+                isPulling.current = false;
+            }, 400);
         }
     };
 
     // Derived values for animations
-    const progress = Math.min(1, pullY / THRESHOLD);
     const rotation = state === PTR_STATES.REFRESHING ? 0 : pullY * 2;
 
     return (
@@ -143,7 +159,7 @@ export default function PullToRefresh({ onRefresh, children }) {
                 position: 'relative', 
                 minHeight: '100vh',
                 // Important: prevent scrolling while pulling
-                touchAction: pullY > 0 ? 'none' : 'auto',
+                touchAction: (pullY > 0 || overscrollY > 0) ? 'none' : 'auto',
                 overflow: 'hidden'
             }}
         >
@@ -155,7 +171,7 @@ export default function PullToRefresh({ onRefresh, children }) {
                 width: '100%',
                 display: 'flex',
                 justifyContent: 'center',
-                zIndex: 9999,
+                zIndex: 999999,
                 pointerEvents: 'none',
                 height: 0
             }}>
@@ -242,7 +258,7 @@ export default function PullToRefresh({ onRefresh, children }) {
             <motion.div
                 className="ptr-content-layer"
                 animate={{ 
-                    y: state === PTR_STATES.REFRESHING || state === PTR_STATES.SUCCESS ? 60 : pullY * 0.4,
+                    y: state === PTR_STATES.REFRESHING || state === PTR_STATES.SUCCESS ? 60 : (pullY * 0.4) + overscrollY,
                     filter: (state === PTR_STATES.REFRESHING || state === PTR_STATES.READY) ? 'grayscale(0.2)' : 'grayscale(0)'
                 }}
                 transition={{ 

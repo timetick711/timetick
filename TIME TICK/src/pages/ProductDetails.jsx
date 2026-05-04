@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { supabase } from '../supabase/client';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -10,7 +10,7 @@ import {
     ShoppingCart, PlayCircle, Image as ImageIcon, 
     Check, ShieldCheck, Truck, RotateCcw, 
     Share2, ChevronRight, Tag, Info, Award, 
-    Gem, Clock, Sparkles, Copy
+    Gem, Clock, Sparkles, Copy, Home
 } from 'lucide-react';
 import { subscribeToProducts, subscribeToProduct } from '../services/productService';
 import ProductCard from '../components/ProductCard';
@@ -167,12 +167,67 @@ const ProductDetails = () => {
 
     if (!product) {
         return (
-            <div style={{ padding: '100px', textAlign: 'center', color: 'var(--text-dim)' }}>
-                <h2>المنتج غير موجود</h2>
-                <button onClick={() => navigate('/')} className="btn-primary" style={{ marginTop: '20px' }}>
-                    العودة للمتجر
-                </button>
-            </div>
+            <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="container" 
+                style={{ 
+                    padding: '160px 20px', 
+                    textAlign: 'center', 
+                    minHeight: '80vh',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '24px'
+                }}
+            >
+                <motion.div
+                    initial={{ scale: 0.8, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ type: 'spring', damping: 15 }}
+                    style={{
+                        width: '120px',
+                        height: '120px',
+                        borderRadius: '50%',
+                        background: 'rgba(212, 175, 55, 0.1)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        marginBottom: '10px',
+                        border: '1px solid rgba(212, 175, 55, 0.2)'
+                    }}
+                >
+                    <Info size={60} color="var(--primary)" />
+                </motion.div>
+                
+                <div style={{ maxWidth: '400px' }}>
+                    <h2 style={{ fontSize: '2rem', fontWeight: '900', color: 'var(--text-main)', marginBottom: '12px' }}>المنتج غير موجود</h2>
+                    <p style={{ color: 'var(--text-dim)', fontSize: '1.1rem', lineHeight: '1.6' }}>
+                        نعتذر منك، يبدو أن المنتج الذي تبحث عنه غير متوفر حالياً أو تم نقله.
+                    </p>
+                </div>
+
+                <motion.div
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                >
+                    <Link 
+                        to="/" 
+                        className="btn-primary" 
+                        style={{ 
+                            marginTop: '20px',
+                            textDecoration: 'none',
+                            padding: '14px 40px',
+                            fontSize: '1.1rem',
+                            boxShadow: '0 10px 20px rgba(212, 175, 55, 0.2)'
+                        }}
+                    >
+                        <Home size={20} style={{ marginLeft: '8px' }} />
+                        العودة للمتجر
+                    </Link>
+                </motion.div>
+            </motion.div>
         );
     }
 

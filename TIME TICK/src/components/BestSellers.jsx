@@ -71,7 +71,7 @@ const BestSellers = () => {
                     style={{ textAlign: 'center', marginBottom: '50px' }}
                 >
                     <h2 style={{
-                        fontSize: window.innerWidth < 480 ? '2rem' : '3rem',
+                        fontSize: window.innerWidth < 480 ? '1.7rem' : '2.4rem',
                         color: 'var(--text-main)',
                         marginBottom: '10px'
                     }}>
