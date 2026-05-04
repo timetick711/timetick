@@ -36,25 +36,46 @@ export default function PullToRefresh({ onRefresh, children }) {
     // Prevent default browser "pull-to-refresh" or "overscroll"
     useEffect(() => {
         const preventDefault = (e) => {
-            // If we are at the top and pulling down, we take control
-            if (window.scrollY === 0 && (isPulling.current || overscrollY > 0)) {
+            // If we are actively in a PTR gesture, we MUST take full control and block native scroll
+            // This prevents the "jumping" behavior where the page scrolls while we pull
+            if (isPulling.current || state === PTR_STATES.REFRESHING || state === PTR_STATES.READY || overscrollY > 0) {
                 if (e.cancelable) e.preventDefault();
             }
         };
 
         document.addEventListener('touchmove', preventDefault, { passive: false });
         return () => document.removeEventListener('touchmove', preventDefault);
-    }, [overscrollY]);
+    }, [overscrollY, state]);
+
+    // Added: Lock body scroll when PTR is active for a premium feel
+    useEffect(() => {
+        const isActive = isPulling.current || state === PTR_STATES.REFRESHING || state === PTR_STATES.READY;
+        if (isActive) {
+            document.body.style.overflow = 'hidden';
+            // Optional: prevent elastic bounce on iOS if needed
+            document.body.style.position = 'fixed';
+            document.body.style.width = '100%';
+        } else {
+            document.body.style.overflow = '';
+            document.body.style.position = '';
+            document.body.style.width = '';
+        }
+        return () => {
+            document.body.style.overflow = '';
+            document.body.style.position = '';
+            document.body.style.width = '';
+        };
+    }, [state, pullY]);
 
     const handleTouchStart = (e) => {
-        // Record starting position and state
-        startY.current = e.touches[0].pageY;
+        // Record starting position and state - Using clientY for more stable gesture tracking
+        startY.current = e.touches[0].clientY;
         isPulling.current = false;
         startedAtTop.current = window.scrollY <= 0;
     };
 
     const handleTouchMove = (e) => {
-        const currentY = e.touches[0].pageY;
+        const currentY = e.touches[0].clientY;
         const diff = currentY - startY.current;
 
         // 1. Initial Logic: Decide if we should take control of this gesture
@@ -74,8 +95,7 @@ export default function PullToRefresh({ onRefresh, children }) {
 
         // 3. If we have control, we handle EVERYTHING and block native behavior
         if (isPulling.current) {
-            // We only care about diff >= 0 for the visual movement, but we keep control even if diff < 0
-            // Apply 1:1 movement with slight resistance as it gets very deep
+            // We handle movement even if diff < 0 (finger above start point) to allow "returning" the circle
             let finalPull = 0;
             if (diff > 0) {
                 // 1:1 movement initially, then some resistance after threshold
@@ -96,23 +116,17 @@ export default function PullToRefresh({ onRefresh, children }) {
             } else {
                 if (state !== PTR_STATES.PULLING) setState(PTR_STATES.PULLING);
             }
-            
-            // Note: preventDefault is handled by the useEffect listener which checks isPulling.current
         }
     };
 
     const handleTouchEnd = async () => {
         setOverscrollY(0);
         if (!isPulling.current) return;
-        // Keep isPulling true if we are refreshing, otherwise reset on end
         
         if (state === PTR_STATES.READY) {
             setState(PTR_STATES.REFRESHING);
-            setPullY(THRESHOLD); // Snap to threshold position
-            // Keep isPulling = true during refresh to block scroll? 
-            // The user says "طالما الدائرة ظاهرة -> الاسكرول معزول"
-            // Usually while refreshing, you can still scroll down, but the user wants isolation.
-
+            setPullY(60); // Snap to a comfortable refresh position
+            
             try {
                 if (onRefresh) {
                     await onRefresh();
@@ -123,6 +137,7 @@ export default function PullToRefresh({ onRefresh, children }) {
             } catch (error) {
                 console.error("PTR Error:", error);
                 setState(PTR_STATES.IDLE);
+                isPulling.current = false;
             } finally {
                 // Success pause then reset
                 setTimeout(() => {
