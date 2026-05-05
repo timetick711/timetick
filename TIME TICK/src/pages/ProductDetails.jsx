@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { supabase } from '../supabase/client';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -213,21 +213,25 @@ const ProductDetails = () => {
                     whileTap={{ scale: 0.95 }}
                 >
                     <button 
-                        onClick={() => navigate('/')} 
+                        onClick={() => {
+                            navigate('/');
+                            window.scrollTo(0, 0);
+                        }}
                         className="btn-primary" 
                         style={{ 
                             marginTop: '20px',
-                            border: 'none',
-                            cursor: 'pointer',
+                            textDecoration: 'none',
                             padding: '14px 40px',
                             fontSize: '1.1rem',
                             boxShadow: '0 10px 20px rgba(212, 175, 55, 0.2)',
+                            border: 'none',
+                            cursor: 'pointer',
                             display: 'flex',
                             alignItems: 'center',
-                            justifyContent: 'center'
+                            gap: '8px'
                         }}
                     >
-                        <Home size={20} style={{ marginLeft: '8px' }} />
+                        <Home size={20} />
                         العودة للمتجر
                     </button>
                 </motion.div>

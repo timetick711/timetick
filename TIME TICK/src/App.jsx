@@ -28,7 +28,7 @@ import AppDownloadBanner from './components/AppDownloadBanner';
 import { StatusBar } from '@capacitor/status-bar';
 import { App as CapApp } from '@capacitor/app';
 import { Capacitor } from '@capacitor/core';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 
 // Home Page Component
 const Home = () => (
@@ -88,12 +88,16 @@ const AnimatedRoutes = () => {
 // Deep Link Handler Component
 const DeepLinkHandler = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const isHandlingColdStart = useRef(false);
 
   useEffect(() => {
     if (!Capacitor.isNativePlatform()) return;
 
-    const handleUrl = (url, isLaunch = false) => {
+    const handleUrl = (url, isColdStart = false) => {
       if (!url) return;
+      
+      console.log(`Handling Deep Link (${isColdStart ? 'Cold' : 'Resume'}):`, url);
       
       let path = '';
       if (url.includes('timetick.vercel.app')) {
@@ -104,36 +108,41 @@ const DeepLinkHandler = () => {
       }
 
       if (path) {
-        const targetPath = path.split('?')[0];
-        if (targetPath.startsWith('/product/') || targetPath.startsWith('/orders') || targetPath === '/') {
-          // Use window.location.pathname for a stable check that doesn't trigger effect re-runs
-          if (window.location.pathname === targetPath) return;
-
-          if (isLaunch) {
+        path = path.replace(/\/+/g, '/');
+        
+        if (path.startsWith('/product/') || path.startsWith('/orders')) {
+          // If cold start, we always navigate (with delay)
+          // If resume, only navigate if path is different
+          if (isColdStart || location.pathname !== path) {
+            const delay = isColdStart ? 600 : 0;
             setTimeout(() => {
-              navigate(path, { replace: true });
-            }, 200); // Slightly longer delay for safer initialization
-          } else {
-            navigate(path);
+              console.log('Deep Link Navigating to:', path);
+              navigate(path, { replace: isColdStart });
+            }, delay);
           }
         }
       }
     };
 
+    // 1. Handle Cold Start (App was closed)
+    if (!isHandlingColdStart.current) {
+      isHandlingColdStart.current = true;
+      CapApp.getLaunchUrl().then((launchUrl) => {
+        if (launchUrl?.url) {
+          handleUrl(launchUrl.url, true);
+        }
+      });
+    }
+
+    // 2. Handle Resume (App was in background)
     const urlListener = CapApp.addListener('appUrlOpen', (event) => {
       handleUrl(event.url, false);
-    });
-
-    CapApp.getLaunchUrl().then((launchUrl) => {
-      if (launchUrl && launchUrl.url) {
-        handleUrl(launchUrl.url, true);
-      }
     });
 
     return () => {
       urlListener.remove();
     };
-  }, [navigate]);
+  }, [navigate, location.pathname]);
 
   return null;
 };

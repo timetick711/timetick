@@ -103,117 +103,103 @@ export default function PullToRefresh({ onRefresh, children }) {
         startedAtTop.current = atTop;
     };
 
-    useEffect(() => {
-        if (!isNative) return;
+    const handleTouchMove = (e) => {
+        const currentY = e.touches[0].clientY;
+        const diff = currentY - startY.current;
 
-        const handleMove = (e) => {
-            const currentY = e.touches[0].clientY;
-            const diff = currentY - startY.current;
-
-            // 1. Initial Logic: Decide if we should take control of this gesture
-            if (diff < -10) {
-                hasScrolledDown.current = true;
-            }
-
-            if (!isPulling.current && startedAtTop.current && !hasScrolledDown.current && window.scrollY <= 0 && diff > 5 && (state === PTR_STATES.IDLE || state === PTR_STATES.SUCCESS)) {
-                isPulling.current = true;
-            }
-
-            // 2. Handle Spring Effect (Rubber Banding) when not pulling PTR
-            if (!isPulling.current && startedAtTop.current && window.scrollY <= 0 && diff > 0) {
-                // High resistance for the spring effect
-                const springValue = Math.pow(diff, 0.65) * 2.5;
-                setOverscrollY(Math.min(40, springValue));
-            } else {
-                if (overscrollY !== 0) setOverscrollY(0);
-            }
-
-            // 3. If we have control, we handle EVERYTHING and block native behavior
-            if (isPulling.current) {
-                // If we are actively in a PTR gesture, we MUST block native scroll
-                if (e.cancelable) e.preventDefault();
-
-                // If the user swipes back up beyond the starting point, release control
-                if (diff <= 0) {
-                    isPulling.current = false;
-                    setPullY(0);
-                    setState(PTR_STATES.IDLE);
-                    return;
-                }
-
-                let finalPull = 0;
-                if (diff > 0) {
-                    if (diff < THRESHOLD) {
-                        finalPull = diff;
-                    } else {
-                        const extra = diff - THRESHOLD;
-                        finalPull = THRESHOLD + (extra * 0.4);
-                    }
-                }
-                
-                const clampedPull = Math.min(MAX_PULL, finalPull);
-                setPullY(clampedPull);
-
-                if (clampedPull >= THRESHOLD) {
-                    if (state !== PTR_STATES.READY) setState(PTR_STATES.READY);
-                } else {
-                    if (state !== PTR_STATES.PULLING) setState(PTR_STATES.PULLING);
-                }
-            }
-        };
-
-        const handleEnd = async () => {
-            setOverscrollY(0);
-            if (!isPulling.current) return;
-            
-            // Mark as no longer pulling IMMEDIATELY to prevent issues during re-renders
-            isPulling.current = false;
-
-            if (state === PTR_STATES.READY) {
-                setState(PTR_STATES.REFRESHING);
-                setPullY(60); // Snap to a comfortable refresh position
-                
-                try {
-                    if (onRefresh) {
-                        await onRefresh();
-                    } else {
-                        await new Promise(resolve => setTimeout(resolve, 1500));
-                    }
-                    setState(PTR_STATES.SUCCESS);
-                } catch (error) {
-                    console.error("PTR Error:", error);
-                    setState(PTR_STATES.IDLE);
-                    setPullY(0);
-                } finally {
-                    // Success pause then reset - robust even if data arrived during the gesture
-                    setTimeout(() => {
-                        setState(PTR_STATES.RESETTING);
-                        setPullY(0);
-                        setTimeout(() => {
-                            setState(PTR_STATES.IDLE);
-                        }, 400);
-                    }, 800);
-                }
-            } else {
-                // Cancel pull: animate back
-                setState(PTR_STATES.RESETTING);
-                setPullY(0);
-                setTimeout(() => {
-                    setState(PTR_STATES.IDLE);
-                }, 400);
-            }
-        };
-
-        // Attach global listeners while at the top to ensure we catch events even during re-renders
-        if (isNative) {
-            window.addEventListener('touchmove', handleMove, { passive: false });
-            window.addEventListener('touchend', handleEnd);
-            return () => {
-                window.removeEventListener('touchmove', handleMove);
-                window.removeEventListener('touchend', handleEnd);
-            };
+        // 1. Initial Logic: Decide if we should take control of this gesture
+        // IMPORTANT: Only allow PTR if the gesture STARTED at the top AND hasn't scrolled down yet
+        if (diff < -10) {
+            hasScrolledDown.current = true;
         }
-    }, [isNative, state, overscrollY, onRefresh]);
+
+        if (!isPulling.current && startedAtTop.current && !hasScrolledDown.current && window.scrollY <= 0 && diff > 5 && (state === PTR_STATES.IDLE || state === PTR_STATES.SUCCESS)) {
+            isPulling.current = true;
+        }
+
+        // 2. Handle Spring Effect (Rubber Banding) when not pulling PTR
+        if (!isPulling.current && startedAtTop.current && window.scrollY <= 0 && diff > 0) {
+            // High resistance for the spring effect
+            const springValue = Math.pow(diff, 0.65) * 2.5;
+            setOverscrollY(Math.min(40, springValue));
+        } else {
+            if (overscrollY !== 0) setOverscrollY(0);
+        }
+
+        // 3. If we have control, we handle EVERYTHING and block native behavior
+        if (isPulling.current) {
+            // If the user swipes back up beyond the starting point, release control
+            if (diff <= 0) {
+                isPulling.current = false;
+                setPullY(0);
+                setState(PTR_STATES.IDLE);
+                return;
+            }
+
+            // We handle movement even if diff < 0 (finger above start point) to allow "returning" the circle
+            let finalPull = 0;
+            if (diff > 0) {
+                // 1:1 movement initially, then some resistance after threshold
+                if (diff < THRESHOLD) {
+                    finalPull = diff;
+                } else {
+                    const extra = diff - THRESHOLD;
+                    finalPull = THRESHOLD + (extra * 0.4); // Resistance after threshold
+                }
+            }
+            
+            const clampedPull = Math.min(MAX_PULL, finalPull);
+            setPullY(clampedPull);
+
+            // Update state based on threshold for visual feedback
+            if (clampedPull >= THRESHOLD) {
+                if (state !== PTR_STATES.READY) setState(PTR_STATES.READY);
+            } else {
+                if (state !== PTR_STATES.PULLING) setState(PTR_STATES.PULLING);
+            }
+        }
+    };
+
+    const handleTouchEnd = async () => {
+        setOverscrollY(0);
+        if (!isPulling.current) return;
+        
+        if (state === PTR_STATES.READY) {
+            setState(PTR_STATES.REFRESHING);
+            setPullY(60); // Snap to a comfortable refresh position
+            
+            try {
+                if (onRefresh) {
+                    await onRefresh();
+                } else {
+                    await new Promise(resolve => setTimeout(resolve, 1500));
+                }
+                setState(PTR_STATES.SUCCESS);
+            } catch (error) {
+                console.error("PTR Error:", error);
+                setState(PTR_STATES.IDLE);
+                isPulling.current = false;
+            } finally {
+                // Success pause then reset
+                setTimeout(() => {
+                    setState(PTR_STATES.RESETTING);
+                    setPullY(0);
+                    setTimeout(() => {
+                        setState(PTR_STATES.IDLE);
+                        isPulling.current = false;
+                    }, 400);
+                }, 800);
+            }
+        } else {
+            // Cancel pull: animate back
+            setState(PTR_STATES.RESETTING);
+            setPullY(0);
+            setTimeout(() => {
+                setState(PTR_STATES.IDLE);
+                isPulling.current = false;
+            }, 400);
+        }
+    };
 
     // Derived values for animations
     const rotation = state === PTR_STATES.REFRESHING ? 0 : pullY * 2;
@@ -222,6 +208,8 @@ export default function PullToRefresh({ onRefresh, children }) {
         <div 
             ref={containerRef}
             onTouchStart={isNative ? handleTouchStart : undefined}
+            onTouchMove={isNative ? handleTouchMove : undefined}
+            onTouchEnd={isNative ? handleTouchEnd : undefined}
             className={`ptr-wrapper state-${state}`}
             style={{ 
                 position: 'relative', 
