@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Package, Calendar, CreditCard, ChevronDown, ChevronUp, ShoppingBag, Clock, CheckCircle2, XCircle, User } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useLoader } from '../context/LoaderContext';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 
 export default function Orders() {
     const { currentUser, openAuthModal } = useAuth();
