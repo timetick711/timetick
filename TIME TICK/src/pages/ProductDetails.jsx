@@ -212,20 +212,24 @@ const ProductDetails = () => {
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                 >
-                    <Link 
-                        to="/" 
+                    <button 
+                        onClick={() => navigate('/')} 
                         className="btn-primary" 
                         style={{ 
                             marginTop: '20px',
-                            textDecoration: 'none',
+                            border: 'none',
+                            cursor: 'pointer',
                             padding: '14px 40px',
                             fontSize: '1.1rem',
-                            boxShadow: '0 10px 20px rgba(212, 175, 55, 0.2)'
+                            boxShadow: '0 10px 20px rgba(212, 175, 55, 0.2)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
                         }}
                     >
                         <Home size={20} style={{ marginLeft: '8px' }} />
                         العودة للمتجر
-                    </Link>
+                    </button>
                 </motion.div>
             </motion.div>
         );

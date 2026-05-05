@@ -88,47 +88,65 @@ const AnimatedRoutes = () => {
 // Deep Link Handler Component
 const DeepLinkHandler = () => {
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     if (!Capacitor.isNativePlatform()) return;
 
-    const handleUrl = (url) => {
+    const handleUrl = (url, isLaunch = false) => {
       if (!url) return;
       
-      // Extract path (e.g., from https://timetick.vercel.app/product/123 or com.timetick.store://product/123)
+      // Extract path
       let path = '';
       if (url.includes('timetick.vercel.app')) {
         path = url.split('timetick.vercel.app')[1];
       } else if (url.includes('com.timetick.store://')) {
         path = url.split('com.timetick.store://')[1];
-        // Ensure path starts with /
         if (path && !path.startsWith('/')) path = '/' + path;
       }
 
       if (path) {
-        // We only navigate if it's a valid path like /product/ or /orders
-        if (path.startsWith('/product/') || path.startsWith('/orders')) {
-          navigate(path);
+        // Normalize path for comparison
+        const targetPath = path.split('?')[0];
+        
+        // Only navigate if it's a valid path we care about
+        if (targetPath.startsWith('/product/') || targetPath.startsWith('/orders') || targetPath === '/') {
+          // Prevent redundant navigation if we're already there
+          if (location.pathname === targetPath) return;
+
+          if (isLaunch) {
+            // Cold start: delay slightly to ensure Router and Providers are fully ready
+            // and use replace: true to prevent a messy initial history stack
+            setTimeout(() => {
+              navigate(path, { replace: true });
+            }, 150);
+          } else {
+            // Resume: navigate immediately
+            navigate(path);
+          }
         }
       }
     };
 
     // 1. Handle links when the app is already open (Resume/Foreground)
     const urlListener = CapApp.addListener('appUrlOpen', (event) => {
-      handleUrl(event.url);
+      handleUrl(event.url, false);
     });
 
     // 2. Handle links when the app was CLOSED (Cold Start)
     CapApp.getLaunchUrl().then((launchUrl) => {
       if (launchUrl && launchUrl.url) {
-        handleUrl(launchUrl.url);
+        handleUrl(launchUrl.url, true);
       }
     });
 
     return () => {
       urlListener.remove();
     };
-  }, [navigate]);
+  }, [navigate, location.pathname]);
+
+  return null;
+};
 
   return null;
 };

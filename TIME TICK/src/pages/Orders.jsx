@@ -115,7 +115,19 @@ export default function Orders() {
                     <ShoppingBag size={isMobile ? 36 : 48} style={{ color: 'var(--primary)', marginBottom: '15px', opacity: 0.4 }} />
                     <h2 style={{ fontSize: isMobile ? '1.1rem' : '1.2rem', marginBottom: '10px' }}>لا توجد طلبات حالياً</h2>
                     <p style={{ color: 'var(--text-dim)', fontSize: '0.85rem', marginBottom: '20px' }}>ابدأ رحلة تسوقك الآن واكتشف القطع الفريدة</p>
-                    <Link to="/" className="btn-primary" style={{ padding: isMobile ? '8px 20px' : '8px 24px', fontSize: '0.9rem', textDecoration: 'none' }}>تصفح المتجر</Link>
+                    <button 
+                        onClick={() => navigate('/')} 
+                        className="btn-primary" 
+                        style={{ 
+                            padding: isMobile ? '8px 20px' : '8px 24px', 
+                            fontSize: '0.9rem', 
+                            border: 'none', 
+                            cursor: 'pointer',
+                            textDecoration: 'none' 
+                        }}
+                    >
+                        تصفح المتجر
+                    </button>
                 </motion.div>
             ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
