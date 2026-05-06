@@ -28,6 +28,23 @@ export default function PullToRefresh({ onRefresh, children }) {
     const startedAtTop = useRef(false);
     const hasScrolledDown = useRef(false);
     const containerRef = useRef(null);
+    const timeoutRefs = useRef([]);
+    const activeTouchId = useRef(null);
+
+    // Helper to clear all pending timeouts
+    const clearTimeouts = () => {
+        timeoutRefs.current.forEach(clearTimeout);
+        timeoutRefs.current = [];
+    };
+
+    // Helper for forced reset
+    const forceReset = () => {
+        clearTimeouts();
+        isPulling.current = false;
+        setPullY(0);
+        setOverscrollY(0);
+        setState(PTR_STATES.IDLE);
+    };
 
     // Configuration
     const THRESHOLD = 90; 
@@ -78,8 +95,17 @@ export default function PullToRefresh({ onRefresh, children }) {
     }, [state, pullY]);
 
     const handleTouchStart = (e) => {
-        // Record starting position and state - Using clientY for more stable gesture tracking
-        startY.current = e.touches[0].clientY;
+        // Multi-touch safety: If already tracking a finger, ignore new touches
+        if (activeTouchId.current !== null) return;
+
+        // Safety: If we are in a stuck state or resetting, and a new touch starts, clear everything
+        if (pullY > 0 || state === PTR_STATES.RESETTING || state === PTR_STATES.SUCCESS) {
+            forceReset();
+        }
+
+        const touch = e.touches[0];
+        activeTouchId.current = touch.identifier;
+        startY.current = touch.clientY;
         isPulling.current = false;
         hasScrolledDown.current = false;
         
@@ -104,7 +130,11 @@ export default function PullToRefresh({ onRefresh, children }) {
     };
 
     const handleTouchMove = (e) => {
-        const currentY = e.touches[0].clientY;
+        // Find the touch we are tracking
+        const touch = Array.from(e.touches).find(t => t.identifier === activeTouchId.current);
+        if (!touch) return;
+
+        const currentY = touch.clientY;
         const diff = currentY - startY.current;
 
         // 1. Initial Logic: Decide if we should take control of this gesture
@@ -160,9 +190,20 @@ export default function PullToRefresh({ onRefresh, children }) {
         }
     };
 
-    const handleTouchEnd = async () => {
+    const handleTouchEnd = async (e) => {
+        // Only proceed if the finger we were tracking was lifted
+        const isLifted = !Array.from(e.touches).some(t => t.identifier === activeTouchId.current);
+        if (!isLifted) return;
+
+        // Clear tracking
+        activeTouchId.current = null;
         setOverscrollY(0);
-        if (!isPulling.current) return;
+        
+        // If we weren't pulling but have a stuck state, reset it
+        if (!isPulling.current) {
+            if (pullY > 0 || state !== PTR_STATES.IDLE) forceReset();
+            return;
+        }
         
         if (state === PTR_STATES.READY) {
             setState(PTR_STATES.REFRESHING);
@@ -177,27 +218,29 @@ export default function PullToRefresh({ onRefresh, children }) {
                 setState(PTR_STATES.SUCCESS);
             } catch (error) {
                 console.error("PTR Error:", error);
-                setState(PTR_STATES.IDLE);
-                isPulling.current = false;
+                forceReset();
             } finally {
                 // Success pause then reset
-                setTimeout(() => {
+                const t1 = setTimeout(() => {
                     setState(PTR_STATES.RESETTING);
                     setPullY(0);
-                    setTimeout(() => {
+                    const t2 = setTimeout(() => {
                         setState(PTR_STATES.IDLE);
                         isPulling.current = false;
                     }, 400);
+                    timeoutRefs.current.push(t2);
                 }, 800);
+                timeoutRefs.current.push(t1);
             }
         } else {
             // Cancel pull: animate back
             setState(PTR_STATES.RESETTING);
             setPullY(0);
-            setTimeout(() => {
+            const t3 = setTimeout(() => {
                 setState(PTR_STATES.IDLE);
                 isPulling.current = false;
             }, 400);
+            timeoutRefs.current.push(t3);
         }
     };
 
@@ -210,6 +253,7 @@ export default function PullToRefresh({ onRefresh, children }) {
             onTouchStart={isNative ? handleTouchStart : undefined}
             onTouchMove={isNative ? handleTouchMove : undefined}
             onTouchEnd={isNative ? handleTouchEnd : undefined}
+            onTouchCancel={isNative ? handleTouchEnd : undefined}
             className={`ptr-wrapper state-${state}`}
             style={{ 
                 position: 'relative', 
