@@ -93,6 +93,15 @@ export default function PullToRefresh({ onRefresh, children }) {
             }
         };
     }, [state, pullY]);
+    
+    // 3. Stuck Guard: If the component re-renders and we are in an inconsistent state, reset.
+    // This handles cases where a parent re-render (e.g. data arrival) might have disrupted the gesture.
+    useEffect(() => {
+        if (pullY > 0 && !isPulling.current && state === PTR_STATES.IDLE) {
+            console.log("PTR Stuck Guard Triggered: Resetting inconsistent state");
+            forceReset();
+        }
+    }, [pullY, state]);
 
     const handleTouchStart = (e) => {
         // Multi-touch safety: If already tracking a finger, ignore new touches
@@ -191,29 +200,36 @@ export default function PullToRefresh({ onRefresh, children }) {
     };
 
     const handleTouchEnd = async (e, isCancel = false) => {
-        // If it's a cancel event, force reset immediately
-        if (isCancel) {
-            forceReset();
-            return;
+        // Multi-touch safety: only handle if the tracked finger is gone or all fingers are gone
+        const trackedFingerGone = !Array.from(e.touches).some(t => t.identifier === activeTouchId.current);
+        const allFingersGone = e.touches.length === 0;
+
+        if (!isCancel && !trackedFingerGone && !allFingersGone) {
+            return; // Finger we are tracking is still down
         }
 
-        // Only proceed if the finger we were tracking was lifted
-        const isLifted = !Array.from(e.touches).some(t => t.identifier === activeTouchId.current);
-        if (!isLifted) return;
+        // Prepare to reset/trigger
+        const wasPulling = isPulling.current;
+        const currentPullY = pullY;
+        const currentState = state;
 
-        // Clear tracking
+        // Clear tracking immediately
         activeTouchId.current = null;
+        isPulling.current = false;
         setOverscrollY(0);
         
-        // If we weren't pulling but have a stuck state, reset it
-        if (!isPulling.current) {
-            if (pullY > 0 || state !== PTR_STATES.IDLE) forceReset();
+        // Handle the end of the gesture
+        if (isCancel || !wasPulling) {
+            if (currentPullY > 0 || currentState !== PTR_STATES.IDLE) {
+                forceReset();
+            }
             return;
         }
         
-        if (state === PTR_STATES.READY) {
+        // If we reached the threshold, trigger refresh
+        if (currentState === PTR_STATES.READY) {
             setState(PTR_STATES.REFRESHING);
-            setPullY(60); // Snap to a comfortable refresh position
+            setPullY(60); // Snap to loading position
             
             try {
                 if (onRefresh) {
@@ -225,6 +241,7 @@ export default function PullToRefresh({ onRefresh, children }) {
             } catch (error) {
                 console.error("PTR Error:", error);
                 forceReset();
+                return;
             } finally {
                 // Success pause then reset
                 const t1 = setTimeout(() => {
@@ -232,7 +249,6 @@ export default function PullToRefresh({ onRefresh, children }) {
                     setPullY(0);
                     const t2 = setTimeout(() => {
                         setState(PTR_STATES.IDLE);
-                        isPulling.current = false;
                     }, 400);
                     timeoutRefs.current.push(t2);
                 }, 800);
@@ -244,7 +260,6 @@ export default function PullToRefresh({ onRefresh, children }) {
             setPullY(0);
             const t3 = setTimeout(() => {
                 setState(PTR_STATES.IDLE);
-                isPulling.current = false;
             }, 400);
             timeoutRefs.current.push(t3);
         }

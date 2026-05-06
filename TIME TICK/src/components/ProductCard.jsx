@@ -1,4 +1,4 @@
-import { useState, forwardRef, useEffect } from 'react';
+import { useState, forwardRef, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ShoppingCart, Image as ImageIcon, PlayCircle, Heart, Info } from 'lucide-react';
 import { useCart } from '../context/CartContext';
@@ -16,7 +16,8 @@ const ProductCard = forwardRef(({ product }, ref) => {
     const [mediaMode, setMediaMode] = useState(
         (product.video && product.imageUrl?.includes('placehold.co')) ? 'video' : 'image'
     );
-    const { activeVideoId, setActiveVideoId, isVideoPlaying, setIsVideoPlaying } = useVideo();
+    const { activeVideoId, setActiveVideoId, isVideoPlaying, setIsVideoPlaying, isVideoFullscreen, setIsVideoFullscreen } = useVideo();
+    const videoRef = useRef(null);
     const [showModal, setShowModal] = useState(false);
 
     // Sync media mode with global video context
@@ -30,6 +31,42 @@ const ProductCard = forwardRef(({ product }, ref) => {
             setMediaMode('image');
         }
     }, [activeVideoId, product.id, mediaMode, isVideoPlaying]);
+
+    // Fullscreen handling
+    useEffect(() => {
+        const video = videoRef.current;
+        if (!video) return;
+
+        const handleFullscreenChange = () => {
+            const isFs = !!(document.fullscreenElement || document.webkitFullscreenElement);
+            if (activeVideoId === product.id) {
+                setIsVideoFullscreen(isFs);
+            }
+        };
+
+        // Standard and iOS specific events
+        video.addEventListener('webkitbeginfullscreen', () => activeVideoId === product.id && setIsVideoFullscreen(true));
+        video.addEventListener('webkitendfullscreen', () => activeVideoId === product.id && setIsVideoFullscreen(false));
+        document.addEventListener('fullscreenchange', handleFullscreenChange);
+        document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+
+        return () => {
+            video.removeEventListener('webkitbeginfullscreen', () => {});
+            video.removeEventListener('webkitendfullscreen', () => {});
+            document.removeEventListener('fullscreenchange', handleFullscreenChange);
+            document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
+        };
+    }, [activeVideoId, product.id]);
+
+    // React to global fullscreen exit (from BackButtonHandler)
+    useEffect(() => {
+        if (!isVideoFullscreen && activeVideoId === product.id) {
+            if (document.fullscreenElement || document.webkitFullscreenElement) {
+                if (document.exitFullscreen) document.exitFullscreen();
+                else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+            }
+        }
+    }, [isVideoFullscreen, activeVideoId, product.id]);
 
     const handleInquiry = (e) => {
         e.stopPropagation();
@@ -65,6 +102,7 @@ const ProductCard = forwardRef(({ product }, ref) => {
                 style={{ width: '100%', height: '100%' }}
             >
                 <video
+                    ref={videoRef}
                     src={product.video}
                     muted
                     loop

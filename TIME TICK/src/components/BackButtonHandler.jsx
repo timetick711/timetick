@@ -20,7 +20,7 @@ const BackButtonHandler = () => {
     
     const { isCartOpen, closeCart, isOptionsModalOpen } = useCart();
     const { isFavoritesOpen, setIsFavoritesOpen } = useFavorites();
-    const { isVideoPlaying, setIsVideoPlaying } = useVideo();
+    const { isVideoPlaying, setIsVideoPlaying, isVideoFullscreen, setIsVideoFullscreen } = useVideo();
 
     useEffect(() => {
         // Only run this logic on native mobile platforms
@@ -28,7 +28,9 @@ const BackButtonHandler = () => {
 
         const handleBackButton = async () => {
             // 1. Check for open UI layers in order of priority
-            if (isVideoPlaying) {
+            if (isVideoFullscreen) {
+                setIsVideoFullscreen(false);
+            } else if (isVideoPlaying) {
                 setIsVideoPlaying(false);
             } else if (isOptionsModalOpen) {
                 window.dispatchEvent(new CustomEvent('close-product-options'));
@@ -73,7 +75,8 @@ const BackButtonHandler = () => {
         isAuthModalOpen, closeAuthModal,
         isProfileModalOpen, closeProfileModal,
         isLogoutConfirmOpen, closeLogoutConfirm,
-        isVideoPlaying, setIsVideoPlaying
+        isVideoPlaying, setIsVideoPlaying,
+        isVideoFullscreen, setIsVideoFullscreen
     ]);
 
     return null; // This component doesn't render anything

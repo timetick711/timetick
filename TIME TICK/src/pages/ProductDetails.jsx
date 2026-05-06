@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { supabase } from '../supabase/client';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -29,7 +29,9 @@ const ProductDetails = () => {
     const [showModal, setShowModal] = useState(false);
     const [copied, setCopied] = useState(false);
     const [codeCopied, setCodeCopied] = useState(false);
-    const { activeVideoId, setActiveVideoId, isVideoPlaying, setIsVideoPlaying } = useVideo();
+    const { activeVideoId, setActiveVideoId, isVideoPlaying, setIsVideoPlaying, isVideoFullscreen, setIsVideoFullscreen } = useVideo();
+    const videoRef = useRef(null);
+    const iframeRef = useRef(null);
     
     // Hardcoded production URL for sharing
     const shareUrl = `https://timetick.vercel.app/product/${id}`;
@@ -44,6 +46,40 @@ const ProductDetails = () => {
             setMediaMode('image');
         }
     }, [activeVideoId, id, mediaMode, isVideoPlaying]);
+
+    // Fullscreen handling
+    useEffect(() => {
+        const handleFullscreenChange = () => {
+            const isFs = !!(document.fullscreenElement || document.webkitFullscreenElement);
+            setIsVideoFullscreen(isFs);
+        };
+
+        const video = videoRef.current;
+        if (video) {
+            video.addEventListener('webkitbeginfullscreen', () => setIsVideoFullscreen(true));
+            video.addEventListener('webkitendfullscreen', () => setIsVideoFullscreen(false));
+        }
+
+        document.addEventListener('fullscreenchange', handleFullscreenChange);
+        document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+
+        return () => {
+            if (video) {
+                video.removeEventListener('webkitbeginfullscreen', () => {});
+                video.removeEventListener('webkitendfullscreen', () => {});
+            }
+            document.removeEventListener('fullscreenchange', handleFullscreenChange);
+            document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
+        };
+    }, [mediaMode]);
+
+    // React to global fullscreen exit (from BackButtonHandler)
+    useEffect(() => {
+        if (!isVideoFullscreen && (document.fullscreenElement || document.webkitFullscreenElement)) {
+            if (document.exitFullscreen) document.exitFullscreen();
+            else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+        }
+    }, [isVideoFullscreen]);
 
     useEffect(() => {
         showLoader('تحميل تفاصيل المنتج...');
@@ -157,15 +193,15 @@ const ProductDetails = () => {
         if (!videoUrl) return null;
 
         if (videoUrl.startsWith('data:video')) {
-            return <video src={videoUrl} controls autoPlay loop style={{ width: '100%', height: '100%', objectFit: 'contain' }} />;
+            return <video ref={videoRef} src={videoUrl} controls autoPlay loop style={{ width: '100%', height: '100%', objectFit: 'contain' }} />;
         }
 
         const ytId = getYouTubeId(videoUrl);
         if (ytId) {
-            return <iframe width="100%" height="100%" src={`https://www.youtube.com/embed/${ytId}?autoplay=1`} frameBorder="0" allowFullScreen style={{ border: 'none' }} />;
+            return <iframe ref={iframeRef} width="100%" height="100%" src={`https://www.youtube.com/embed/${ytId}?autoplay=1`} frameBorder="0" allowFullScreen style={{ border: 'none' }} />;
         }
 
-        return <video src={videoUrl} controls autoPlay loop style={{ width: '100%', height: '100%', objectFit: 'contain' }} />;
+        return <video ref={videoRef} src={videoUrl} controls autoPlay loop style={{ width: '100%', height: '100%', objectFit: 'contain' }} />;
     };
 
     if (loading) return <div style={{ minHeight: '80vh' }} />;

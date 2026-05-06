@@ -5,9 +5,14 @@ const VideoContext = createContext();
 export const VideoProvider = ({ children }) => {
     const [activeVideoId, setActiveVideoId] = useState(null);
     const [isVideoPlaying, setIsVideoPlaying] = useState(false);
+    const [isVideoFullscreen, setIsVideoFullscreen] = useState(false);
 
     return (
-        <VideoContext.Provider value={{ activeVideoId, setActiveVideoId, isVideoPlaying, setIsVideoPlaying }}>
+        <VideoContext.Provider value={{ 
+            activeVideoId, setActiveVideoId, 
+            isVideoPlaying, setIsVideoPlaying,
+            isVideoFullscreen, setIsVideoFullscreen
+        }}>
             {children}
         </VideoContext.Provider>
     );
