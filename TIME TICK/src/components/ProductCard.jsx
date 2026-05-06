@@ -16,7 +16,7 @@ const ProductCard = forwardRef(({ product }, ref) => {
     const [mediaMode, setMediaMode] = useState(
         (product.video && product.imageUrl?.includes('placehold.co')) ? 'video' : 'image'
     );
-    const { activeVideoId, setActiveVideoId } = useVideo();
+    const { activeVideoId, setActiveVideoId, isVideoPlaying, setIsVideoPlaying } = useVideo();
     const [showModal, setShowModal] = useState(false);
 
     // Sync media mode with global video context
@@ -24,7 +24,12 @@ const ProductCard = forwardRef(({ product }, ref) => {
         if (activeVideoId !== product.id && mediaMode === 'video') {
             setMediaMode('image');
         }
-    }, [activeVideoId, product.id, mediaMode]);
+        
+        // If global state says no video is playing, but we are in video mode, switch back
+        if (!isVideoPlaying && activeVideoId === product.id && mediaMode === 'video') {
+            setMediaMode('image');
+        }
+    }, [activeVideoId, product.id, mediaMode, isVideoPlaying]);
 
     const handleInquiry = (e) => {
         e.stopPropagation();
@@ -106,7 +111,10 @@ const ProductCard = forwardRef(({ product }, ref) => {
                 {product.video && (
                     <div className="media-toggle-bar" onClick={(e) => e.stopPropagation()}>
                         <button
-                            onClick={() => setMediaMode('image')}
+                            onClick={() => {
+                                setMediaMode('image');
+                                if (activeVideoId === product.id) setIsVideoPlaying(false);
+                            }}
                             className={`media-toggle-btn ${mediaMode === 'image' ? 'active' : ''}`}
                         >
                             <ImageIcon size={14} /> صورة
@@ -115,6 +123,7 @@ const ProductCard = forwardRef(({ product }, ref) => {
                             onClick={() => {
                                 setMediaMode('video');
                                 setActiveVideoId(product.id);
+                                setIsVideoPlaying(true);
                             }}
                             className={`media-toggle-btn ${mediaMode === 'video' ? 'active' : ''}`}
                         >

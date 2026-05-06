@@ -5,6 +5,7 @@ import { Capacitor } from '@capacitor/core';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { useFavorites } from '../context/FavoritesContext';
+import { useVideo } from '../context/VideoContext';
 
 const BackButtonHandler = () => {
     const location = useLocation();
@@ -19,7 +20,7 @@ const BackButtonHandler = () => {
     
     const { isCartOpen, closeCart, isOptionsModalOpen } = useCart();
     const { isFavoritesOpen, setIsFavoritesOpen } = useFavorites();
-    const { isVideoModalOpen, closeVideoModal } = useAuth(); // Assuming video modal might exist or be added
+    const { isVideoPlaying, setIsVideoPlaying } = useVideo();
 
     useEffect(() => {
         // Only run this logic on native mobile platforms
@@ -27,7 +28,9 @@ const BackButtonHandler = () => {
 
         const handleBackButton = async () => {
             // 1. Check for open UI layers in order of priority
-            if (isOptionsModalOpen) {
+            if (isVideoPlaying) {
+                setIsVideoPlaying(false);
+            } else if (isOptionsModalOpen) {
                 window.dispatchEvent(new CustomEvent('close-product-options'));
             } else if (isCartOpen) {
                 closeCart();
@@ -69,7 +72,8 @@ const BackButtonHandler = () => {
         isFavoritesOpen, setIsFavoritesOpen,
         isAuthModalOpen, closeAuthModal,
         isProfileModalOpen, closeProfileModal,
-        isLogoutConfirmOpen, closeLogoutConfirm
+        isLogoutConfirmOpen, closeLogoutConfirm,
+        isVideoPlaying, setIsVideoPlaying
     ]);
 
     return null; // This component doesn't render anything

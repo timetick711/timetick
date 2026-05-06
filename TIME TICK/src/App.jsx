@@ -129,7 +129,13 @@ const DeepLinkHandler = () => {
       isHandlingColdStart.current = true;
       CapApp.getLaunchUrl().then((launchUrl) => {
         if (launchUrl?.url) {
-          handleUrl(launchUrl.url, true);
+          // Check if this specific launch URL has already been handled in this session
+          // This prevents re-navigating to the product after a page refresh
+          const lastHandled = sessionStorage.getItem('lastHandledLaunchUrl');
+          if (lastHandled !== launchUrl.url) {
+            handleUrl(launchUrl.url, true);
+            sessionStorage.setItem('lastHandledLaunchUrl', launchUrl.url);
+          }
         }
       });
     }

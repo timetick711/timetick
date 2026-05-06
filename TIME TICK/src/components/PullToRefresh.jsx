@@ -190,7 +190,13 @@ export default function PullToRefresh({ onRefresh, children }) {
         }
     };
 
-    const handleTouchEnd = async (e) => {
+    const handleTouchEnd = async (e, isCancel = false) => {
+        // If it's a cancel event, force reset immediately
+        if (isCancel) {
+            forceReset();
+            return;
+        }
+
         // Only proceed if the finger we were tracking was lifted
         const isLifted = !Array.from(e.touches).some(t => t.identifier === activeTouchId.current);
         if (!isLifted) return;
@@ -252,8 +258,8 @@ export default function PullToRefresh({ onRefresh, children }) {
             ref={containerRef}
             onTouchStart={isNative ? handleTouchStart : undefined}
             onTouchMove={isNative ? handleTouchMove : undefined}
-            onTouchEnd={isNative ? handleTouchEnd : undefined}
-            onTouchCancel={isNative ? handleTouchEnd : undefined}
+            onTouchEnd={isNative ? (e) => handleTouchEnd(e, false) : undefined}
+            onTouchCancel={isNative ? (e) => handleTouchEnd(e, true) : undefined}
             className={`ptr-wrapper state-${state}`}
             style={{ 
                 position: 'relative', 

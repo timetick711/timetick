@@ -29,7 +29,7 @@ const ProductDetails = () => {
     const [showModal, setShowModal] = useState(false);
     const [copied, setCopied] = useState(false);
     const [codeCopied, setCodeCopied] = useState(false);
-    const { activeVideoId, setActiveVideoId } = useVideo();
+    const { activeVideoId, setActiveVideoId, isVideoPlaying, setIsVideoPlaying } = useVideo();
     
     // Hardcoded production URL for sharing
     const shareUrl = `https://timetick.vercel.app/product/${id}`;
@@ -38,7 +38,12 @@ const ProductDetails = () => {
         if (activeVideoId !== id && mediaMode === 'video') {
             setMediaMode('image');
         }
-    }, [activeVideoId, id, mediaMode]);
+        
+        // If global state says no video is playing, but we are in video mode, switch back
+        if (!isVideoPlaying && mediaMode === 'video') {
+            setMediaMode('image');
+        }
+    }, [activeVideoId, id, mediaMode, isVideoPlaying]);
 
     useEffect(() => {
         showLoader('تحميل تفاصيل المنتج...');
@@ -267,7 +272,12 @@ const ProductDetails = () => {
                             {product.video && (
                                 <div style={{ position: 'absolute', bottom: '20px', left: '20px', zIndex: 10 }}>
                                     <button 
-                                        onClick={() => { setMediaMode(mediaMode === 'image' ? 'video' : 'image'); setActiveVideoId(id); }}
+                                        onClick={() => { 
+                                            const newMode = mediaMode === 'image' ? 'video' : 'image';
+                                            setMediaMode(newMode); 
+                                            setActiveVideoId(id);
+                                            setIsVideoPlaying(newMode === 'video');
+                                        }}
                                         style={{ background: 'var(--primary)', color: '#000', border: 'none', padding: '10px 20px', borderRadius: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 'bold', boxShadow: '0 4px 12px rgba(212,175,55,0.4)' }}
                                     >
                                         {mediaMode === 'image' ? <PlayCircle size={18} /> : <ImageIcon size={18} />}
@@ -289,7 +299,11 @@ const ProductDetails = () => {
                                         <motion.div 
                                             key={idx} 
                                             whileHover={{ y: -4 }}
-                                            onClick={() => { setActiveImage(img); setMediaMode('image'); }}
+                                            onClick={() => { 
+                                                setActiveImage(img); 
+                                                setMediaMode('image'); 
+                                                setIsVideoPlaying(false);
+                                            }}
                                             style={{ 
                                                 minWidth: '80px', width: '80px', height: '80px', borderRadius: '12px', overflow: 'hidden', 
                                                 border: activeImage === img ? '2.5px solid var(--primary)' : '1px solid var(--border-color)', 
