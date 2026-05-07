@@ -94,7 +94,14 @@ export default function PullToRefresh({ onRefresh, children }) {
         };
     }, [state, pullY]);
     
-    // Attach global listeners logic moved to after function definitions to avoid ReferenceError
+    // 3. Stuck Guard: If the component re-renders and we are in an inconsistent state, reset.
+    // This handles cases where a parent re-render (e.g. data arrival) might have disrupted the gesture.
+    useEffect(() => {
+        if (pullY > 0 && !isPulling.current && state === PTR_STATES.IDLE) {
+            console.log("PTR Stuck Guard Triggered: Resetting inconsistent state");
+            forceReset();
+        }
+    }, [pullY, state]);
 
     const handleTouchStart = (e) => {
         // Multi-touch safety: If already tracking a finger, ignore new touches
@@ -113,9 +120,13 @@ export default function PullToRefresh({ onRefresh, children }) {
         
         // Check if we are at the top of the window
         let atTop = window.scrollY <= 0;
+
+        // If we are on a platform where the body is fixed (modals open), 
+        // we need to check if the scrollable element being touched is at its top.
         if (atTop) {
             let node = e.target;
             while (node && node !== containerRef.current && node !== document.body) {
+                // If we find a scrollable element that is not at its top, we are NOT at the top
                 if (node.scrollTop > 0) {
                     atTop = false;
                     break;
@@ -123,12 +134,11 @@ export default function PullToRefresh({ onRefresh, children }) {
                 node = node.parentNode;
             }
         }
+
         startedAtTop.current = atTop;
     };
 
     const handleTouchMove = (e) => {
-        if (activeTouchId.current === null) return;
-
         // Find the touch we are tracking
         const touch = Array.from(e.touches).find(t => t.identifier === activeTouchId.current);
         if (!touch) return;
@@ -137,46 +147,50 @@ export default function PullToRefresh({ onRefresh, children }) {
         const diff = currentY - startY.current;
 
         // 1. Initial Logic: Decide if we should take control of this gesture
-        if (diff < -10) hasScrolledDown.current = true;
+        // IMPORTANT: Only allow PTR if the gesture STARTED at the top AND hasn't scrolled down yet
+        if (diff < -10) {
+            hasScrolledDown.current = true;
+        }
 
         if (!isPulling.current && startedAtTop.current && !hasScrolledDown.current && window.scrollY <= 0 && diff > 5 && (state === PTR_STATES.IDLE || state === PTR_STATES.SUCCESS)) {
             isPulling.current = true;
         }
 
-        // 2. Handle Spring Effect (Rubber Banding)
+        // 2. Handle Spring Effect (Rubber Banding) when not pulling PTR
         if (!isPulling.current && startedAtTop.current && window.scrollY <= 0 && diff > 0) {
+            // High resistance for the spring effect
             const springValue = Math.pow(diff, 0.65) * 2.5;
             setOverscrollY(Math.min(40, springValue));
-        } else if (overscrollY !== 0) {
-            setOverscrollY(0);
+        } else {
+            if (overscrollY !== 0) setOverscrollY(0);
         }
 
-        // 3. If we have control, we handle EVERYTHING
+        // 3. If we have control, we handle EVERYTHING and block native behavior
         if (isPulling.current) {
-            // Block native scroll while pulling
-            if (e.cancelable) e.preventDefault();
-
+            // If the user swipes back up beyond the starting point, release control
             if (diff <= 0) {
                 isPulling.current = false;
                 setPullY(0);
                 setState(PTR_STATES.IDLE);
-                activeTouchId.current = null;
                 return;
             }
 
+            // We handle movement even if diff < 0 (finger above start point) to allow "returning" the circle
             let finalPull = 0;
             if (diff > 0) {
+                // 1:1 movement initially, then some resistance after threshold
                 if (diff < THRESHOLD) {
                     finalPull = diff;
                 } else {
                     const extra = diff - THRESHOLD;
-                    finalPull = THRESHOLD + (extra * 0.4);
+                    finalPull = THRESHOLD + (extra * 0.4); // Resistance after threshold
                 }
             }
             
             const clampedPull = Math.min(MAX_PULL, finalPull);
             setPullY(clampedPull);
 
+            // Update state based on threshold for visual feedback
             if (clampedPull >= THRESHOLD) {
                 if (state !== PTR_STATES.READY) setState(PTR_STATES.READY);
             } else {
@@ -185,89 +199,71 @@ export default function PullToRefresh({ onRefresh, children }) {
         }
     };
 
-    const handleTouchEnd = async (e) => {
-        if (activeTouchId.current === null) return;
-
-        // Check if the tracked finger is gone
+    const handleTouchEnd = async (e, isCancel = false) => {
+        // Multi-touch safety: only handle if the tracked finger is gone or all fingers are gone
         const trackedFingerGone = !Array.from(e.touches).some(t => t.identifier === activeTouchId.current);
-        if (!trackedFingerGone && e.type !== 'touchcancel') return;
+        const allFingersGone = e.touches.length === 0;
+
+        if (!isCancel && !trackedFingerGone && !allFingersGone) {
+            return; // Finger we are tracking is still down
+        }
 
         // Prepare to reset/trigger
         const wasPulling = isPulling.current;
-        const currentState = state;
         const currentPullY = pullY;
+        const currentState = state;
 
-        // Clear tracking immediately to avoid race conditions
+        // Clear tracking immediately
         activeTouchId.current = null;
         isPulling.current = false;
         setOverscrollY(0);
         
-        if (e.type === 'touchcancel' || !wasPulling) {
-            if (currentPullY > 0 || currentState !== PTR_STATES.IDLE) forceReset();
+        // Handle the end of the gesture
+        if (isCancel || !wasPulling) {
+            if (currentPullY > 0 || currentState !== PTR_STATES.IDLE) {
+                forceReset();
+            }
             return;
         }
         
+        // If we reached the threshold, trigger refresh
         if (currentState === PTR_STATES.READY) {
             setState(PTR_STATES.REFRESHING);
-            setPullY(60);
+            setPullY(60); // Snap to loading position
             
             try {
-                if (onRefresh) await onRefresh();
-                else await new Promise(r => setTimeout(r, 1500));
+                if (onRefresh) {
+                    await onRefresh();
+                } else {
+                    await new Promise(resolve => setTimeout(resolve, 1500));
+                }
                 setState(PTR_STATES.SUCCESS);
             } catch (error) {
                 console.error("PTR Error:", error);
                 forceReset();
                 return;
             } finally {
+                // Success pause then reset
                 const t1 = setTimeout(() => {
                     setState(PTR_STATES.RESETTING);
                     setPullY(0);
-                    const t2 = setTimeout(() => setState(PTR_STATES.IDLE), 400);
+                    const t2 = setTimeout(() => {
+                        setState(PTR_STATES.IDLE);
+                    }, 400);
                     timeoutRefs.current.push(t2);
                 }, 800);
                 timeoutRefs.current.push(t1);
             }
         } else {
+            // Cancel pull: animate back
             setState(PTR_STATES.RESETTING);
             setPullY(0);
-            const t3 = setTimeout(() => setState(PTR_STATES.IDLE), 400);
+            const t3 = setTimeout(() => {
+                setState(PTR_STATES.IDLE);
+            }, 400);
             timeoutRefs.current.push(t3);
         }
     };
-
-    // 4. Stable Listeners Pattern:
-    // Use refs to keep handlers fresh for global listeners without re-attaching on every render.
-    // This must be defined AFTER the functions to avoid ReferenceErrors.
-    const moveHandlerRef = useRef(handleTouchMove);
-    const endHandlerRef = useRef(handleTouchEnd);
-
-    useEffect(() => {
-        moveHandlerRef.current = handleTouchMove;
-        endHandlerRef.current = handleTouchEnd;
-    });
-
-    // Attach global listeners ONCE to ensure they are never missed and never interrupted on mobile.
-    useEffect(() => {
-        if (!isNative) return;
-
-        const onWindowMove = (e) => {
-            if (moveHandlerRef.current) moveHandlerRef.current(e);
-        };
-        const onWindowEnd = (e) => {
-            if (endHandlerRef.current) endHandlerRef.current(e);
-        };
-
-        window.addEventListener('touchmove', onWindowMove, { passive: false });
-        window.addEventListener('touchend', onWindowEnd);
-        window.addEventListener('touchcancel', onWindowEnd);
-
-        return () => {
-            window.removeEventListener('touchmove', onWindowMove);
-            window.removeEventListener('touchend', onWindowEnd);
-            window.removeEventListener('touchcancel', onWindowEnd);
-        };
-    }, [isNative]); 
 
     // Derived values for animations
     const rotation = state === PTR_STATES.REFRESHING ? 0 : pullY * 2;
@@ -276,6 +272,9 @@ export default function PullToRefresh({ onRefresh, children }) {
         <div 
             ref={containerRef}
             onTouchStart={isNative ? handleTouchStart : undefined}
+            onTouchMove={isNative ? handleTouchMove : undefined}
+            onTouchEnd={isNative ? (e) => handleTouchEnd(e, false) : undefined}
+            onTouchCancel={isNative ? (e) => handleTouchEnd(e, true) : undefined}
             className={`ptr-wrapper state-${state}`}
             style={{ 
                 position: 'relative', 
