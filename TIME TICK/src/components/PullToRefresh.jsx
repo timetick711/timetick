@@ -94,32 +94,7 @@ export default function PullToRefresh({ onRefresh, children }) {
         };
     }, [state, pullY]);
     
-    // Use refs to keep handlers fresh for global listeners without re-attaching
-    const moveHandlerRef = useRef(handleTouchMove);
-    const endHandlerRef = useRef(handleTouchEnd);
-
-    useEffect(() => {
-        moveHandlerRef.current = handleTouchMove;
-        endHandlerRef.current = handleTouchEnd;
-    });
-
-    // Attach global listeners ONCE to ensure they are never missed and never interrupted
-    useEffect(() => {
-        if (!isNative) return;
-
-        const onWindowMove = (e) => moveHandlerRef.current(e);
-        const onWindowEnd = (e) => endHandlerRef.current(e);
-
-        window.addEventListener('touchmove', onWindowMove, { passive: false });
-        window.addEventListener('touchend', onWindowEnd);
-        window.addEventListener('touchcancel', onWindowEnd);
-
-        return () => {
-            window.removeEventListener('touchmove', onWindowMove);
-            window.removeEventListener('touchend', onWindowEnd);
-            window.removeEventListener('touchcancel', onWindowEnd);
-        };
-    }, []); // Empty dependency array = listeners stay attached for the lifetime of the component
+    // Attach global listeners logic moved to after function definitions to avoid ReferenceError
 
     const handleTouchStart = (e) => {
         // Multi-touch safety: If already tracking a finger, ignore new touches
@@ -261,7 +236,38 @@ export default function PullToRefresh({ onRefresh, children }) {
         }
     };
 
-    // Attached global listeners logic moved to stable useEffect above
+    // 4. Stable Listeners Pattern:
+    // Use refs to keep handlers fresh for global listeners without re-attaching on every render.
+    // This must be defined AFTER the functions to avoid ReferenceErrors.
+    const moveHandlerRef = useRef(handleTouchMove);
+    const endHandlerRef = useRef(handleTouchEnd);
+
+    useEffect(() => {
+        moveHandlerRef.current = handleTouchMove;
+        endHandlerRef.current = handleTouchEnd;
+    });
+
+    // Attach global listeners ONCE to ensure they are never missed and never interrupted on mobile.
+    useEffect(() => {
+        if (!isNative) return;
+
+        const onWindowMove = (e) => {
+            if (moveHandlerRef.current) moveHandlerRef.current(e);
+        };
+        const onWindowEnd = (e) => {
+            if (endHandlerRef.current) endHandlerRef.current(e);
+        };
+
+        window.addEventListener('touchmove', onWindowMove, { passive: false });
+        window.addEventListener('touchend', onWindowEnd);
+        window.addEventListener('touchcancel', onWindowEnd);
+
+        return () => {
+            window.removeEventListener('touchmove', onWindowMove);
+            window.removeEventListener('touchend', onWindowEnd);
+            window.removeEventListener('touchcancel', onWindowEnd);
+        };
+    }, [isNative]); 
 
     // Derived values for animations
     const rotation = state === PTR_STATES.REFRESHING ? 0 : pullY * 2;
