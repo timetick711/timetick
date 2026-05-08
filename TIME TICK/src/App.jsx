@@ -28,7 +28,8 @@ import AppDownloadBanner from './components/AppDownloadBanner';
 import { StatusBar } from '@capacitor/status-bar';
 import { App as CapApp } from '@capacitor/app';
 import { Capacitor } from '@capacitor/core';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
+import OnboardingGate from './components/OnboardingGate';
 
 // Home Page Component
 const Home = () => (
@@ -204,6 +205,13 @@ const ScrollLockManager = () => {
 };
 
 function App() {
+  // Triggered by OnboardingGate when user chooses Login on final screen
+  const [openAuthOnMount, setOpenAuthOnMount] = useState(false);
+
+  const handleOnboardingLogin = useCallback(() => {
+    setOpenAuthOnMount(true);
+  }, []);
+
   useEffect(() => {
     // Force Immersive Full Screen on Mobile
     if (Capacitor.isNativePlatform()) {
@@ -216,39 +224,41 @@ function App() {
 
   return (
     <Router>
-      <ScrollToTop />
-      <ThemeProvider>
-        <LoaderProvider>
-          <AuthProvider>
-              <FavoritesProvider>
-                <VideoProvider>
-                  <CartProvider>
-                    <DeepLinkHandler />
-                    <BackButtonHandler />
-                    <ScrollLockManager />
-                    <SEOHelper />
-                    <div className="app-container">
-                      <Navbar />
-                      <CartSidebar />
-                      <AuthModal />
-                      <LogoutConfirmModal />
-                      <ProfileModal />
-                      <FavoritesModal />
-                      <PullToRefresh onRefresh={async () => {
-                          // Force a real reload for the whole app
-                          window.location.reload();
-                      }}>
-                        <AnimatedRoutes />
-                      </PullToRefresh>
-                      <Footer />
-                      <AppDownloadBanner />
-                    </div>
-                  </CartProvider>
-                </VideoProvider>
-              </FavoritesProvider>
-          </AuthProvider>
-        </LoaderProvider>
-      </ThemeProvider>
+      <OnboardingGate onLogin={handleOnboardingLogin}>
+        <ScrollToTop />
+        <ThemeProvider>
+          <LoaderProvider>
+            <AuthProvider openAuthOnMount={openAuthOnMount} onAuthMountHandled={() => setOpenAuthOnMount(false)}>
+                <FavoritesProvider>
+                  <VideoProvider>
+                    <CartProvider>
+                      <DeepLinkHandler />
+                      <BackButtonHandler />
+                      <ScrollLockManager />
+                      <SEOHelper />
+                      <div className="app-container">
+                        <Navbar />
+                        <CartSidebar />
+                        <AuthModal />
+                        <LogoutConfirmModal />
+                        <ProfileModal />
+                        <FavoritesModal />
+                        <PullToRefresh onRefresh={async () => {
+                            // Force a real reload for the whole app
+                            window.location.reload();
+                        }}>
+                          <AnimatedRoutes />
+                        </PullToRefresh>
+                        <Footer />
+                        <AppDownloadBanner />
+                      </div>
+                    </CartProvider>
+                  </VideoProvider>
+                </FavoritesProvider>
+            </AuthProvider>
+          </LoaderProvider>
+        </ThemeProvider>
+      </OnboardingGate>
     </Router>
   );
 }

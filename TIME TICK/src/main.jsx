@@ -10,5 +10,6 @@ ReactDOM.createRoot(document.getElementById('root')).render(
   </React.StrictMode>,
 )
 
-// Hide the splash screen after the app is mounted
-SplashScreen.hide();
+// Delay hiding the native splash screen so the onboarding welcome screen
+// has time to paint its first frame — preventing any black screen flash.
+setTimeout(() => SplashScreen.hide(), 300);

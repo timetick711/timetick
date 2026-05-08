@@ -49,16 +49,12 @@
 
 html {
   scroll-behavior: smooth;
-  overflow-x: hidden;
-  width: 100%;
 }
 
 body {
   background-color: var(--bg-main);
   color: var(--text-main);
   font-family: var(--font-main);
-  overflow-x: hidden;
-  width: 100%;
   position: relative;
   direction: rtl;
   transition: background-color 0.4s ease, color 0.4s ease;

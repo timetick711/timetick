@@ -1,4 +1,4 @@
-import { createContext, useState, useContext, useEffect, useCallback } from 'react';
+import { createContext, useState, useContext, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../supabase/client';
 import emailjs from '@emailjs/browser';
 import { useLoader } from './LoaderContext';
@@ -9,7 +9,7 @@ const AuthContext = createContext();
 
 export const useAuth = () => useContext(AuthContext);
 
-export const AuthProvider = ({ children }) => {
+export const AuthProvider = ({ children, openAuthOnMount = false, onAuthMountHandled }) => {
     const { showLoader, hideLoader } = useLoader();
     const [currentUser, setCurrentUser] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -44,6 +44,16 @@ export const AuthProvider = ({ children }) => {
             setIsAuthModalOpen(true);
         }
     }, []);
+
+    // Open AuthModal when triggered by OnboardingGate "Login" button
+    const handledOnMount = useRef(false);
+    useEffect(() => {
+        if (openAuthOnMount && !handledOnMount.current) {
+            handledOnMount.current = true;
+            setIsAuthModalOpen(true);
+            onAuthMountHandled?.();
+        }
+    }, [openAuthOnMount, onAuthMountHandled]);
 
     useEffect(() => {
         // Check for local storage user first (for legacy/manual login support)
