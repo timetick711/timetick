@@ -158,8 +158,8 @@ export default function PullToRefresh({ onRefresh, children }) {
         if (isResettingRef.current) return;
         if (gestureStateRef.current === VS.REFRESHING || gestureStateRef.current === VS.SUCCESS) return;
 
-        // Only track touch/pen, but also allow mouse (pointerId=1)
-        if (e.pointerType === 'mouse' && e.button !== 0) return;
+        // Only track touch/pen. Never track mouse to prevent intercepting and breaking Desktop clicks.
+        if (e.pointerType === 'mouse') return;
 
         // Safety: if circle is somehow visible, force reset first
         if (pullYRef.current > 0) {

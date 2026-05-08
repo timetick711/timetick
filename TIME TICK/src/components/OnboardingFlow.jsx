@@ -372,8 +372,8 @@ export default function OnboardingFlow({ onComplete, onLogin }) {
               whileTap={{ scale: 0.95 }}
               transition={{ type: "spring", stiffness: 400, damping: 25 }}
             >
-              {screen < 5 ? 'التالي' : 'إنهاء'}
               <ChevronRight size={20} strokeWidth={2.5} />
+              {screen < 5 ? 'التالي' : 'إنهاء'}
             </motion.button>
 
             {screen > 1 && (
@@ -383,8 +383,8 @@ export default function OnboardingFlow({ onComplete, onLogin }) {
                 whileTap={{ scale: 0.95 }}
                 transition={{ type: "spring", stiffness: 400, damping: 25 }}
               >
-                <ChevronLeft size={20} strokeWidth={2.5} />
                 السابق
+                <ChevronLeft size={20} strokeWidth={2.5} />
               </motion.button>
             )}
           </div>

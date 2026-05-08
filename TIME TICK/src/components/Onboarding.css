@@ -18,6 +18,10 @@
   touch-action: pan-x pan-y;
 }
 
+.onboarding-root button {
+  font-family: inherit;
+}
+
 /* ── Ambient Glows ── */
 .onboarding-glow {
   position: absolute;
@@ -75,6 +79,14 @@
   justify-content: center;
   padding: 24px;
   text-align: center;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+@supports (justify-content: safe center) {
+  .onboarding-slide {
+    justify-content: safe center;
+  }
 }
 
 /* We push dynamic content up a bit to leave room for the static footer */
@@ -92,7 +104,7 @@
 }
 
 .onboarding-welcome-logo {
-  width: min(220px, 55vw);
+  width: min(220px, 55vw, 30vh);
   height: auto;
   object-fit: contain;
   filter: drop-shadow(0 0 30px rgba(212, 175, 55, 0.35));
@@ -164,8 +176,8 @@
 
 /* ── Dynamic Content (Slides 1-5) ── */
 .onboarding-image-wrapper {
-  width: min(340px, 80vw);
-  height: min(340px, 80vw);
+  width: min(340px, 80vw, 40vh);
+  height: min(340px, 80vw, 40vh);
   border-radius: 32px;
   overflow: hidden;
   position: relative;
@@ -255,7 +267,7 @@
 }
 
 .onboarding-final-logo {
-  width: min(150px, 40vw);
+  width: min(150px, 40vw, 25vh);
   height: auto;
   object-fit: contain;
   margin-bottom: 16px;
@@ -395,3 +407,4 @@
   color: #fff;
   box-shadow: none;
 }
+
