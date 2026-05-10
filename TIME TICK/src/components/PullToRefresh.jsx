@@ -80,8 +80,15 @@ export default function PullToRefresh({ onRefresh, children }) {
 
         if (circleRef.current) {
             circleRef.current.style.transform  = `translateY(${y}px)`;
-            circleRef.current.style.opacity    = y > 5 ? '1' : '0';
-            circleRef.current.style.scale      = y > 5 ? '1' : '0.5';
+            
+            // PRD: Gradual opacity / fade-in effect
+            circleRef.current.style.opacity    = Math.min(1, y / 25);
+            
+            // PRD: Slight indicator scaling (0.5 -> 1.1 max)
+            const baseScale = 0.5;
+            const progress  = Math.min(1.2, y / THRESHOLD);
+            circleRef.current.style.scale      = String(baseScale + progress * 0.6);
+
             const isReady = gestureStateRef.current === VS.READY;
             circleRef.current.style.background = isReady
                 ? 'var(--primary)'
@@ -92,44 +99,88 @@ export default function PullToRefresh({ onRefresh, children }) {
                 : '0 10px 25px rgba(0,0,0,0.6)';
         }
 
-        // PRD: Animation Isolation — Content layer remains static while indicator pulls down.
-        // This prevents lateral drift and layout recalculations on the main UI.
-
         if (textRef.current) {
             textRef.current.style.transform = `translateY(${y}px)`;
-            textRef.current.style.opacity   = y > THRESHOLD * 0.7 ? '1' : '0';
+            textRef.current.style.opacity   = Math.min(1, (y - THRESHOLD * 0.4) / (THRESHOLD * 0.4));
         }
     }, []);
 
-    /** Enable CSS transitions for snap-back, apply y=0, then remove transitions */
-    const animateReset = useCallback(() => {
-        isResettingRef.current = true;
+    // ─── Animation Utilities (PRD: Spring Effect) ────────────────────────────
+
+    /** 
+     * Calculate elastic offset with progressive resistance 
+     * FR-1 — Spring Effect During Pull
+     */
+    const calculateElasticOffset = useCallback((diff) => {
+        if (diff <= THRESHOLD) return diff;
+        // Progressive resistance: the further you pull, the harder it gets
+        // Using a power function for a "heavy" elastic feel
+        const extra = diff - THRESHOLD;
+        return THRESHOLD + Math.pow(extra, 0.72) * 1.8;
+    }, []);
+
+    /** 
+     * Apply spring physics to return to target position 
+     * Using a damped spring solver for a "premium" feel.
+     * FR-2 — Smooth Animation
+     */
+    const applySpringAnimation = useCallback((targetY, onComplete) => {
         cancelRaf();
+        isResettingRef.current = true;
 
-        // Enable smooth CSS transition for the snap-back
-        if (circleRef.current) {
-            circleRef.current.style.transition  = 'transform 0.38s cubic-bezier(0.2,0,0,1), opacity 0.25s ease, background 0.2s, color 0.2s, box-shadow 0.2s, scale 0.25s';
-        }
-        // contentRef transition removed for isolation
-        if (textRef.current) {
-            textRef.current.style.transition    = 'transform 0.38s cubic-bezier(0.2,0,0,1), opacity 0.2s';
-        }
+        // Spring parameters for a snappy but soft bounce
+        const stiffness = 240; // k
+        const damping   = 24;  // d
+        const mass      = 1;   // m
+        
+        let velocity    = 0;
+        let lastTime    = performance.now();
 
-        // Update pullY to 0 and apply
-        pullYRef.current = 0;
-        applyVisuals();
+        const step = (now) => {
+            const dt = Math.min((now - lastTime) / 1000, 0.032); 
+            lastTime = now;
 
-        // Remove transitions after snap completes
-        const t = setTimeout(() => {
-            [circleRef, textRef].forEach(r => {
-                if (r.current) r.current.style.transition = 'none';
-            });
+            const distance = targetY - pullYRef.current;
+            const force    = stiffness * distance;
+            const friction = damping * velocity;
+            const acceleration = (force - friction) / mass;
+
+            velocity += acceleration * dt;
+            pullYRef.current += velocity * dt;
+
+            applyVisuals();
+
+            // Check if settled (close enough to target with low velocity)
+            const isSettled = Math.abs(targetY - pullYRef.current) < 0.2 && Math.abs(velocity) < 0.5;
+            
+            if (isSettled) {
+                pullYRef.current = targetY;
+                applyVisuals();
+                rafRef.current = null;
+                if (onComplete) onComplete();
+            } else {
+                rafRef.current = requestAnimationFrame(step);
+            }
+        };
+
+        rafRef.current = requestAnimationFrame(step);
+    }, [applyVisuals]);
+
+    /** 
+     * Standardized reset logic (PRD: Spring return motion)
+     * Smoothly returns the indicator to y=0 with a bounce.
+     */
+    const resetPullAnimation = useCallback(() => {
+        applySpringAnimation(0, () => {
             isResettingRef.current = false;
             gestureStateRef.current = VS.IDLE;
             setVisualState(VS.IDLE);
-        }, 400);
-        timerRefs.current.push(t);
-    }, [applyVisuals]);
+            
+            // Clean up any remaining transition styles
+            if (circleRef.current) circleRef.current.style.transition = 'none';
+            if (textRef.current) textRef.current.style.transition = 'none';
+        });
+    }, [applySpringAnimation]);
 
     /** Hard reset — no animation, instant */
     const forceReset = useCallback(() => {
@@ -155,8 +206,8 @@ export default function PullToRefresh({ onRefresh, children }) {
         if (isResettingRef.current) return;
         if (gestureStateRef.current === VS.REFRESHING || gestureStateRef.current === VS.SUCCESS) return;
 
-        // Only track touch/pen. Never track mouse to prevent intercepting and breaking Desktop clicks.
-        if (e.pointerType === 'mouse') return;
+        // Support all pointer types including mouse for desktop parity
+        // (FR-5 — Touch & Mouse Support)
 
         // Safety: if circle is somehow visible, force reset first
         if (pullYRef.current > 0) {
@@ -220,14 +271,8 @@ export default function PullToRefresh({ onRefresh, children }) {
             return;
         }
 
-        // Rubber-band resistance after threshold
-        let finalPull;
-        if (diff < THRESHOLD) {
-            finalPull = diff;
-        } else {
-            finalPull = THRESHOLD + (diff - THRESHOLD) * 0.38;
-        }
-        pullYRef.current = Math.min(MAX_PULL, finalPull);
+        // Elastic resistance logic (PRD: Progressive resistance motion)
+        pullYRef.current = Math.min(MAX_PULL, calculateElasticOffset(diff));
 
         // Update gesture state (ref only — no re-render)
         const newGesture = pullYRef.current >= THRESHOLD ? VS.READY : VS.PULLING;
@@ -269,43 +314,36 @@ export default function PullToRefresh({ onRefresh, children }) {
 
         // If cancel or not really pulling — just reset
         if (isCancel || !wasPulling) {
-            if (pullYRef.current > 0) animateReset();
+            if (pullYRef.current > 0) resetPullAnimation();
             return;
         }
 
         if (wasReady) {
             // ── Case A: Threshold reached ──────────────────────────────────
-            // 1. Snap circle to "loading position" (small fixed offset)
             clearTimers();
-            isResettingRef.current = true;
-
-            // Smooth transition to loading position (y=65)
-            if (circleRef.current) {
-                circleRef.current.style.transition = 'transform 0.22s cubic-bezier(0.2,0,0,1), background 0.2s, color 0.2s, box-shadow 0.2s, scale 0.2s';
-            }
-            // contentRef transition removed for isolation
-            pullYRef.current = 65;
-            applyVisuals();
+            
+            // Snap to loading position (y=65) with a quick spring bounce
+            applySpringAnimation(65);
 
             // Show spinner
             gestureStateRef.current = VS.REFRESHING;
             setVisualState(VS.REFRESHING);
 
-            // 2. Fire onRefresh as fire-and-forget (NEVER awaited here)
+            // 2. Fire onRefresh as fire-and-forget
             try {
                 const refreshResult = onRefresh?.();
                 if (refreshResult && typeof refreshResult.catch === 'function') {
-                    refreshResult.catch(() => { /* swallow — UI already handled */ });
+                    refreshResult.catch(() => { /* swallow */ });
                 }
             } catch (_) { /* swallow */ }
 
-            // 3. Fixed timer for success → reset (completely independent of data)
+            // 3. Fixed timer for success → reset
             const t1 = setTimeout(() => {
                 gestureStateRef.current = VS.SUCCESS;
                 setVisualState(VS.SUCCESS);
 
                 const t2 = setTimeout(() => {
-                    animateReset();
+                    resetPullAnimation();
                 }, SUCCESS_SHOW);
                 timerRefs.current.push(t2);
             }, REFRESH_SHOW);
@@ -314,9 +352,9 @@ export default function PullToRefresh({ onRefresh, children }) {
         } else {
             // ── Case B: Threshold NOT reached — just retract ───────────────
             gestureStateRef.current = VS.IDLE;
-            animateReset();
+            resetPullAnimation();
         }
-    }, [animateReset, applyVisuals, onRefresh]);
+    }, [resetPullAnimation, applySpringAnimation, onRefresh]);
 
     // ─── One-time window listener mount ───────────────────────────────────────
     // These NEVER re-attach (empty dep array).
@@ -374,7 +412,6 @@ export default function PullToRefresh({ onRefresh, children }) {
             style={{
                 position:  'relative',
                 minHeight: '100vh',
-                touchAction: 'pan-y', // PRD: Strictly lock horizontal axis
                 overflowX: 'hidden',
                 width:     '100%',
                 maxWidth:  '100%',
@@ -417,7 +454,7 @@ export default function PullToRefresh({ onRefresh, children }) {
                         scale:          '0.5',
                         transform:      'translateY(0px)',
                         transition:     'none',
-                        willChange:     'transform, opacity',
+                        willChange:     'transform, opacity, scale',
                     }}
                 >
                     {/* Spinner */}
@@ -470,6 +507,7 @@ export default function PullToRefresh({ onRefresh, children }) {
                         transition:    'none',
                         pointerEvents: 'none',
                         whiteSpace:    'nowrap',
+                        willChange:    'transform, opacity',
                     }}
                 >
                     {visualState === VS.READY
@@ -501,9 +539,7 @@ export default function PullToRefresh({ onRefresh, children }) {
                     to   { transform: scale(1); opacity: 1; }
                 }
                 /* Prevent Chrome/Android native pull-to-refresh */
-                html, body {
-                    overscroll-behavior-y: contain;
-                }
+                /* Removed overscroll-behavior-y: contain; as per PRD to restore native scrolling */
                 .ptr-content-layer {
                     transform-origin: top center;
                 }

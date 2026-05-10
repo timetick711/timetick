@@ -57,15 +57,13 @@ html {
   width: 100%;
   max-width: 100%;
   overflow-x: hidden;
-  position: relative;
-  touch-action: pan-y;
+  overflow-y: auto;
 }
 
 body {
   background-color: var(--bg-main);
   color: var(--text-main);
   font-family: var(--font-main);
-  position: relative;
   direction: rtl;
   transition: background-color 0.4s ease, color 0.4s ease;
   line-height: 1.6;
@@ -74,8 +72,7 @@ body {
   width: 100%;
   max-width: 100%;
   overflow-x: hidden;
-  touch-action: pan-y;
-  overscroll-behavior-x: none;
+  overflow-y: auto;
 }
 
 body.no-scroll {
