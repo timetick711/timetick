@@ -6,6 +6,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { FavoritesProvider, useFavorites } from './context/FavoritesContext';
 import { VideoProvider } from './context/VideoContext';
 import { LoaderProvider } from './context/LoaderContext';
+import { useTheme } from './context/ThemeContext';
 import Navbar from './components/Navbar';
 import Hero from './components/Hero';
 import Features from './components/Features';
@@ -204,6 +205,20 @@ const ScrollLockManager = () => {
   return null;
 };
 
+// Inner component so it can access ThemeContext
+function StatusBarSync() {
+  const { theme } = useTheme();
+
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform()) return;
+    // Flip status bar icon colour to match the active theme:
+    // LIGHT icons on dark backgrounds, DARK icons on light backgrounds
+    StatusBar.setStyle({ style: theme === 'dark' ? 'LIGHT' : 'DARK' });
+  }, [theme]);
+
+  return null;
+}
+
 function App() {
   // Triggered by OnboardingGate when user chooses Login on final screen
   const [openAuthOnMount, setOpenAuthOnMount] = useState(false);
@@ -213,12 +228,11 @@ function App() {
   }, []);
 
   useEffect(() => {
-    // Force Immersive Full Screen on Mobile
+    // Force Immersive Full Screen on Mobile — transparent overlay status bar
     if (Capacitor.isNativePlatform()) {
-      // Make status bar transparent and overlay content
       StatusBar.setOverlaysWebView({ overlay: true });
       StatusBar.setBackgroundColor({ color: '#00000000' });
-      StatusBar.setStyle({ style: 'LIGHT' }); // Light icons for dark theme
+      // Initial icon style handled by <StatusBarSync> below
     }
   }, []);
 
@@ -237,6 +251,7 @@ function App() {
                       <ScrollLockManager />
                       <SEOHelper />
                       <div className="app-container">
+                        <StatusBarSync />
                         <Navbar />
                         <CartSidebar />
                         <AuthModal />

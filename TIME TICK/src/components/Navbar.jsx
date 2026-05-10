@@ -168,11 +168,15 @@ export default function Navbar() {
                 right: isMobile ? '0' : '10px',
                 zIndex: 1000,
                 width: isMobile ? '100%' : 'calc(100% - 20px)',
-                padding: isMobile ? '10px 15px' : '10px 40px',
+                /* Mobile: top padding grows by safe-area-top so icons clear the OS status bar */
+                padding: isMobile
+                    ? 'calc(10px + var(--safe-area-top, 0px)) 15px 10px 15px'
+                    : '10px 40px',
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center',
-                height: '70px',
+                /* Mobile: height extends by the same inset for visual continuity behind the status bar */
+                height: isMobile ? 'calc(70px + var(--safe-area-top, 0px))' : '70px',
                 borderRadius: isMobile ? '0' : 'var(--radius)'
             }}>
                 {/* Desktop LAYOUT: LEFT (Logo - Position swapped) */}

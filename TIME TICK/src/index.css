@@ -1,6 +1,8 @@
 @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700&display=swap');
 
 :root {
+  /* Safe Area: resolves to the OS status-bar height on mobile, 0px on desktop */
+  --safe-area-top: env(safe-area-inset-top, 0px);
   --primary: #d4af37;
   /* Gold */
   --primary-hover: #b4932a;
@@ -90,10 +92,17 @@ input, textarea, [contenteditable="true"] {
   display: flex;
   flex-direction: column;
   overflow-x: hidden;
-  /* Handling Top and Bottom Safe Areas on Mobile */
-  padding-top: env(safe-area-inset-top, 0);
-  padding-bottom: env(safe-area-inset-bottom, 0);
+  /* Default desktop: Hero section starts at top, Navbar floats above it */
+  padding-top: var(--safe-area-top);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
   background-color: var(--bg-main);
+}
+
+/* Mobile: Push scroll content below the fixed Navbar (70px) AND the OS status bar */
+@media (max-width: 1023px) {
+  .app-container {
+    padding-top: calc(70px + var(--safe-area-top));
+  }
 }
 
 /* Utilities */
@@ -191,6 +200,8 @@ input, textarea, [contenteditable="true"] {
   display: flex;
   /* Ensure content stretches */
   flex-direction: column;
+  /* Push drawer content below the OS status bar */
+  padding-top: var(--safe-area-top);
 }
 
 .sidebar-drawer.open {
