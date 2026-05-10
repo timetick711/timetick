@@ -15,7 +15,7 @@
   overflow: hidden;
   color: #fff;
   font-family: 'Cairo', sans-serif;
-  touch-action: pan-x pan-y;
+  touch-action: pan-y;
 }
 
 .onboarding-root button {

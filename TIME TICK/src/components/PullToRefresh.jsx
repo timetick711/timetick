@@ -92,9 +92,8 @@ export default function PullToRefresh({ onRefresh, children }) {
                 : '0 10px 25px rgba(0,0,0,0.6)';
         }
 
-        if (contentRef.current) {
-            contentRef.current.style.transform = `translateY(${y * 0.3}px)`;
-        }
+        // PRD: Animation Isolation — Content layer remains static while indicator pulls down.
+        // This prevents lateral drift and layout recalculations on the main UI.
 
         if (textRef.current) {
             textRef.current.style.transform = `translateY(${y}px)`;
@@ -111,9 +110,7 @@ export default function PullToRefresh({ onRefresh, children }) {
         if (circleRef.current) {
             circleRef.current.style.transition  = 'transform 0.38s cubic-bezier(0.2,0,0,1), opacity 0.25s ease, background 0.2s, color 0.2s, box-shadow 0.2s, scale 0.25s';
         }
-        if (contentRef.current) {
-            contentRef.current.style.transition = 'transform 0.38s cubic-bezier(0.2,0,0,1)';
-        }
+        // contentRef transition removed for isolation
         if (textRef.current) {
             textRef.current.style.transition    = 'transform 0.38s cubic-bezier(0.2,0,0,1), opacity 0.2s';
         }
@@ -124,7 +121,7 @@ export default function PullToRefresh({ onRefresh, children }) {
 
         // Remove transitions after snap completes
         const t = setTimeout(() => {
-            [circleRef, contentRef, textRef].forEach(r => {
+            [circleRef, textRef].forEach(r => {
                 if (r.current) r.current.style.transition = 'none';
             });
             isResettingRef.current = false;
@@ -144,7 +141,7 @@ export default function PullToRefresh({ onRefresh, children }) {
         gestureStateRef.current    = VS.IDLE;
         isResettingRef.current     = false;
         applyVisuals();
-        [circleRef, contentRef, textRef].forEach(r => {
+        [circleRef, textRef].forEach(r => {
             if (r.current) r.current.style.transition = 'none';
         });
         setVisualState(VS.IDLE);
@@ -286,9 +283,7 @@ export default function PullToRefresh({ onRefresh, children }) {
             if (circleRef.current) {
                 circleRef.current.style.transition = 'transform 0.22s cubic-bezier(0.2,0,0,1), background 0.2s, color 0.2s, box-shadow 0.2s, scale 0.2s';
             }
-            if (contentRef.current) {
-                contentRef.current.style.transition = 'transform 0.22s cubic-bezier(0.2,0,0,1)';
-            }
+            // contentRef transition removed for isolation
             pullYRef.current = 65;
             applyVisuals();
 
@@ -379,8 +374,10 @@ export default function PullToRefresh({ onRefresh, children }) {
             style={{
                 position:  'relative',
                 minHeight: '100vh',
-                touchAction: 'pan-x pan-y', // allow normal scroll; we override on pull
+                touchAction: 'pan-y', // PRD: Strictly lock horizontal axis
                 overflowX: 'hidden',
+                width:     '100%',
+                maxWidth:  '100%',
             }}
         >
             {/* ── Indicator Layer ── */}
@@ -489,11 +486,6 @@ export default function PullToRefresh({ onRefresh, children }) {
             <div
                 ref={contentRef}
                 className="ptr-content-layer"
-                style={{
-                    transform:  'translateY(0px)',
-                    transition: 'none',
-                    willChange: 'transform',
-                }}
             >
                 {children}
             </div>
