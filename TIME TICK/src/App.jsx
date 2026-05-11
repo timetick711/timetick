@@ -240,15 +240,34 @@ function PullToRefreshGate({ children }) {
   );
 }
 
-// Inner component so it can access ThemeContext
-function StatusBarSync() {
+// Inner component so it can access ThemeContext.
+// Controls:
+//   1. <meta name="theme-color"> — web / Capacitor browser chrome
+//   2. StatusBar icon style     — LIGHT on dark BG, DARK on light BG
+//   3. Android Navigation Bar   — transparent bg already set in styles.xml;
+//      icon brightness is flipped here to match theme.
+function SystemBarsSync() {
   const { theme } = useTheme();
 
   useEffect(() => {
+    const isDark  = theme === 'dark';
+    const bgColor = isDark ? '#0a0a0a' : '#ffffff';
+
+    // ── Web: keep <meta name="theme-color"> in sync ──────────────────────
+    let metaThemeColor = document.querySelector('meta[name="theme-color"]');
+    if (!metaThemeColor) {
+      metaThemeColor = document.createElement('meta');
+      metaThemeColor.name = 'theme-color';
+      document.head.appendChild(metaThemeColor);
+    }
+    metaThemeColor.content = bgColor;
+
+    // ── Native only ──────────────────────────────────────────────────────
     if (!Capacitor.isNativePlatform()) return;
-    // Flip status bar icon colour to match the active theme:
-    // LIGHT icons on dark backgrounds, DARK icons on light backgrounds
-    StatusBar.setStyle({ style: theme === 'dark' ? 'LIGHT' : 'DARK' });
+
+    // Flip status bar icon colour to contrast with the active theme:
+    // LIGHT icons on dark backgrounds, DARK icons on light backgrounds.
+    StatusBar.setStyle({ style: isDark ? 'LIGHT' : 'DARK' });
   }, [theme]);
 
   return null;
@@ -286,7 +305,7 @@ function App() {
                       <ScrollLockManager />
                       <SEOHelper />
                       <div className="app-container">
-                        <StatusBarSync />
+                        <SystemBarsSync />
                         <Navbar />
                         <CartSidebar />
                         <AuthModal />

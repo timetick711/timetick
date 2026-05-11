@@ -14,12 +14,14 @@ export const ThemeProvider = ({ children }) => {
         localStorage.setItem('time-tick-theme', theme);
     }, [theme]);
 
+    const isDarkMode = theme === 'dark';
+
     const toggleTheme = () => {
         setTheme(prev => prev === 'dark' ? 'light' : 'dark');
     };
 
     return (
-        <ThemeContext.Provider value={{ theme, toggleTheme }}>
+        <ThemeContext.Provider value={{ theme, isDarkMode, toggleTheme }}>
             {children}
         </ThemeContext.Provider>
     );
