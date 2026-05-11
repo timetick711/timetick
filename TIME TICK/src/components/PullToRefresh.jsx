@@ -34,7 +34,7 @@ const VS = {
 };
 
 // ─── Component ────────────────────────────────────────────────────────────────
-export default function PullToRefresh({ onRefresh, children }) {
+export default function PullToRefresh({ onRefresh, children, disabled = false }) {
 
     // ── Visual state (React — only for icon switching) ──────────────────────
     const [visualState, setVisualState] = useState(VS.IDLE);
@@ -59,6 +59,10 @@ export default function PullToRefresh({ onRefresh, children }) {
 
     // ── Stable handler ref — the window listener always calls this ───────────
     const handlerRef = useRef(null);
+
+    // ── disabled ref — lets the window listener (never re-bound) read latest value ──
+    const disabledRef = useRef(false);
+    useEffect(() => { disabledRef.current = disabled; }, [disabled]);
 
     // ─── Helpers ──────────────────────────────────────────────────────────────
 
@@ -201,6 +205,9 @@ export default function PullToRefresh({ onRefresh, children }) {
     // ─── Gesture logic (lives in handlerRef so no re-bind on re-render) ──────
 
     const onPointerDown = useCallback((e) => {
+        // ── Disabled guard — reject gesture when PTR is not allowed on this page/state ──
+        if (disabledRef.current) return;
+
         // Ignore if already tracking a pointer or in a post-gesture animation
         if (activePointerRef.current !== null) return;
         if (isResettingRef.current) return;
@@ -384,6 +391,13 @@ export default function PullToRefresh({ onRefresh, children }) {
     useEffect(() => {
         handlerRef.current = { onPointerDown, onPointerMove, onPointerUp };
     });
+
+    // ─── Safety: force-reset if disabled while a pull is in progress ────────
+    useEffect(() => {
+        if (disabled && pullYRef.current > 0) {
+            forceReset();
+        }
+    }, [disabled, forceReset]);
 
     // ─── Cleanup on unmount ───────────────────────────────────────────────────
     useEffect(() => {

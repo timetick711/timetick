@@ -175,6 +175,7 @@ export default function ProfileModal() {
                 height: '100%',
                 background: '#000',
                 zIndex: 2000,
+                touchAction: 'none',   // Prevent browser/OS pull-to-refresh & overscroll on cropper
                 display: 'flex',
                 flexDirection: 'column',
                 justifyContent: 'center',

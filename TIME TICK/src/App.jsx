@@ -205,6 +205,41 @@ const ScrollLockManager = () => {
   return null;
 };
 
+// Pull-to-Refresh Gate — computes disabled state from route + overlay context
+function PullToRefreshGate({ children }) {
+  const location = useLocation();
+  const { isMenuOpen, isProfileModalOpen } = useAuth();
+  const { isCartOpen, isOptionsModalOpen } = useCart();
+  const { isFavoritesOpen } = useFavorites();
+
+  // Routes where PTR is explicitly ALLOWED (primary pages)
+  const isAllowedRoute =
+    location.pathname === '/' ||
+    location.pathname === '/orders' ||
+    location.pathname.startsWith('/product/');
+
+  // PTR must be off whenever ANY overlay / drawer / modal is open
+  const isAnyOverlayOpen =
+    isMenuOpen ||
+    isCartOpen ||
+    isFavoritesOpen ||
+    isOptionsModalOpen ||
+    isProfileModalOpen;
+
+  const disabled = !isAllowedRoute || isAnyOverlayOpen;
+
+  return (
+    <PullToRefresh
+      disabled={disabled}
+      onRefresh={async () => {
+        window.location.reload();
+      }}
+    >
+      {children}
+    </PullToRefresh>
+  );
+}
+
 // Inner component so it can access ThemeContext
 function StatusBarSync() {
   const { theme } = useTheme();
@@ -258,12 +293,9 @@ function App() {
                         <LogoutConfirmModal />
                         <ProfileModal />
                         <FavoritesModal />
-                        <PullToRefresh onRefresh={async () => {
-                            // Force a real reload for the whole app
-                            window.location.reload();
-                        }}>
+                        <PullToRefreshGate>
                           <AnimatedRoutes />
-                        </PullToRefresh>
+                        </PullToRefreshGate>
                         <Footer />
                         <AppDownloadBanner />
                       </div>
