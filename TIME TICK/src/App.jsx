@@ -206,11 +206,15 @@ const ScrollLockManager = () => {
 };
 
 // Pull-to-Refresh Gate — computes disabled state from route + overlay context
+// PRD: PTR is restricted to the native Mobile App only (no web browsers).
 function PullToRefreshGate({ children }) {
   const location = useLocation();
   const { isMenuOpen, isProfileModalOpen } = useAuth();
   const { isCartOpen, isOptionsModalOpen } = useCart();
   const { isFavoritesOpen } = useFavorites();
+
+  // ── Platform gate: disable entirely on Web (Desktop & Mobile browsers) ──
+  const isNativeApp = Capacitor.isNativePlatform();
 
   // Routes where PTR is explicitly ALLOWED (primary pages)
   const isAllowedRoute =
@@ -226,7 +230,7 @@ function PullToRefreshGate({ children }) {
     isOptionsModalOpen ||
     isProfileModalOpen;
 
-  const disabled = !isAllowedRoute || isAnyOverlayOpen;
+  const disabled = !isNativeApp || !isAllowedRoute || isAnyOverlayOpen;
 
   return (
     <PullToRefresh
