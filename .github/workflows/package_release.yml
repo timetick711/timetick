@@ -1,0 +1,53 @@
+name: Package & Release Store Code
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  release:
+    name: Package and Release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Create Clean Zip Archive
+        run: |
+          zip -r time-tick-store.zip . -x "*.git*" "**/node_modules/*" "**/dist/*" "**/build/*" "**/.env" "**/temp_orders.json"
+
+      - name: Create Release and Upload Asset
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: time-tick-store.zip
+          draft: false
+          prerelease: false
+          body: |
+            ### Time Tick Store - Source Code Release
+            
+            This is a pre-packaged ZIP archive of the source code.
+            
+            #### Features of this ZIP:
+            - **Known Download Size:** Serves with correct content length so the browser displays download progress and estimated time.
+            - **All Original Files Included:** Contains all tracked source files.
+            
+            #### How to use:
+            1. Download and extract this ZIP.
+            2. Run the provided `setup.bat` (Windows) or `setup.sh` (Mac/Linux) in the root directory to install all required dependencies automatically.
+            3. Configure `.env` files for the `server`, `dashbourd`, and `TIME TICK` folders.
+            4. Start development!
+            
+      - name: Upload Artifact (for manual runs without tags)
+        uses: actions/upload-artifact@v4
+        if: "!startsWith(github.ref, 'refs/tags/')"
+        with:
+          name: time-tick-store-zip
+          path: time-tick-store.zip
