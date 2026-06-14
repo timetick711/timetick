@@ -4,10 +4,10 @@ echo   TIME TICK STORE - Local Environment Setup
 echo ===================================================
 echo.
 
-:: Check for Node.js
+REM Check for Node.js
 where node >nul 2>nul
 if %errorlevel% neq 0 (
-    echo [ERROR] Node.js is not installed! Please install Node.js (v18+) and try again.
+    echo [ERROR] Node.js is not installed! Please install Node.js v18 or newer and try again.
     pause
     exit /b 1
 )
@@ -34,7 +34,7 @@ if %errorlevel% neq 0 (
 )
 cd ..
 
-echo [3/3] Installing dependencies for main app (TIME TICK)...
+echo [3/3] Installing dependencies for main app TIME TICK...
 cd "TIME TICK"
 call npm install
 if %errorlevel% neq 0 (
