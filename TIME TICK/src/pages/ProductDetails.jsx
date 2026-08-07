@@ -285,7 +285,7 @@ const ProductDetails = () => {
         : null;
 
     return (
-        <div className="container" style={{ padding: '120px 0 60px', minHeight: '80vh' }}>
+        <div className="container product-details-page">
             {/* Minimalist Breadcrumbs */}
             <nav style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '32px', padding: '0 20px', color: 'var(--text-dim)', fontSize: '0.9rem' }}>
                 <span onClick={() => navigate('/')} style={{ cursor: 'pointer' }}>الرئيسية</span>

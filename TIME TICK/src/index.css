@@ -789,3 +789,30 @@ input, textarea, [contenteditable="true"] {
   }
 }
 
+/* Product Details Page - Top Spacing Optimization */
+/* Desktop (>= 1024px): Navbar bottom is at 80px (10px top + 70px height). PRD Spacing = 24px */
+.product-details-page {
+  padding: 104px 0 60px;
+  min-height: 80vh;
+}
+
+/* Tablet (768px - 1023px): app-container already clears navbar. PRD Spacing = 20px */
+@media (max-width: 1023px) {
+  .product-details-page {
+    padding-top: 20px;
+  }
+}
+
+/* Large Phones (376px - 767px): PRD Spacing = 16px */
+@media (max-width: 767px) {
+  .product-details-page {
+    padding-top: 16px;
+  }
+}
+
+/* Small Phones (<= 375px): PRD Spacing = 12px */
+@media (max-width: 375px) {
+  .product-details-page {
+    padding-top: 12px;
+  }
+}
