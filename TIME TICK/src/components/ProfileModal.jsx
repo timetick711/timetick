@@ -148,7 +148,7 @@ export default function ProfileModal() {
         background: 'rgba(255, 255, 255, 0.05)',
         color: 'var(--text-main)',
         fontSize: '1rem',
-        fontFamily: "'Cairo', sans-serif",
+        fontFamily: "'OYMandisa', sans-serif",
         outline: 'none',
         transition: 'all 0.3s'
     };
@@ -160,7 +160,7 @@ export default function ProfileModal() {
         padding: '0',
         color: 'var(--text-main)',
         fontSize: '1.1rem',
-        fontFamily: "'Cairo', sans-serif",
+        fontFamily: "'OYMandisa', sans-serif",
         fontWeight: '600'
     };
 

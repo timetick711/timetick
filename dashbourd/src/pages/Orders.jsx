@@ -285,7 +285,7 @@ const Orders = () => {
         invoiceDiv.style.width = '800px';
 
         invoiceDiv.innerHTML = pages.map((page, index) => `
-            <div class="pdf-page" style="width: 800px; min-height: 1120px; padding: 40px; background: #ffffff; color: #000; font-family: 'Cairo', sans-serif; direction: rtl; box-sizing: border-box; position: relative; display: flex; flex-direction: column;">
+            <div class="pdf-page" style="width: 800px; min-height: 1120px; padding: 40px; background: #ffffff; color: #000; font-family: 'OYMandisa', sans-serif; direction: rtl; box-sizing: border-box; position: relative; display: flex; flex-direction: column;">
                 ${page.isFirst ? `
                     <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #d4af37; padding-bottom: 20px; margin-bottom: 30px;">
                         <div style="flex: 1; text-align: right;">
@@ -344,10 +344,10 @@ const Orders = () => {
                         <tbody>
                             ${page.items.map(item => `
                                 <tr style="border-bottom: 1px solid #eee; page-break-inside: avoid;">
-                                    <td style="padding: 15px; text-align: right; color: #555; font-size: 13px; font-weight: bold;">#${item.displayId || '---'}</td>
+                                    <td style="padding: 15px; text-align: right; color: #555; font-size: 13px; font-weight: bold;">#${item.displayId ? item.displayId.toLocaleString() : '---'}</td>
                                     <td style="padding: 15px; text-align: right; color: #000; font-weight: 600;">${item.name || item.title}</td>
                                     <td style="padding: 15px; text-align: center; color: #333;">${(item.price || 0).toLocaleString()} ر.س</td>
-                                    <td style="padding: 15px; text-align: center; color: #333;">${item.dp_qty || item.quantity || 1}</td>
+                                    <td style="padding: 15px; text-align: center; color: #333;">${(item.dp_qty || item.quantity || 1).toLocaleString()}</td>
                                     <td style="padding: 15px; text-align: left; color: #d4af37; font-weight: bold;">${((item.price || 0) * (item.dp_qty || item.quantity || 1)).toLocaleString()} ر.س</td>
                                 </tr>
                             `).join('')}
@@ -653,7 +653,7 @@ const OrderCard = ({ order, index, lastOrderRef, onUpdateStatus, onDelete, onInv
                                             <span style={{ fontSize: '0.7rem', color: 'var(--text-dim)' }}>{item.displayId ? `#${item.displayId}` : 'ساعة راقية'}</span>
                                         </div>
                                     </div>
-                                    <div style={{ textAlign: 'left' }}><span style={{ fontSize: '0.85rem', fontWeight: '900', color: 'var(--primary)' }}>{item.dp_qty || item.quantity} ×</span><br/><span style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>{item.price.toLocaleString()}</span></div>
+                                    <div style={{ textAlign: 'left' }}><span style={{ fontSize: '0.85rem', fontWeight: '900', color: 'var(--primary)' }}>{(item.dp_qty || item.quantity).toLocaleString()} ×</span><br/><span style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>{item.price.toLocaleString()}</span></div>
                                 </motion.div>
                             ))}
                         </AnimatePresence>

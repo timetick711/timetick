@@ -1,4 +1,9 @@
-@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700&display=swap');
+@font-face {
+  font-family: 'OYMandisa';
+  src: url('/fonts/OYMandisa-mob.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
 
 /* Loading Bar */
 .loading-bar-container {
@@ -34,7 +39,7 @@
   --radius-lg: 24px;
   --radius-md: 16px;
   --radius-sm: 12px;
-  --font-main: 'Cairo', sans-serif;
+  --font-main: 'OYMandisa', sans-serif;
 
   /* Sidebar Variables */
   --sidebar-width: 280px;

@@ -205,7 +205,7 @@ const Users = () => {
                     </div>
                     <div>
                         <p style={{ fontSize: isMobile ? '0.7rem' : '0.85rem', color: 'var(--text-muted)', fontWeight: '700', marginBottom: '2px' }}>إجمالي العملاء</p>
-                        <h4 style={{ fontSize: isMobile ? '1.4rem' : '1.8rem', fontWeight: '950', color: '#fff', lineHeight: 1 }}>{totalCount}</h4>
+                        <h4 style={{ fontSize: isMobile ? '1.4rem' : '1.8rem', fontWeight: '950', color: '#fff', lineHeight: 1 }}>{totalCount.toLocaleString()}</h4>
                     </div>
                 </motion.div>
             </div>

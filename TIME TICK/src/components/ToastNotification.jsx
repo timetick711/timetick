@@ -38,7 +38,7 @@ export default function ToastNotification({ message, onClose, duration = 3000 })
             transform: isVisible ? 'translateY(0)' : 'translateY(20px)',
             transition: 'all 0.3s ease-in-out',
             boxShadow: '0 5px 15px rgba(0,0,0,0.3)',
-            fontFamily: "'Cairo', sans-serif"
+            fontFamily: "'OYMandisa', sans-serif"
         }}>
             <CheckCircle size={20} color="var(--primary)" />
             <span style={{ fontSize: '0.95rem' }}>{message}</span>

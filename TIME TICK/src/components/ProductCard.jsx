@@ -70,7 +70,7 @@ const ProductCard = forwardRef(({ product }, ref) => {
 
     const handleInquiry = (e) => {
         e.stopPropagation();
-        navigate(`/product/${product.id}`);
+        navigate(`/product/${product.slug || product.id}`);
     };
 
     const handleAddToCart = (e) => {
@@ -87,7 +87,7 @@ const ProductCard = forwardRef(({ product }, ref) => {
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
                     src={product.imageUrl || product.image}
-                    alt={product.name}
+                    alt={`صورة لـ ${product.name}`}
                     loading="lazy"
                     style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                 />

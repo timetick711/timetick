@@ -15,6 +15,7 @@ import {
 import { subscribeToProducts, subscribeToProduct } from '../services/productService';
 import ProductCard from '../components/ProductCard';
 import ProductOptionsModal from '../components/ProductOptionsModal';
+import SEO from '../components/SEO';
 
 const ProductDetails = () => {
     const { id } = useParams();
@@ -184,6 +185,7 @@ const ProductDetails = () => {
                     transition={{ duration: 0.4 }}
                     src={activeImage || product.imageUrl || product.image}
                     alt={product.name}
+                    loading="lazy"
                     style={{ width: '100%', height: '100%', objectFit: 'contain' }}
                 />
             );
@@ -284,8 +286,37 @@ const ProductDetails = () => {
         ? Math.round(((Number(product.old_price) - Number(product.price)) / Number(product.old_price)) * 100)
         : null;
 
+    const productSchema = {
+        "@context": "https://schema.org",
+        "@type": "Product",
+        "name": product.name,
+        "image": [product.imageUrl || product.image],
+        "description": product.description,
+        "sku": product.displayId,
+        "brand": {
+            "@type": "Brand",
+            "name": product.brand || "Time Tick"
+        },
+        "offers": {
+            "@type": "Offer",
+            "url": shareUrl,
+            "priceCurrency": "SAR",
+            "price": product.price,
+            "priceValidUntil": new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().split('T')[0],
+            "itemCondition": "https://schema.org/NewCondition",
+            "availability": "https://schema.org/InStock"
+        }
+    };
+
     return (
         <div className="container product-details-page">
+            <SEO 
+                title={product.name} 
+                description={product.description?.substring(0, 160)} 
+                image={product.imageUrl || product.image} 
+                url={`/product/${product.slug || product.id}`}
+                schema={productSchema}
+            />
             {/* Minimalist Breadcrumbs */}
             <nav style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '32px', padding: '0 20px', color: 'var(--text-dim)', fontSize: '0.9rem' }}>
                 <span onClick={() => navigate('/')} style={{ cursor: 'pointer' }}>الرئيسية</span>
@@ -346,7 +377,7 @@ const ProductDetails = () => {
                                                 background: 'var(--bg-card)', cursor: 'pointer', transition: '0.2s', flexShrink: 0
                                             }}
                                         >
-                                            <img src={img} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                            <img src={img} alt={`صورة مصغرة لـ ${product.name}`} loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                         </motion.div>
                                     ));
                                 })()}

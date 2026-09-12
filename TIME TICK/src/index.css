@@ -1,4 +1,9 @@
-@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700&display=swap');
+@font-face {
+  font-family: 'OYMandisa';
+  src: url('/fonts/OYMandisa-mob.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
 
 :root {
   /* Safe Area: resolves to the OS status-bar height on mobile, 0px on desktop */
@@ -20,7 +25,7 @@
   --glass-border: rgba(255, 255, 255, 0.05);
   /* Thinner, subtler border */
   --shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.5);
-  --font-main: 'Cairo', sans-serif;
+  --font-main: 'OYMandisa', sans-serif;
   --radius: 12px;
 
   /* PRD: Root Color Syncing */

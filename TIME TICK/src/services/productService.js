@@ -150,12 +150,16 @@ export const subscribeToProducts = (callback) => {
     };
 };
 
-export const subscribeToProduct = (id, callback) => {
+export const subscribeToProduct = (idOrSlug, callback) => {
+    // Check if the parameter is a UUID
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(idOrSlug);
+    const fetchColumn = isUUID ? 'id' : 'slug';
+
     const fetchProduct = async () => {
         const { data, error } = await supabase
             .from('products')
             .select('*')
-            .eq('id', id)
+            .eq(fetchColumn, idOrSlug)
             .single();
 
         if (error) {
@@ -169,8 +173,8 @@ export const subscribeToProduct = (id, callback) => {
     fetchProduct();
 
     const subscription = supabase
-        .channel(`public:products:id=eq.${id}`)
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'products', filter: `id=eq.${id}` }, (payload) => {
+        .channel(`public:products:${fetchColumn}=eq.${idOrSlug}`)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'products', filter: `${fetchColumn}=eq.${idOrSlug}` }, (payload) => {
             fetchProduct();
         })
         .subscribe();

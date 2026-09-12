@@ -110,7 +110,7 @@ export default function FavoritesModal() {
                                     </div>
                                     <div>
                                         <h2 style={{ fontSize: '1.5rem', fontWeight: '900', color: 'var(--text-main)', margin: 0 }}>المفضلات</h2>
-                                        <span style={{ fontSize: '0.85rem', color: 'var(--text-dim)' }}>{favorites.length} منتجات محفوظة</span>
+                                        <span style={{ fontSize: '0.85rem', color: 'var(--text-dim)' }}>{favorites.length.toLocaleString()} منتجات محفوظة</span>
                                     </div>
                                 </div>
                                 <button

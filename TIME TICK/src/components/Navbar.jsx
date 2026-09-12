@@ -68,7 +68,7 @@ export default function Navbar() {
     const dockItems = [
         { icon: <Home size={22} />, label: "الرئيسية", onClick: () => navigate('/') },
         { icon: <ListIcon size={22} />, label: "طلباتي", onClick: () => navigate('/orders') },
-        { icon: <Heart size={22} />, label: "المفضلة", onClick: () => setIsFavoritesOpen(true), badgeCount: favorites.length },
+        { icon: <Heart size={22} />, label: "المفضلة", onClick: () => setIsFavoritesOpen(true), badgeCount: favorites.length > 0 ? favorites.length.toLocaleString() : 0 },
         {
             icon: theme === 'dark' ? <Sun size={22} /> : <Moon size={22} />,
             label: theme === 'dark' ? 'الوضع النهاري' : 'الوضع الليلي',
@@ -146,7 +146,7 @@ export default function Navbar() {
 
                 <div className="action-icon" style={{ justifyContent: 'flex-start', }} onClick={() => { setIsFavoritesOpen(true); setIsMenuOpen(false); }}>
                     <Heart size={22} color="#ff4b4b" />
-                    <span style={{ fontSize: '1.1rem' }}>المفضلة ({favorites.length})</span>
+                    <span style={{ fontSize: '1.1rem' }}>المفضلة ({favorites.length.toLocaleString()})</span>
                 </div>
 
                 {currentUser && (
@@ -246,11 +246,11 @@ export default function Navbar() {
                             ) : (
                                 <button onClick={openAuthModal} className="btn-primary" style={{ padding: '8px 22px', fontSize: '0.9rem' }}>تسجيل الدخول</button>
                             )}
-                            <NavIcon icon={ShoppingBag} onClick={openCart} badge={itemCount} title="السلة" />
+                            <NavIcon icon={ShoppingBag} onClick={openCart} badge={itemCount > 0 ? itemCount.toLocaleString() : 0} title="السلة" />
                         </>
                     ) : (
                         /* Mobile Cart icon on the Right */
-                        <NavIcon icon={ShoppingBag} onClick={openCart} badge={itemCount} />
+                        <NavIcon icon={ShoppingBag} onClick={openCart} badge={itemCount > 0 ? itemCount.toLocaleString() : 0} />
                     )}
                 </div>
             </nav>

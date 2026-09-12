@@ -185,7 +185,7 @@ export const CartProvider = ({ children }) => {
         invoiceDiv.style.padding = '40px';
         invoiceDiv.style.background = '#ffffff'; // White background as requested
         invoiceDiv.style.color = '#000'; // Black text
-        invoiceDiv.style.fontFamily = "'Cairo', sans-serif";
+        invoiceDiv.style.fontFamily = "'OYMandisa', sans-serif";
         invoiceDiv.style.direction = 'rtl';
 
         invoiceDiv.innerHTML = `

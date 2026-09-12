@@ -12,16 +12,17 @@ import Hero from './components/Hero';
 import Features from './components/Features';
 import BestSellers from './components/BestSellers';
 import LatestProducts from './components/LatestProducts';
+import { Suspense, lazy } from 'react';
 import ProductList from './components/ProductList';
-import ProductDetails from './pages/ProductDetails';
-import Orders from './pages/Orders';
+const ProductDetails = lazy(() => import('./pages/ProductDetails'));
+const Orders = lazy(() => import('./pages/Orders'));
 import CartSidebar from './components/CartSidebar';
 import AuthModal from './components/AuthModal';
 import LogoutConfirmModal from './components/LogoutConfirmModal';
 import ProfileModal from './components/ProfileModal';
 import FavoritesModal from './components/FavoritesModal';
 import Footer from './components/Footer';
-import SEOHelper from './components/SEOHelper';
+import SEO from './components/SEO';
 import ScrollToTop from './components/ScrollToTop';
 import BackButtonHandler from './components/BackButtonHandler';
 import PullToRefresh from './components/PullToRefresh';
@@ -59,30 +60,32 @@ const AnimatedRoutes = () => {
   const location = useLocation();
   return (
     <AnimatePresence mode="wait">
-      <Routes location={location} key={location.pathname}>
-        <Route path="/" element={<Home />} />
-        <Route path="/app" element={<RedirectToApp />} />
-        <Route path="/product/:id" element={
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            transition={{ duration: 0.4 }}
-          >
-            <ProductDetails />
-          </motion.div>
-        } />
-        <Route path="/orders" element={
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            transition={{ duration: 0.4 }}
-          >
-            <Orders />
-          </motion.div>
-        } />
-      </Routes>
+      <Suspense fallback={<div className="loading-dots-container"><div className="loading-dots"><span></span><span></span><span></span></div></div>}>
+        <Routes location={location} key={location.pathname}>
+          <Route path="/" element={<Home />} />
+          <Route path="/app" element={<RedirectToApp />} />
+          <Route path="/product/:id" element={
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.4 }}
+            >
+              <ProductDetails />
+            </motion.div>
+          } />
+          <Route path="/orders" element={
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.4 }}
+            >
+              <Orders />
+            </motion.div>
+          } />
+        </Routes>
+      </Suspense>
     </AnimatePresence>
   );
 };
@@ -307,7 +310,22 @@ function App() {
                       <DeepLinkHandler />
                       <BackButtonHandler />
                       <ScrollLockManager />
-                      <SEOHelper />
+                      <SEO schema={{
+                        "@context": "https://schema.org",
+                        "@type": "Store",
+                        "name": "Time Tick Store",
+                        "image": "https://timetick.vercel.app/public/default-og.jpg",
+                        "url": "https://timetick.vercel.app",
+                        "telephone": "",
+                        "address": {
+                          "@type": "PostalAddress",
+                          "streetAddress": "",
+                          "addressLocality": "Gaza",
+                          "addressRegion": "Gaza",
+                          "postalCode": "",
+                          "addressCountry": "PS"
+                        }
+                      }} />
                       <div className="app-container">
                         <SystemBarsSync />
                         <Navbar />

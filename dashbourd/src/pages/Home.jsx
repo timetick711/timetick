@@ -72,10 +72,10 @@ const Home = () => {
     }, []);
 
     const statCards = [
-        { label: 'إجمالي المنتجات', value: stats.products, icon: Box, color: '#d4af37', bg: 'rgba(212, 175, 55, 0.15)', glow: 'rgba(212, 175, 55, 0.3)' },
-        { label: 'إجمالي الطلبات', value: stats.orders, icon: ShoppingBag, color: '#3b82f6', bg: 'rgba(59, 130, 246, 0.15)', glow: 'rgba(59, 130, 246, 0.3)' },
-        { label: 'إجمالي المستخدمين', value: stats.users, icon: UsersIcon, color: '#10b981', bg: 'rgba(16, 185, 129, 0.15)', glow: 'rgba(16, 185, 129, 0.3)' },
-        { label: 'إجمالي الأرباح', value: `${stats.revenue.toLocaleString()} ر.س`, icon: TrendingUp, color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.15)', glow: 'rgba(245, 158, 11, 0.3)' },
+        { label: 'إجمالي المنتجات', value: Number(stats.products).toLocaleString(), icon: Box, color: '#d4af37', bg: 'rgba(212, 175, 55, 0.15)', glow: 'rgba(212, 175, 55, 0.3)' },
+        { label: 'إجمالي الطلبات', value: Number(stats.orders).toLocaleString(), icon: ShoppingBag, color: '#3b82f6', bg: 'rgba(59, 130, 246, 0.15)', glow: 'rgba(59, 130, 246, 0.3)' },
+        { label: 'إجمالي المستخدمين', value: Number(stats.users).toLocaleString(), icon: UsersIcon, color: '#10b981', bg: 'rgba(16, 185, 129, 0.15)', glow: 'rgba(16, 185, 129, 0.3)' },
+        { label: 'إجمالي الأرباح', value: `${Number(stats.revenue).toLocaleString()} ر.س`, icon: TrendingUp, color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.15)', glow: 'rgba(245, 158, 11, 0.3)' },
     ];
 
     return (

@@ -235,7 +235,7 @@ export default function ProductOptionsModal({ isOpen, onClose, product, onConfir
                                             <Minus size={16} />
                                         </button>
                                         <span style={{ fontSize: '1.3rem', fontWeight: '700', minWidth: '30px', textAlign: 'center' }}>
-                                            {quantity}
+                                            {quantity.toLocaleString()}
                                         </span>
                                         <button
                                             onClick={() => setQuantity(quantity + 1)}
